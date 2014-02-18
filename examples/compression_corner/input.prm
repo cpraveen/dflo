@@ -1,0 +1,86 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = corner.msh
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+subsection boundary_1
+  set type = slip
+end
+
+# farfield supersonic inflow boundary
+subsection boundary_2
+  set type = inflow
+  set w_0 value = 1.0
+  set w_1 value = 0.0
+  set w_2 value = 1.0
+  set w_3 value = 6.98412698412698e-01
+end
+
+# outflow boundary
+subsection boundary_3
+  set type = outflow
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+  set w_0 value = 1.0
+  set w_1 value = 0.0
+  set w_2 value = 1.0
+  set w_3 value = 6.98412698412698e-01
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = local
+  set cfl = 0.4
+  set theta scheme value = 1.0
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  #set output         = verbose
+  set method         = rk3
+  set residual       = 1.0e-1
+  set max iters      = 300
+  set ilut fill      = 1.5
+  set ilut drop tolerance = 1e-6
+  set ilut absolute tolerance = 1e-6
+  set ilut relative tolerance = 1.0
+end
+
+# --------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 10
+  set schlieren plot = true
+  set format         = tecplot
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = kfvs
+end
