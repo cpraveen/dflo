@@ -54,6 +54,7 @@ const double ark[3] = {0.0, 3.0/4.0, 1.0/3.0};
 
 using namespace dealii;
 
+//------------------------------------------------------------------------------
 // @sect4{ConservationLaw::ConservationLaw}
 //
 // There is nothing much to say about
@@ -61,6 +62,7 @@ using namespace dealii;
 // reads the input file and fills the
 // parameter object with the parsed
 // values:
+//------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
                                        const unsigned int mapping,
@@ -69,6 +71,8 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    mapping (mapping),
    fe (FE_DGQ<dim>(degree), EulerEquations<dim>::n_components),
    dof_handler (triangulation),
+   fe0 (FE_DGQ<dim>(0), EulerEquations<dim>::n_components),
+   dof_handler0 (triangulation),
    fe_cell (FE_DGQ<dim>(0)),
    dh_cell (triangulation),
    verbose_cout (std::cout, false)
@@ -86,8 +90,7 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    prm.print_parameters (xml_file,  ParameterHandler::XML);
 }
 
-
-
+//------------------------------------------------------------------------------
 // @sect4{ConservationLaw::setup_system}
 //
 // The following (easy) function is called
@@ -96,10 +99,29 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
 // according to a sparsity pattern that we
 // generate as in all the previous tutorial
 // programs.
+//------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::setup_system ()
 {
    //DoFRenumbering::Cuthill_McKee (dof_handler);
+   
+   dof_handler.clear();
+   dof_handler.distribute_dofs (fe);
+   
+   // Size all of the fields.
+   old_solution.reinit (dof_handler.n_dofs());
+   current_solution.reinit (dof_handler.n_dofs());
+   predictor.reinit (dof_handler.n_dofs());
+   right_hand_side.reinit (dof_handler.n_dofs());
+   
+   dof_handler0.clear();
+   dof_handler0.distribute_dofs (fe0);
+   cell_average.reinit (dof_handler0.n_dofs());
+   
+   // Used for cell data like time step
+   dh_cell.clear();
+   dh_cell.distribute_dofs (fe_cell);
+   mu_shock.reinit (dh_cell.n_dofs());
 
    if(parameters.solver == Parameters::Solver::rk3)
    {
@@ -297,6 +319,49 @@ ConservationLaw<dim>::compute_time_step ()
 
 }
 
+//------------------------------------------------------------------------------
+// Compute cell average solution
+//------------------------------------------------------------------------------
+template <int dim>
+void
+ConservationLaw<dim>::compute_cell_average ()
+{
+   QGauss<dim>   quadrature_formula(fe.degree+1);
+   const unsigned int n_q_points = quadrature_formula.size();
+   
+   FEValues<dim> fe_values (fe,
+                            quadrature_formula,
+                            update_values | update_JxW_values);
+   std::vector<Vector<double> > solution_values(n_q_points,
+                                                Vector<double>(EulerEquations<dim>::n_components));
+   std::vector<unsigned int> cell_dofs(fe0.dofs_per_cell);
+   
+   cell_average = 0;
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end(),
+      cell0= dof_handler0.begin_active();
+   
+   for (; cell!=endc; ++cell, ++cell0)
+   {
+      fe_values.reinit (cell);
+      fe_values.get_function_values (current_solution, solution_values);
+      
+      cell0->get_dof_indices(cell_dofs);
+      
+      for (unsigned int q=0; q<n_q_points; ++q)
+         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+            cell_average(cell_dofs[c]) += solution_values[q][c] * fe_values.JxW(q);
+      
+      for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+         cell_average(cell_dofs[c]) /= cell->measure();
+      
+   }
+   
+}
+
+//------------------------------------------------------------------------------
 // @sect4{ConservationLaw::solve}
 //
 // Here, we actually solve the linear system,
@@ -307,7 +372,7 @@ ConservationLaw<dim>::compute_time_step ()
 // function. The result is a pair of number
 // of iterations and the final linear
 // residual.
-
+//------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
 ConservationLaw<dim>::solve (Vector<double> &newton_update, 
@@ -371,7 +436,7 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
    
    return std::pair<unsigned int, double> (0,0);
 }
-
+//------------------------------------------------------------------------------
 // @sect4{ConservationLaw::run}
 
 // This function contains the top-level logic
@@ -388,6 +453,7 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
 // already well adapted to the starting
 // solution. At the end of this process, we
 // output the initial solution.
+//------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::run ()
 {
@@ -409,20 +475,6 @@ void ConservationLaw<dim>::run ()
    triangulation.set_boundary (1, boundary_description);
    */
    
-   dof_handler.clear();
-   dof_handler.distribute_dofs (fe);
-   
-   // Size all of the fields.
-   old_solution.reinit (dof_handler.n_dofs());
-   current_solution.reinit (dof_handler.n_dofs());
-   predictor.reinit (dof_handler.n_dofs());
-   right_hand_side.reinit (dof_handler.n_dofs());
-
-   // Used for cell data like time step
-   dh_cell.clear();
-   dh_cell.distribute_dofs (fe_cell);
-   mu_shock.reinit (dh_cell.n_dofs());
-   
    setup_system();
    
    VectorTools::interpolate(dof_handler,
@@ -430,6 +482,7 @@ void ConservationLaw<dim>::run ()
    current_solution = old_solution;
    predictor = old_solution;
    
+   // Refine the initial mesh
    if (parameters.do_refine == true)
       for (unsigned int i=0; i<parameters.shock_levels; ++i)
       {
@@ -437,8 +490,6 @@ void ConservationLaw<dim>::run ()
          
          compute_refinement_indicators(refinement_indicators);
          refine_grid(refinement_indicators);
-         
-         setup_system();
          
          VectorTools::interpolate(dof_handler,
                                   parameters.initial_conditions, old_solution);
@@ -519,6 +570,8 @@ void ConservationLaw<dim>::run ()
             // current_solution = ark*old_solution + (1-ark)*current_solution
             current_solution.sadd (1.0-ark[nonlin_iter], ark[nonlin_iter], old_solution);
          }
+         
+         compute_cell_average ();
             
          std::printf("   %-16.3e %04d        %-5.2e\n",
                      res_norm, convergence.first, convergence.second);
@@ -587,13 +640,8 @@ void ConservationLaw<dim>::run ()
          compute_refinement_indicators(refinement_indicators);
          
          refine_grid(refinement_indicators);
-         setup_system();
          
          newton_update.reinit (dof_handler.n_dofs());
-
-         dh_cell.clear();
-         dh_cell.distribute_dofs (fe_cell);
-         mu_shock.reinit (dh_cell.n_dofs());
 
          next_refine_time = time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;

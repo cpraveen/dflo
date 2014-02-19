@@ -71,6 +71,17 @@ void ConservationLaw<dim>::output_results () const
    shock.build_patches ();
    std::ofstream shock_output ("shock.plt");
    shock.write_tecplot (shock_output);
+   
+   // Write cell average solution
+   DataOut<dim> avg;
+   avg.attach_dof_handler (dof_handler0);
+   avg.add_data_vector (cell_average,
+                        EulerEquations<dim>::component_names (),
+                        DataOut<dim>::type_dof_data,
+                        EulerEquations<dim>::component_interpretation ());
+   avg.build_patches ();
+   std::ofstream avg_output ("avg.plt");
+   avg.write_tecplot (avg_output);
 }
 
 template class ConservationLaw<2>;

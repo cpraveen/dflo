@@ -92,6 +92,7 @@ private:
    void assemble_system (IntegratorImplicit<dim>& integrator);
 
    void compute_time_step ();
+   void compute_cell_average ();
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -130,6 +131,10 @@ private:
    const dealii::FESystem<dim>  fe;
    dealii::DoFHandler<dim>      dof_handler;
    
+   // For cell average solution
+   const dealii::FESystem<dim>  fe0;
+   dealii::DoFHandler<dim>      dof_handler0;
+   
    // Degree zero FE for storing data on each cell
    const dealii::FE_DGQ<dim>    fe_cell;
    dealii::DoFHandler<dim>      dh_cell;
@@ -162,6 +167,7 @@ private:
    dealii::Vector<double>       old_solution;
    dealii::Vector<double>       current_solution;
    dealii::Vector<double>       predictor;
+   dealii::Vector<double>       cell_average;
    
    dealii::Vector<double>       right_hand_side;
 

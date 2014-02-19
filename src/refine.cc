@@ -85,8 +85,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    
    triangulation.execute_coarsening_and_refinement ();
    
-   dof_handler.clear();
-   dof_handler.distribute_dofs (fe);
+   setup_system ();
    
    {
       Vector<double> new_old_solution(1);
@@ -99,16 +98,10 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    }
    
    soltrans.interpolate(transfer_in, transfer_out);
-   
-   old_solution.reinit (transfer_out[0].size());
+
    old_solution = transfer_out[0];
-   
-   predictor.reinit (transfer_out[1].size());
    predictor = transfer_out[1];
-   
-   current_solution.reinit(dof_handler.n_dofs());
    current_solution = old_solution;
-   right_hand_side.reinit (dof_handler.n_dofs());
 }
 
 template class ConservationLaw<2>;

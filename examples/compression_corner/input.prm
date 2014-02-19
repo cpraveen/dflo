@@ -77,6 +77,9 @@ end
 # Refinement control
 subsection refinement
   set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
 end
 
 # --------------------------------------------------
