@@ -16,6 +16,7 @@
 #include <grid/grid_refinement.h>
 #include <grid/tria_accessor.h>
 #include <grid/tria_iterator.h>
+#include <grid/grid_tools.h>
 
 #include <dofs/dof_handler.h>
 #include <dofs/dof_accessor.h>
@@ -93,6 +94,8 @@ private:
 
    void compute_time_step ();
    void compute_cell_average ();
+   void apply_limiter ();
+   void apply_limiter_TVB ();
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -214,7 +217,7 @@ private:
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       typename InputVector::value_type (&normal_flux)[EulerEquations<dim>::n_components]
-   )
+   ) const
    {
       switch(parameters.flux_type)
       {
@@ -248,7 +251,7 @@ private:
    // Given a cell iterator, return the cell number
    template <typename ITERATOR>
    inline
-   unsigned int cell_number (const ITERATOR &cell)
+   unsigned int cell_number (const ITERATOR &cell) const
    {
       dealii::DoFAccessor<dim,dealii::DoFHandler<dim>,false> 
          dof_accessor (&triangulation, 
@@ -256,6 +259,37 @@ private:
                        cell->index(), 
                        &dh_cell);
       return dof_accessor.dof_index(0);
+   }
+   
+   // If cell is active, return cell average.
+   // If cell is not active, return area average of child cells.
+   inline
+   void get_cell_average(const typename dealii::DoFHandler<dim>::cell_iterator& cell,
+                         dealii::Vector<double>& avg) const
+   {
+      std::vector<unsigned int> dof_indices(fe0.dofs_per_cell);
+      
+      if(cell->active())
+      {
+         cell->get_dof_indices(dof_indices);
+         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+            avg(c) = cell_average(dof_indices[c]);
+      }
+      else
+      {  // compute average solution on child cells
+         auto child_cells =
+            dealii::GridTools::get_active_child_cells< dealii::DoFHandler<dim> > (cell);
+         avg = 0;
+         double measure = 0;
+         for(unsigned int i=0; i<child_cells.size(); ++i)
+         {
+            child_cells[i]->get_dof_indices(dof_indices);
+            for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+               avg(c) += cell_average(dof_indices[c]) * child_cells[i]->measure();
+            measure += child_cells[i]->measure();
+         }
+         avg /= measure;
+      }
    }
 
 };

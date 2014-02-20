@@ -239,6 +239,19 @@ namespace Parameters
       void parse_parameters (dealii::ParameterHandler &prm);
    };
    
+   struct Limiter
+   {
+      enum LimiterType { none, TVB };
+      
+      LimiterType limiter_type;
+      bool        char_lim;
+      bool        pos_lim;
+      double      M;
+      
+      static void declare_parameters (dealii::ParameterHandler &prm);
+      void parse_parameters (dealii::ParameterHandler &prm);
+   };
+   
    
    // @sect4{Parameters::Output}
    //
@@ -347,6 +360,7 @@ namespace Parameters
    struct AllParameters : public Solver,
    public Refinement,
    public Flux,
+   public Limiter,
    public Output
    {
       static const unsigned int max_n_boundaries = 10;

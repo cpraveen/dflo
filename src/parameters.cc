@@ -171,6 +171,46 @@ namespace Parameters
       prm.leave_subsection();
    }
    
+   void Limiter::declare_parameters (ParameterHandler &prm)
+   {
+      prm.enter_subsection("limiter");
+      {
+         prm.declare_entry("type", "none",
+                           Patterns::Selection("none|TVB"),
+                           "Limiter type: none | TVB");
+         prm.declare_entry("characteristic limiter", "false",
+                           Patterns::Bool(),
+                           "whether to use characteristic limiter");
+         prm.declare_entry("positivity limiter", "false",
+                           Patterns::Bool(),
+                           "whether to use positivity limiter");
+         prm.declare_entry("M", "0",
+                           Patterns::Double(0),
+                           "TVB parameter");
+      }
+      prm.leave_subsection();
+   }
+   
+   
+   void Limiter::parse_parameters (ParameterHandler &prm)
+   {
+      prm.enter_subsection("limiter");
+      {
+         const std::string type = prm.get("type");
+         if(type == "none")
+            limiter_type = none;
+         else if(type == "TVB")
+            limiter_type = TVB;
+         else
+            AssertThrow (false, ExcNotImplemented());
+         
+         char_lim = prm.get_bool("characteristic limiter");
+         pos_lim  = prm.get_bool("positivity limiter");
+         M        = prm.get_double("M");
+      }
+      prm.leave_subsection();
+   }
+   
    
    
    void Output::declare_parameters (ParameterHandler &prm)
@@ -263,7 +303,7 @@ namespace Parameters
                            "value for theta that interpolated between explicit "
                            "Euler (theta=0), Crank-Nicolson (theta=0.5), and "
                            "implicit Euler (theta=1).");
-         prm.declare_entry("nonlinear iterations", "10",
+         prm.declare_entry("nonlinear iterations", "1",
                            Patterns::Integer(),
                            "maximum non-linear iterations");
       }
@@ -303,6 +343,7 @@ namespace Parameters
       Parameters::Solver::declare_parameters (prm);
       Parameters::Refinement::declare_parameters (prm);
       Parameters::Flux::declare_parameters (prm);
+      Parameters::Limiter::declare_parameters (prm);
       Parameters::Output::declare_parameters (prm);
    }
    
@@ -394,6 +435,7 @@ namespace Parameters
       Parameters::Solver::parse_parameters (prm);
       Parameters::Refinement::parse_parameters (prm);
       Parameters::Flux::parse_parameters (prm);
+      Parameters::Limiter::parse_parameters (prm);
       Parameters::Output::parse_parameters (prm);
    }
 }

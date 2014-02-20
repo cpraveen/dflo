@@ -157,8 +157,8 @@ void ConservationLaw<dim>::setup_system ()
 
    const double EPS = 1.0e-10;
    typename DoFHandler<dim>::active_cell_iterator
-      cell = dof_handler.begin_active(),
-      endc = dof_handler.end();
+      cell = dof_handler0.begin_active(),
+      endc = dof_handler0.end();
    for (unsigned int c = 0; cell!=endc; ++cell, ++c)
    {
       lcell[c] = endc;
@@ -518,8 +518,8 @@ void ConservationLaw<dim>::run ()
    
    while (time < parameters.final_time)
    {
-
-      std::cout << "T=" << time << ", dt=" << parameters.time_step 
+      std::cout << std::endl;
+      std::cout << "T=" << time << ", dt=" << parameters.time_step
                 << ", cfl=" << parameters.cfl << std::endl
 		          << "   Number of active cells:       "
 		          << triangulation.n_active_cells()
@@ -572,6 +572,7 @@ void ConservationLaw<dim>::run ()
          }
          
          compute_cell_average ();
+         apply_limiter ();
             
          std::printf("   %-16.3e %04d        %-5.2e\n",
                      res_norm, convergence.first, convergence.second);
