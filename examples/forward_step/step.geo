@@ -55,7 +55,7 @@ Transfinite Line{2,8} = n2;
 Transfinite Line{4,7,10} = n3;
 Transfinite Line{3,5} = n4;
 
-Physical Surface(100000) = {1,2,3};
+Physical Surface(0) = {1,2,3};
 
 Physical Line(1) = {7,8};        // in flow
 Physical Line(2) = {1,2,3,5,6};  // bottom and top
