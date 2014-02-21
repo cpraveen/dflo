@@ -574,6 +574,7 @@ void ConservationLaw<dim>::run ()
          
          compute_cell_average ();
          apply_limiter ();
+         if(parameters.pos_lim) apply_positivity_limiter ();
             
          std::printf("   %-16.3e %04d        %-5.2e\n",
                      res_norm, convergence.first, convergence.second);
