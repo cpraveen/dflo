@@ -193,4 +193,4 @@ EulerEquations<dim>::Postprocessor::n_output_variables () const
 }
 
 // To handle linking errors
-template class EulerEquations<2>;
+template struct EulerEquations<2>;

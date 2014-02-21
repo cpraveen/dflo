@@ -313,7 +313,7 @@ void ConservationLaw<dim>::compute_mu_shock ()
 
    mu_shock = 0;
 
-   MeshWorker::integration_loop<dim, dim>
+   MeshWorker::loop<dim,dim,MeshWorker::DoFInfo<dim>,MeshWorker::IntegrationInfoBox<dim> >
    (dof_handler.begin_active(),
     dof_handler.end(),
     integrator.dof_info, 
@@ -326,7 +326,7 @@ void ConservationLaw<dim>::compute_mu_shock ()
     integrator.assembler, 
     false);
 
-   MeshWorker::integration_loop<dim, dim>
+   MeshWorker::loop<dim,dim,MeshWorker::DoFInfo<dim>,MeshWorker::IntegrationInfoBox<dim> >
    (dof_handler.begin_active(),
     dof_handler.end(),
     integrator.dof_info, 
