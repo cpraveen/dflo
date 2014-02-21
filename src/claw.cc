@@ -159,8 +159,9 @@ void ConservationLaw<dim>::setup_system ()
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler0.begin_active(),
       endc = dof_handler0.end();
-   for (unsigned int c = 0; cell!=endc; ++cell, ++c)
+   for (; cell!=endc; ++cell)
    {
+      unsigned int c = cell_number(cell);
       lcell[c] = endc;
       rcell[c] = endc;
       bcell[c] = endc;
@@ -518,7 +519,10 @@ void ConservationLaw<dim>::run ()
    
    while (time < parameters.final_time)
    {
-      std::cout << std::endl;
+      // compute time step in each cell using cfl condition
+      compute_time_step ();
+      
+      std::cout << std::endl << "It=" << time_iter << ",  ";
       std::cout << "T=" << time << ", dt=" << parameters.time_step
                 << ", cfl=" << parameters.cfl << std::endl
 		          << "   Number of active cells:       "
@@ -532,9 +536,6 @@ void ConservationLaw<dim>::run ()
       std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
                 << "   _____________________________________" << std::endl;
       
-      // compute time step in each cell using cfl condition
-      compute_time_step ();
-
       unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;
       double res_norm  = 1.0;

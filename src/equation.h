@@ -169,7 +169,97 @@ struct EulerEquations
                                      (W[energy_component] + pressure);
    }
    
+   //---------------------------------------------------------------------------
+   // Left and right eigenvector matrices
+   // Lx, Rx = along x direction
+   // Ly, Ry = along y direction
+   // Expressions taken from
+   // http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf
+   // Note: This is implemented only for 2-D
+   //---------------------------------------------------------------------------
+   static
+   void compute_eigen_matrix (const dealii::Vector<double> &W,
+                              double            (&Rx)[n_components][n_components],
+                              double            (&Lx)[n_components][n_components],
+                              double            (&Ry)[n_components][n_components],
+                              double            (&Ly)[n_components][n_components])
+   {
+      double g1   = gas_gamma - 1.0;
+      double rho  = W[density_component];
+      double E    = W[energy_component];
+      double u    = W[0] / rho;
+      double v    = W[1] / rho;
+      double q2   = u*u + v*v;
+      double p    = g1 * (E - 0.5 * rho * q2);
+      double c2   = gas_gamma * p / rho;
+      double c    = std::sqrt(c2);
+      double beta = 0.5/c2;
+      double phi2 = 0.5*g1*q2;
+      double h    = c2/g1 + 0.5*q2;
+      
+      Rx[0][0] = 1;      Rx[0][1] = 0;  Rx[0][2] = 1;     Rx[0][3] = 1;
+      Rx[1][0] = u;      Rx[1][1] = 0;  Rx[1][2] = u+c;   Rx[1][3] = u-c;
+      Rx[2][0] = v;      Rx[2][1] = -1; Rx[2][2] = v;     Rx[2][3] = v;
+      Rx[3][0] = 0.5*q2; Rx[3][1] = -v; Rx[3][2] = h+c*u; Rx[3][3] = h-c*u;
+      
+      Ry[0][0] = 1;      Ry[0][1] = 0;  Ry[0][2] = 1;     Ry[0][3] = 1;
+      Ry[1][0] = u;      Ry[1][1] = 1;  Ry[1][2] = u;     Ry[1][3] = u;
+      Ry[2][0] = v;      Ry[2][1] = 0;  Ry[2][2] = v+c;   Ry[2][3] = v-c;
+      Ry[3][0] = 0.5*q2; Ry[3][1] = u;  Ry[3][2] = h+c*v; Ry[3][3] = h-c*v;
+      
+      Lx[0][0] = 1-phi2/c2;       Lx[0][1] = g1*u/c2;       Lx[0][2] = g1*v/c2;    Lx[0][3] = -g1/c2;
+      Lx[1][0] = v;               Lx[1][1] = 0;             Lx[1][2] = -1;         Lx[1][3] = 0;
+      Lx[2][0] = beta*(phi2-c*u); Lx[2][1] = beta*(c-g1*u); Lx[2][2] = -beta*g1*v; Lx[2][3] = beta*g1;
+      Lx[3][0] = beta*(phi2+c*u); Lx[3][1] =-beta*(c+g1*u); Lx[3][2] = -beta*g1*v; Lx[3][3] = beta*g1;
+      
+      Ly[0][0] = 1-phi2/c2;       Ly[0][1] = g1*u/c2;       Ly[0][2] = g1*v/c2;       Ly[0][3] = -g1/c2;
+      Ly[1][0] = -u;              Ly[1][1] = 1;             Ly[1][2] = 0;             Ly[1][3] = 0;
+      Ly[2][0] = beta*(phi2-c*v); Ly[2][1] =-beta*g1*u;     Ly[2][2] = beta*(c-g1*v); Ly[2][3] = beta*g1;
+      Ly[3][0] = beta*(phi2+c*v); Ly[3][1] =-beta*g1*u;     Ly[3][2] =-beta*(c+g1*v); Ly[3][3] = beta*g1;
+      
+   }
    
+   //---------------------------------------------------------------------------
+   // convert from conserved to characteristic variables: W = L*W
+   //---------------------------------------------------------------------------
+   static
+   void transform_to_char (const double           (&L)[n_components][n_components],
+                           dealii::Vector<double> &W)
+   {
+      dealii::Vector<double> V(n_components);
+      
+      V[0] = W[density_component];
+      V[n_components-1] = W[energy_component];
+      for(unsigned int d=0; d<dim; ++d)
+         V[d+1] = W[d];
+      
+      W = 0;
+      for(unsigned int i=0; i<n_components; ++i)
+         for(unsigned int j=0; j<n_components; ++j)
+            W[i] += L[i][j] * V[j];
+   }
+   
+   //---------------------------------------------------------------------------
+   // convert from characteristic to conserved variables: W = R*W
+   //---------------------------------------------------------------------------
+   static
+   void transform_to_con (const double           (&R)[n_components][n_components],
+                          dealii::Vector<double> &W)
+   {
+      dealii::Vector<double> V(n_components);
+      
+      V = 0;
+      for(unsigned int i=0; i<n_components; ++i)
+         for(unsigned int j=0; j<n_components; ++j)
+            V[i] += R[i][j] * W[j];
+
+      W[density_component] = V[0];
+      W[energy_component] = V[n_components-1];
+      for(unsigned int d=0; d<dim; ++d)
+         W[d] = V[d+1];
+      
+   }
+
    // @sect4{EulerEquations::compute_normal_flux}
    
    // On the boundaries of the

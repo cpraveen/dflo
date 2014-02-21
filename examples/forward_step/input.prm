@@ -78,12 +78,12 @@ end
 # --------------------------------------------------
 # Flux parameters
 subsection flux
- set flux = kfvs
+ set flux = lxf
 end
 
 subsection limiter
    set type = TVB
-   set characteristic limiter = false
+   set characteristic limiter = true
    set positivity limiter = false
    set M = 0
 end
