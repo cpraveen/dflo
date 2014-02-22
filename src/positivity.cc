@@ -157,9 +157,12 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       }
       
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+      {
+         unsigned int comp_i = fe.system_to_component_index(i).first;
          current_solution(local_dof_indices[i]) =
                theta2         * current_solution(local_dof_indices[i])
-            + (1.0 - theta2) * density_average;
+            + (1.0 - theta2)  * cell_average(cell_indices[comp_i]);
+      }
       
    }
 }
