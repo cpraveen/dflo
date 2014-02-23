@@ -71,18 +71,14 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
     
    Vector<double> dfx (EulerEquations<dim>::n_components);
    Vector<double> dbx (EulerEquations<dim>::n_components);
-   Vector<double> DFx (EulerEquations<dim>::n_components);
-   Vector<double> DBx (EulerEquations<dim>::n_components);
+   Vector<double> Dx  (EulerEquations<dim>::n_components);
     
    Vector<double> dfy (EulerEquations<dim>::n_components);
    Vector<double> dby (EulerEquations<dim>::n_components);
-   Vector<double> DFy (EulerEquations<dim>::n_components);
-   Vector<double> DBy (EulerEquations<dim>::n_components);
+   Vector<double> Dy  (EulerEquations<dim>::n_components);
     
-   Vector<double> DFx_new (EulerEquations<dim>::n_components);
-   Vector<double> DBx_new (EulerEquations<dim>::n_components);
-   Vector<double> DFy_new (EulerEquations<dim>::n_components);
-   Vector<double> DBy_new (EulerEquations<dim>::n_components);
+   Vector<double> Dx_new (EulerEquations<dim>::n_components);
+   Vector<double> Dy_new (EulerEquations<dim>::n_components);
    Vector<double> avg_nbr (EulerEquations<dim>::n_components);
    
    std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
@@ -96,16 +92,12 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
    
    for(; cell != endc; ++cell, ++cell0)
    {
-      unsigned int c = cell_number(cell);
-      double dx = cell->diameter() / std::sqrt(2.0);
-      double Mdx2 = parameters.M * dx * dx;
+      const unsigned int c = cell_number(cell);
+      const double dx = cell->diameter() / std::sqrt(2.0);
+      const double Mdx2 = parameters.M * dx * dx;
       
       cell0->get_dof_indices (cell_indices);
       
-      // Limit x derivative
-      fe_values_x.reinit(cell);
-      fe_values_x.get_function_values(current_solution, face_values_x);
-
       // Backward difference of cell averages
       dbx = 0;
       if(lcell[c] != endc0)
@@ -124,10 +116,6 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
             dfx(i) = avg_nbr(i) - cell_average(cell_indices[i]);
       }
        
-      // Limit y derivative
-      fe_values_y.reinit(cell);
-      fe_values_y.get_function_values(current_solution, face_values_y);
-      
       // Backward difference of cell averages
       dby = 0;
       if(bcell[c] != endc0)
@@ -146,12 +134,14 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
             dfy(i) = avg_nbr(i) - cell_average(cell_indices[i]);
       }
       
+      fe_values_x.reinit(cell);
+      fe_values_x.get_function_values(current_solution, face_values_x);
+      fe_values_y.reinit(cell);
+      fe_values_y.get_function_values(current_solution, face_values_y);
       for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
       {
-         DBx(i) = cell_average(cell_indices[i]) - face_values_x[0][i];
-         DFx(i) = face_values_x[1][i] - cell_average(cell_indices[i]);
-         DBy(i) = cell_average(cell_indices[i]) - face_values_y[0][i];
-         DFy(i) = face_values_y[1][i] - cell_average(cell_indices[i]);
+         Dx(i) = face_values_x[1][i] - face_values_x[0][i];
+         Dy(i) = face_values_y[1][i] - face_values_y[0][i];
       }
       
       // Transform to characteristic variables
@@ -167,10 +157,8 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          EulerEquations<dim>::transform_to_char (Lx, dfx);
          EulerEquations<dim>::transform_to_char (Ly, dby);
          EulerEquations<dim>::transform_to_char (Ly, dfy);
-         EulerEquations<dim>::transform_to_char (Lx, DBx);
-         EulerEquations<dim>::transform_to_char (Lx, DFx);
-         EulerEquations<dim>::transform_to_char (Ly, DBy);
-         EulerEquations<dim>::transform_to_char (Ly, DFy);
+         EulerEquations<dim>::transform_to_char (Lx, Dx);
+         EulerEquations<dim>::transform_to_char (Ly, Dy);
       }
       
       // Apply minmod limiter
@@ -178,30 +166,23 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
       double change_y = 0;
       for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
       {
-         DBx_new(i) = minmod(DBx(i), dbx(i), dfx(i), Mdx2);
-         DFx_new(i) = minmod(DFx(i), dbx(i), dfx(i), Mdx2);
-         DBy_new(i) = minmod(DBy(i), dby(i), dfy(i), Mdx2);
-         DFy_new(i) = minmod(DFy(i), dby(i), dfy(i), Mdx2);
-         change_x += std::fabs(DBx_new(i) - DBx(i)) + std::fabs(DFx_new(i) - DFx(i));
-         change_y += std::fabs(DBy_new(i) - DBy(i)) + std::fabs(DFy_new(i) - DFy(i));
+         Dx_new(i) = minmod(Dx(i), dbx(i), dfx(i), Mdx2);
+         Dy_new(i) = minmod(Dy(i), dby(i), dfy(i), Mdx2);
+         change_x += std::fabs(Dx_new(i) - Dx(i));
+         change_y += std::fabs(Dy_new(i) - Dy(i));
       }
-      change_x /= 2 * EulerEquations<dim>::n_components;
-      change_y /= 2 * EulerEquations<dim>::n_components;
+      change_x /= EulerEquations<dim>::n_components;
+      change_y /= EulerEquations<dim>::n_components;
       
       // If limiter is active, reduce polynomial to linear
       if(change_x + change_y > 1.0e-10)
       {
-         Vector<double> gradx(EulerEquations<dim>::n_components);
-         Vector<double> grady(EulerEquations<dim>::n_components);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-         {
-            gradx(i) = (DBx_new(i) + DFx_new(i))/dx;
-            grady(i) = (DBy_new(i) + DFy_new(i))/dx;
-         }
+         Dx_new /= dx;
+         Dy_new /= dx;
          if(parameters.char_lim)
          {
-            EulerEquations<dim>::transform_to_con (Rx, gradx);
-            EulerEquations<dim>::transform_to_con (Ry, grady);
+            EulerEquations<dim>::transform_to_con (Rx, Dx_new);
+            EulerEquations<dim>::transform_to_con (Ry, Dy_new);
          }
          cell->get_dof_indices(dof_indices);
          fe_values.reinit (cell);
@@ -212,7 +193,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
             unsigned int base_i = fe.system_to_component_index(i).second;
             Point<dim> dr = p[base_i] - cell->center();
             current_solution(dof_indices[i]) = cell_average(cell_indices[comp_i])
-               + dr[0] * gradx(comp_i) + dr[1] * grady(comp_i);
+               + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
          }
       }
       
