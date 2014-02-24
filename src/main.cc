@@ -1,4 +1,5 @@
 #include "claw.h"
+#include <base/timer.h>
 
 using namespace dealii;
 
@@ -21,34 +22,40 @@ int main (int argc, char *argv[])
   try
    {
       Utilities::System::MPI_InitFinalize mpi_initialization (argc, argv);
+      Timer timer;
+      timer.start ();
       ParameterHandler prm;
       Parameters::AllParameters<2>::declare_parameters (prm);
       prm.read_input (argv[1]);
       unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
       ConservationLaw<2> cons (argv[1], degree);
       cons.run ();
+      timer.stop ();
+      std::cout << std::endl;
+      std::cout << "Elapsed CPU time : " << timer()/60 << " min.\n";
+      std::cout << "Elapsed wall time: " << timer.wall_time()/60 << " min.\n";
    }
   catch (std::exception &exc)
     {
       std::cerr << std::endl << std::endl
-		<< "----------------------------------------------------"
-		<< std::endl;
+		          << "----------------------------------------------------"
+                << std::endl;
       std::cerr << "Exception on processing: " << std::endl
-		<< exc.what() << std::endl
-		<< "Aborting!" << std::endl
-		<< "----------------------------------------------------"
-		<< std::endl;
+		          << exc.what() << std::endl
+		          << "Aborting!" << std::endl
+		          << "----------------------------------------------------"
+		          << std::endl;
       return 1;
     }
   catch (...)
     {
       std::cerr << std::endl << std::endl
-		<< "----------------------------------------------------"
-		<< std::endl;
+		          << "----------------------------------------------------"
+		          << std::endl;
       std::cerr << "Unknown exception!" << std::endl
-		<< "Aborting!" << std::endl
-		<< "----------------------------------------------------"
-		<< std::endl;
+		          << "Aborting!" << std::endl
+		          << "----------------------------------------------------"
+		          << std::endl;
       return 1;
     };
 

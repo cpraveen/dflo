@@ -4,6 +4,8 @@
 # The input grid 
 set mesh type = gmsh
 set mesh file = step.msh
+set degree = 1
+set mapping = cartesian
 
 # Stabilization parameter
 set diffusion power       = 2.0
@@ -48,7 +50,7 @@ end
 # Time stepping control
 subsection time stepping
   set time step type = global
-  set cfl = 0.1
+  set cfl = 0.5
   set final time = 4.0
   set nonlinear iterations = 1
 end
