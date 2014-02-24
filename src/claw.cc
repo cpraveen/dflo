@@ -24,6 +24,7 @@
 #include <fe/fe_values.h>
 #include <fe/fe_system.h>
 #include <fe/mapping_q1.h>
+#include <fe/mapping_cartesian.h>
 #include <fe/fe_dgq.h>
 
 #include <numerics/vector_tools.h>
@@ -65,10 +66,8 @@ using namespace dealii;
 //------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
-                                       const unsigned int mapping,
                                        const unsigned int degree)
    :
-   mapping (mapping),
    fe (FE_DGQ<dim>(degree), EulerEquations<dim>::n_components),
    dof_handler (triangulation),
    fe0 (FE_DGQ<dim>(0), EulerEquations<dim>::n_components),
@@ -90,6 +89,35 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    prm.print_parameters (xml_file,  ParameterHandler::XML);
 }
 
+//------------------------------------------------------------------------------
+// Return mapping type based on selected type
+//------------------------------------------------------------------------------
+template <int dim>
+const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
+{
+   if(parameters.mapping_type == Parameters::AllParameters<dim>::q1)
+   {
+      static MappingQ1<dim> m;
+      return m;
+   }
+   else if(parameters.mapping_type == Parameters::AllParameters<dim>::q2)
+   {
+      static MappingQ<dim> m(2);
+      return m;
+   }
+   else if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
+   {
+      static MappingCartesian<dim> m;
+      return m;
+   }
+   else
+   {
+      AssertThrow (false, ExcNotImplemented());
+      static MappingQ1<dim> m;
+      return m;
+   }
+
+}
 //------------------------------------------------------------------------------
 // @sect4{ConservationLaw::setup_system}
 //
@@ -130,7 +158,7 @@ void ConservationLaw<dim>::setup_system ()
       DoFTools::make_sparsity_pattern (dof_handler, c_sparsity);
       sparsity_pattern.copy_from(c_sparsity);
       system_matrix.reinit (sparsity_pattern);
-      MatrixCreator::create_mass_matrix (mapping, 
+      MatrixCreator::create_mass_matrix (mapping(),
                                          dof_handler, 
                                          QGauss<dim>(fe.degree+1), 
                                          system_matrix);
@@ -218,7 +246,7 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorImplicit<dim>& integrato
    integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_gradients);
    integrator.info_box.add_update_flags_face     (update_normal_vectors | update_gradients);
    
-   integrator.info_box.initialize (fe, mapping);
+   integrator.info_box.initialize (fe, mapping());
    
    integrator.assembler.initialize (system_matrix, right_hand_side);
 }
@@ -243,7 +271,7 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_gradients); // TODO:ADIFF
    integrator.info_box.add_update_flags_face     (update_normal_vectors | update_gradients); // TODO:ADIFF
    
-   integrator.info_box.initialize (fe, mapping);
+   integrator.info_box.initialize (fe, mapping());
    
    NamedData< Vector<double>* > rhs;
    Vector<double>* data = &right_hand_side;

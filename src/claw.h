@@ -58,11 +58,11 @@ class ConservationLaw
 {
 public:
    ConservationLaw (const char *input_filename,
-                    const unsigned int mapping,
                     const unsigned int degree);
    void run ();
    
 private:
+   const dealii::Mapping<dim,dim>& mapping() const;
    void setup_system ();
    
    void setup_mesh_worker (IntegratorImplicit<dim>&);
@@ -130,7 +130,6 @@ private:
    // not of sufficiently high
    // order.
    dealii::Triangulation<dim>   triangulation;
-   const dealii::MappingQ<dim>  mapping;
    
    const dealii::FESystem<dim>  fe;
    dealii::DoFHandler<dim>      dof_handler;

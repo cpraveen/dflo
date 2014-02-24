@@ -307,7 +307,7 @@ void ConservationLaw<dim>::compute_mu_shock ()
    //integrator.info_box.add_update_flags_boundary (update_normal_vectors);
    //integrator.info_box.add_update_flags_face     (update_normal_vectors);
    
-   integrator.info_box.initialize (fe, mapping);
+   integrator.info_box.initialize (fe, mapping());
    
    integrator.assembler.initialize (system_matrix, right_hand_side);
 

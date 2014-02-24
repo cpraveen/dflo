@@ -4,6 +4,8 @@
 # The input grid 
 set mesh type = gmsh
 set mesh file = corner.msh
+set degree = 1
+set mapping = q1
 
 # Stabilization parameter
 set diffusion power       = 2.0
@@ -89,7 +91,7 @@ subsection flux
 end
 
 subsection limiter
-   set type = TVB
+   set type = none
    set characteristic limiter = false
    set positivity limiter = false
    set M = 0

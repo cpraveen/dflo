@@ -380,6 +380,10 @@ namespace Parameters
       double diffusion_power;
       double diffusion_coef;
       
+      unsigned int degree;
+      enum MappingType { q1, q2, cartesian };
+      MappingType mapping_type;
+      
       double cfl;
       std::string time_step_type;
       double time_step, final_time;

@@ -18,12 +18,12 @@ compute_refinement_indicators (Vector<double> &refinement_indicators) const
 {
    if(parameters.time_step_type == "global")
       EulerEquations<dim>::compute_refinement_indicators (dof_handler,
-                                                          mapping,
+                                                          mapping(),
                                                           predictor,
                                                           refinement_indicators);
    else
       EulerEquations<dim>::compute_refinement_indicators (dof_handler,
-                                                          mapping,
+                                                          mapping(),
                                                           current_solution,
                                                           refinement_indicators);
 }

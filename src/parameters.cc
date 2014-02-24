@@ -275,6 +275,14 @@ namespace Parameters
                         Patterns::Anything(),
                         "Mesh file name");
       
+      prm.declare_entry("degree", "1",
+                        Patterns::Integer(),
+                        "degree of DG space");
+      
+      prm.declare_entry("mapping", "q1",
+                        Patterns::Selection("q1|q2|cartesian"),
+                        "mapping type to reference element");
+      
       prm.declare_entry("diffusion power", "2.0",
                         Patterns::Double(),
                         "power of mesh size in shock capturing term");
@@ -356,6 +364,17 @@ namespace Parameters
       mesh_filename = prm.get("mesh file");
       diffusion_power = prm.get_double("diffusion power");
       diffusion_coef = prm.get_double("diffusion coefficient");
+      degree = prm.get_integer("degree");
+      
+      std::string map = prm.get("mapping");
+      if(map == "q1")
+         mapping_type = q1;
+      else if(map == "q2")
+         mapping_type = q2;
+      else if(map == "cartesian")
+         mapping_type = cartesian;
+      else
+         AssertThrow (false, ExcNotImplemented());
       
       prm.enter_subsection("time stepping");
       {

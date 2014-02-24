@@ -19,13 +19,15 @@ int main (int argc, char *argv[])
     }
 
   try
-    {
+   {
       Utilities::System::MPI_InitFinalize mpi_initialization (argc, argv);
-      unsigned int mapping = 1; // Degree of mapping
-      unsigned int degree  = 1; // Degree of FEM
-      ConservationLaw<2> cons (argv[1], mapping, degree);
+      ParameterHandler prm;
+      Parameters::AllParameters<2>::declare_parameters (prm);
+      prm.read_input (argv[1]);
+      unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
+      ConservationLaw<2> cons (argv[1], degree);
       cons.run ();
-    }
+   }
   catch (std::exception &exc)
     {
       std::cerr << std::endl << std::endl
