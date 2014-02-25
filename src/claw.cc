@@ -429,10 +429,18 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
          PreconditionBlockSSOR<SparseMatrix<double>, float> preconditioner;
          preconditioner.initialize(system_matrix, fe.dofs_per_cell);
 
-         solver.solve (system_matrix, 
-                       newton_update, 
-                       right_hand_side,
-                       preconditioner);
+         // If gmres does not converge, print message and continue
+         try
+         {
+            solver.solve (system_matrix,
+                          newton_update,
+                          right_hand_side,
+                          preconditioner);
+         }
+         catch(...)
+         {
+            std::cout << "   *** No convergence in gmres ... continuing ***\n";
+         }
 
          return std::pair<unsigned int, double> (solver_control.last_step(),
                                                  solver_control.last_value());
