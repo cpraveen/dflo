@@ -96,6 +96,7 @@ private:
    void compute_cell_average ();
    void apply_limiter ();
    void apply_limiter_TVB ();
+   void apply_limiter_grad ();
    void apply_positivity_limiter ();
    
    void compute_mu_shock ();

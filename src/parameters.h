@@ -241,7 +241,7 @@ namespace Parameters
    
    struct Limiter
    {
-      enum LimiterType { none, TVB };
+      enum LimiterType { none, TVB, grad };
       
       LimiterType limiter_type;
       bool        char_lim;
