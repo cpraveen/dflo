@@ -233,7 +233,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
    
    std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
    std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
-   std::vector< std::vector< Tensor<1,dim> > > grad;
+   std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(), std::vector< Tensor<1,dim> >(n_components));
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
