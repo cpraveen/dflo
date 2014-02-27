@@ -306,15 +306,13 @@ struct EulerEquations
       p_plus  = compute_pressure<number> (Wplus);
       p_minus = compute_pressure<number> (Wminus);
       
-      // Maximum eigenvalue at cell face, based on an average
-      number vdotn_avg, p_avg, d_avg, lambda;
-      vdotn_avg = 0.5 * (vdotn_plus + vdotn_minus);
-      p_avg     = 0.5 * (p_plus + p_minus);
-      d_avg     = 0.5 * (Wplus[density_component] + Wminus[density_component]);
-
-      lambda = std::fabs(vdotn_avg) + 
-               std::sqrt( gas_gamma * p_avg / d_avg );
-            
+      // Maximum eigenvalue at cell face
+      number lambda_plus = std::fabs(vdotn_plus)
+                         + std::sqrt(gas_gamma * p_plus / Wplus[density_component]);
+      number lambda_minus = std::fabs(vdotn_minus)
+                          + std::sqrt(gas_gamma * p_minus / Wminus[density_component]);
+      number lambda = std::max(lambda_plus, lambda_minus);
+      
       // Momentum flux
       for (unsigned int d=0; d<dim; ++d)
          normal_flux[d] = 0.5 * ( p_plus  * normal[d] + Wplus [d] * vdotn_plus +
