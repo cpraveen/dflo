@@ -227,7 +227,7 @@ namespace Parameters
    // the current time step.
    struct Flux
    {
-      enum FluxType {lxf, sw, kfvs};
+      enum FluxType {lxf, sw, kfvs, roe};
       FluxType flux_type;
 
       enum StabilizationKind { constant, mesh_dependent };

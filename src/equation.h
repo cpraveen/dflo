@@ -419,6 +419,93 @@ struct EulerEquations
    }
    
    // --------------------------------------------------------------------------
+   // Roe flux
+   // --------------------------------------------------------------------------
+   template <typename InputVector>
+   static
+   void roe_flux
+   (
+    const dealii::Point<dim>         &normal,
+    const InputVector                &W_l,
+    const InputVector                &W_r,
+    typename InputVector::value_type (&normal_flux)[n_components]
+    )
+   {
+      typedef typename InputVector::value_type number;
+      
+      number rho_l_sqrt = std::sqrt(W_l[density_component]);
+      number rho_r_sqrt = std::sqrt(W_r[density_component]);
+      number fact_l = rho_l_sqrt / (rho_l_sqrt + rho_r_sqrt);
+      number fact_r = 1.0 - fact_l;
+      
+      number v_l[dim], v_r[dim], velocity[dim], dv[dim];
+      number v2_l = 0, v2_r = 0;
+      number v_l_normal = 0, v_r_normal = 0;
+      number vel_normal = 0, v2 = 0;
+      number v_dot_dv = 0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         v_l[d]      = W_l[d] / W_l[density_component];
+         v_r[d]      = W_r[d] / W_r[density_component];
+         v2_l       += v_l[d] * v_l[d];
+         v2_r       += v_r[d] * v_r[d];
+         v_l_normal += v_l[d] * normal[d];
+         v_r_normal += v_r[d] * normal[d];
+         
+         velocity[d] = v_l[d] * fact_l + v_r[d] * fact_r;
+         vel_normal += velocity[d] * normal[d];
+         v2         += velocity[d] * velocity[d];
+         dv[d]       = v_r[d] - v_l[d];
+         v_dot_dv   += velocity[d] * dv[d];
+      }
+      
+      number p_l = (gas_gamma-1) * (W_l[energy_component] - 0.5 * W_l[density_component] * v2_l);
+      number p_r = (gas_gamma-1) * (W_r[energy_component] - 0.5 * W_r[density_component] * v2_r);
+      
+      number h_l = gas_gamma * p_l / W_l[density_component] / (gas_gamma-1) + 0.5 * v2_l;
+      number h_r = gas_gamma * p_r / W_r[density_component] / (gas_gamma-1) + 0.5 * v2_r;
+      
+      number density = rho_l_sqrt * rho_r_sqrt;
+      number h = h_l * fact_l + h_r * fact_r;
+      number c = std::sqrt( (gas_gamma-1.0) * (h - 0.5*v2) );
+      number drho = W_r[density_component] - W_l[density_component];
+      number dp = p_r - p_l;
+      number dvn = v_r_normal - v_l_normal;
+      
+      number a1 = (dp - density * c * dvn) / (2.0*c*c);
+      number a2 = drho - dp / (c*c);
+      number a3 = (dp + density * c * dvn) / (2.0*c*c);
+
+      number l1 = std::fabs(vel_normal - c);
+      number l2 = std::fabs(vel_normal);
+      number l3 = std::fabs(vel_normal + c);
+      
+      number Dflux[n_components];
+      Dflux[density_component] = l1 * a1 + l2 * a2 + l3 * a3;
+      Dflux[energy_component] = l1 * a1 * (h - c * vel_normal)
+                              + l2 * a2 * v2
+                              + l2 * density * (v_dot_dv - vel_normal * dvn)
+                              + l3 * a3 * (h + c * vel_normal);
+      normal_flux[density_component] = 0.5 * (W_l[density_component] * v_l_normal +
+                                              W_r[density_component] * v_r_normal
+                                              - Dflux[density_component]);
+      normal_flux[energy_component] = 0.5 * (W_l[density_component] * h_l * v_l_normal +
+                                             W_r[density_component] * h_r * v_r_normal
+                                              - Dflux[energy_component]);
+      number p_avg = 0.5 * (p_l + p_r);
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         Dflux[d] = (velocity[d] - normal[d] * c) * l1 * a1
+                  + velocity[d] * l2 * a2
+                  + (dv[d] - normal[d] * dvn) * l2 * density
+                  + (velocity[d] + normal[d] * c) * l3 * a3;
+         normal_flux[d] = normal[d] * p_avg
+                        + 0.5 * (W_l[d] * v_l_normal + W_r[d] * v_r_normal)
+                        - 0.5 * Dflux[d];
+      }
+   }
+   
+   // --------------------------------------------------------------------------
    // Error function
    // --------------------------------------------------------------------------
    template <typename number>
@@ -542,7 +629,6 @@ struct EulerEquations
       // Only pressure flux is present
       for (unsigned int c=0; c<dim; ++c)
          normal_flux[c] = pressure * normal[c];
-      std::cout << "out \n";
    }
    
    //---------------------------------------------------------------------------

@@ -22,13 +22,16 @@ int main (int argc, char *argv[])
   try
    {
       Utilities::System::MPI_InitFinalize mpi_initialization (argc, argv);
-      Timer timer;
-      timer.start ();
+
       ParameterHandler prm;
       Parameters::AllParameters<2>::declare_parameters (prm);
-      prm.read_input (argv[1]);
+      bool status = prm.read_input (argv[1], true);
+      AssertThrow( status, ExcFileNotOpen(argv[1]) );
+      prm.print_parameters(std::cout, ParameterHandler::Text);
       unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
       ConservationLaw<2> cons (argv[1], degree);
+      Timer timer;
+      timer.start ();
       cons.run ();
       timer.stop ();
       std::cout << std::endl;

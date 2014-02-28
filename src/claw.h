@@ -242,6 +242,13 @@ private:
                                             Wminus,
                                             normal_flux);
             break;
+            
+         case Parameters::Flux::roe:
+            EulerEquations<dim>::roe_flux (normal,
+                                           Wplus,
+                                           Wminus,
+                                           normal_flux);
+            break;
 
 	      default:
             Assert (false, dealii::ExcNotImplemented());
