@@ -58,7 +58,7 @@ struct EulerEquations
       return data_component_interpretation;
    }
    
-   
+   // Ratio of specific heats
    static const double gas_gamma;
    
    //---------------------------------------------------------------------------
@@ -479,11 +479,16 @@ struct EulerEquations
       number l1 = std::fabs(vel_normal - c);
       number l2 = std::fabs(vel_normal);
       number l3 = std::fabs(vel_normal + c);
+
+      // entropy fix
+      number delta = 0.1 * c;
+      if(l1 < delta) l1 = 0.5 * (l1*l1/delta + delta);
+      if(l3 < delta) l3 = 0.5 * (l3*l3/delta + delta);
       
       number Dflux[n_components];
       Dflux[density_component] = l1 * a1 + l2 * a2 + l3 * a3;
       Dflux[energy_component] = l1 * a1 * (h - c * vel_normal)
-                              + l2 * a2 * v2
+                              + l2 * a2 * 0.5 * v2
                               + l2 * density * (v_dot_dv - vel_normal * dvn)
                               + l3 * a3 * (h + c * vel_normal);
       normal_flux[density_component] = 0.5 * (W_l[density_component] * v_l_normal +
