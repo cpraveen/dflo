@@ -249,6 +249,13 @@ private:
                                            Wminus,
                                            normal_flux);
             break;
+            
+         case Parameters::Flux::hllc:
+            EulerEquations<dim>::hllc_flux (normal,
+                                            Wplus,
+                                            Wminus,
+                                            normal_flux);
+            break;
 
 	      default:
             Assert (false, dealii::ExcNotImplemented());

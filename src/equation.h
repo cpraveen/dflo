@@ -510,6 +510,131 @@ struct EulerEquations
       }
    }
    
+   
+   // --------------------------------------------------------------------------
+   // HLLC flux
+   // Code borrowed from SU2 v2.0.2
+   // --------------------------------------------------------------------------
+   template <typename InputVector>
+   static
+   void hllc_flux
+   (
+    const dealii::Point<dim>         &normal,
+    const InputVector                &W_l,
+    const InputVector                &W_r,
+    typename InputVector::value_type (&normal_flux)[n_components]
+    )
+   {
+      typedef typename InputVector::value_type number;
+      
+      number rho_l_sqrt = std::sqrt(W_l[density_component]);
+      number rho_r_sqrt = std::sqrt(W_r[density_component]);
+      number fact_l = rho_l_sqrt / (rho_l_sqrt + rho_r_sqrt);
+      number fact_r = 1.0 - fact_l;
+      
+      number v_l[dim], v_r[dim], velocity[dim];
+      number v2_l = 0, v2_r = 0;
+      number v_l_normal = 0, v_r_normal = 0;
+      number vel_normal = 0, v2 = 0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         v_l[d]      = W_l[d] / W_l[density_component];
+         v_r[d]      = W_r[d] / W_r[density_component];
+         v2_l       += v_l[d] * v_l[d];
+         v2_r       += v_r[d] * v_r[d];
+         v_l_normal += v_l[d] * normal[d];
+         v_r_normal += v_r[d] * normal[d];
+         
+         velocity[d] = v_l[d] * fact_l + v_r[d] * fact_r;
+         vel_normal += velocity[d] * normal[d];
+         v2         += velocity[d] * velocity[d];
+      }
+      
+      //pressure
+      number p_l = (gas_gamma-1) * (W_l[energy_component] - 0.5 * W_l[density_component] * v2_l);
+      number p_r = (gas_gamma-1) * (W_r[energy_component] - 0.5 * W_r[density_component] * v2_r);
+      
+      // enthalpy
+      number h_l = (W_l[energy_component] + p_l) / W_l[density_component];
+      number h_r = (W_r[energy_component] + p_r) / W_r[density_component];
+
+      // sound speed
+      number c_l = std::sqrt(gas_gamma * p_l / W_l[density_component]);
+      number c_r = std::sqrt(gas_gamma * p_r / W_r[density_component]);
+      
+      // energy per unit mass
+      number e_l = W_l[energy_component] / W_l[density_component];
+      number e_r = W_r[energy_component] / W_r[density_component];
+      
+      // roe average
+      number h = h_l * fact_l + h_r * fact_r;
+      number c = std::sqrt( (gas_gamma-1.0) * (h - 0.5*v2) );
+      
+      // speed of sound at l and r
+      number s_l = std::min(vel_normal-c, v_l_normal-c_l);
+      number s_r = std::min(vel_normal+c, v_r_normal+c_r);
+
+      // speed of contact
+      number s_m = (p_l - p_r
+                    - W_l[density_component] * v_l_normal * (s_l-v_l_normal)
+                    + W_r[density_component] * v_r_normal * (s_r-v_r_normal))
+      /(W_r[density_component]*(s_r-v_r_normal) - W_l[density_component]*(s_l-v_l_normal));
+      
+      // Pressure at right and left (Pressure_j=Pressure_i) side of contact surface
+      number pStar = W_r[density_component] * (v_r_normal-s_r)*(v_r_normal-s_m) + p_r;
+
+      if (s_m >= 0.0) {
+         if (s_l > 0.0)
+         {
+            normal_flux[density_component] = W_l[density_component]*v_l_normal;
+            for (unsigned int d = 0; d < dim; d++)
+               normal_flux[d] = W_l[density_component]*v_l[d]*v_l_normal + p_l*normal[d];
+            normal_flux[energy_component] = e_l*W_l[density_component]*v_l_normal + p_l*v_l_normal;
+         }
+         else
+         {
+            number invSLmSs = 1.0/(s_l-s_m);
+            number sLmuL = s_l-v_l_normal;
+            number rhoSL = W_l[density_component]*sLmuL*invSLmSs;
+            number rhouSL[dim];
+            for (unsigned int d = 0; d < dim; d++)
+               rhouSL[d] = (W_l[density_component]*v_l[d]*sLmuL+(pStar-p_l)*normal[d])*invSLmSs;
+            number eSL = (sLmuL*e_l*W_l[density_component]-p_l*v_l_normal+pStar*s_m)*invSLmSs;
+            
+            normal_flux[density_component] = rhoSL*s_m;
+            for (unsigned int d = 0; d < dim; d++)
+               normal_flux[d] = rhouSL[d]*s_m + pStar*normal[d];
+            normal_flux[energy_component] = (eSL+pStar)*s_m;
+         }
+      }
+      else
+      {
+         if (s_r >= 0.0)
+         {
+            number invSRmSs = 1.0/(s_r-s_m);
+            number sRmuR = s_r-v_r_normal;
+            number rhoSR = W_r[density_component]*sRmuR*invSRmSs;
+            number rhouSR[dim];
+            for (unsigned int d = 0; d < dim; d++)
+               rhouSR[d] = (W_r[density_component]*v_r[d]*sRmuR+(pStar-p_r)*normal[d])*invSRmSs;
+            number eSR = (sRmuR*e_r*W_r[density_component]-p_r*v_r_normal+pStar*s_m)*invSRmSs;
+            
+            normal_flux[density_component] = rhoSR*s_m;
+            for (unsigned int d = 0; d < dim; d++)
+               normal_flux[d] = rhouSR[d]*s_m + pStar*normal[d];
+            normal_flux[energy_component] = (eSR+pStar)*s_m;
+         }
+         else
+         {
+            normal_flux[density_component] = W_r[density_component]*v_r_normal;
+            for (unsigned int d = 0; d < dim; d++)
+               normal_flux[d] = W_r[density_component]*v_r[d]*v_r_normal + p_r*normal[d];
+            normal_flux[energy_component] = e_r*W_r[density_component]*v_r_normal + p_r*v_r_normal;
+         }
+      }
+      
+   }
+   
    // --------------------------------------------------------------------------
    // Error function
    // --------------------------------------------------------------------------
