@@ -13,7 +13,7 @@ using namespace dealii;
 int main (int argc, char *argv[])
 {
    deallog.depth_console(0);
-   if (argc != 2 || argc != 3)
+   if (argc != 2 && argc != 3)
    {
       std::cout << "Usage:" << argv[0] << " input_file" << std::endl;
       std::cout << "      " << argv[0] << " input_file  num_threads" << std::endl;
