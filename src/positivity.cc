@@ -19,11 +19,12 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    if(fe.degree == 0) return;
    
    const double gas_gamma = EulerEquations<dim>::gas_gamma;
-   unsigned int density_component = EulerEquations<dim>::density_component;
-   unsigned int energy_component = EulerEquations<dim>::energy_component;
+   const unsigned int density_component = EulerEquations<dim>::density_component;
+   const unsigned int energy_component = EulerEquations<dim>::energy_component;
    
    // Find mininimum density and pressure in the whole grid
-   double eps = 1.0e-13;
+   const double eps_tol = 1.0e-13;
+   double eps = eps_tol;
    {
       std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
       
@@ -42,7 +43,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          eps = std::min(eps, pressure);
       }
       
-      if(eps < 0.0)
+      if(eps < eps_tol)
       {
          std::cout << "Fatal: Negative states\n";
          exit(0);
@@ -50,8 +51,8 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    }
    
    // Need 2N - 3 >= degree for the quadrature to be exact.
-   unsigned int N = (fe.degree + 3)/2;
-   if((fe.degree+3)%2 != 0) N += 1;
+   // Choose same order as used for assembly process.
+   unsigned int N = fe.degree + 2;
    QGaussLobatto<dim>  quadrature_formula(N);
    const unsigned int n_q_points = quadrature_formula.size();
    FEValues<dim> fe_values (fe, quadrature_formula, update_values);
@@ -60,8 +61,8 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    std::vector<unsigned int> local_dof_indices (fe.dofs_per_cell);
    std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
    
-   const FEValuesExtractors::Scalar density  (dim);
-   const FEValuesExtractors::Scalar energy   (dim+1);
+   const FEValuesExtractors::Scalar density  (density_component);
+   const FEValuesExtractors::Scalar energy   (energy_component);
    const FEValuesExtractors::Vector momentum (0);
    
    typename DoFHandler<dim>::active_cell_iterator
