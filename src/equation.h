@@ -970,7 +970,10 @@ struct EulerEquations
                vdotn += Wplus[d]*normal_vector[d];
             
             for (unsigned int c = 0; c < dim; ++c)
-               Wminus[c] = Wplus[c] - 2.0 * vdotn * normal_vector[c];
+            {
+               Wminus[c] = Wplus[c] - vdotn * normal_vector[c];
+               Wplus[c]  = Wminus[c];
+            }
 
             Wminus[density_component] = Wplus[density_component];
             Wminus[energy_component]  = Wplus[energy_component];

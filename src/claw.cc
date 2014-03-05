@@ -306,7 +306,7 @@ ConservationLaw<dim>::compute_time_step ()
    dt.reinit (triangulation.n_cells());
 
    // If time step given in input file, then use it. This is only for global time stepping
-   if(parameters.time_step_type == "global" && parameters.time_step > 0.0)
+   if(parameters.time_step_type == "global" && parameters.cfl <= 0.0)
    {
       dt = parameters.time_step;
       return;
@@ -327,7 +327,7 @@ ConservationLaw<dim>::compute_time_step ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
 
-   double min_time_step = 1.0e20;
+   global_dt = 1.0e20;
 
    for (; cell!=endc; ++cell)
    {
@@ -345,15 +345,18 @@ ConservationLaw<dim>::compute_time_step ()
       const double h = cell->diameter() / std::sqrt(1.0*dim);
       dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0);
 
-      min_time_step = std::min(min_time_step, dt(c));
+      global_dt = std::min(global_dt, dt(c));
    }
 
 
    // For global time step, use the minimum value
    if(parameters.time_step_type == "global")
    {
-      dt = min_time_step;
-      parameters.time_step = min_time_step;
+      if(global_dt > 0 && parameters.time_step > 0)
+         global_dt = std::min(global_dt, parameters.time_step);
+      if(elapsed_time + global_dt > parameters.final_time)
+         global_dt = parameters.final_time - elapsed_time;
+      dt = global_dt;
    }
 
 }
@@ -550,26 +553,27 @@ void ConservationLaw<dim>::run ()
    // stepping loop. 
    Vector<double> newton_update (dof_handler.n_dofs());
    
-   double time = 0;
-   int time_iter = 0;
+   elapsed_time = 0;
+   time_iter = 0;
 
    // Setup variables to decide if we need to save solution 
-   double next_output_time = time + parameters.output_time_step;
+   double next_output_time = elapsed_time + parameters.output_time_step;
    int next_output_iter = time_iter + parameters.output_iter_step;
 
    // Variable to control grid refinement
-   double next_refine_time = time + parameters.refine_time_step;
+   double next_refine_time = elapsed_time + parameters.refine_time_step;
    int    next_refine_iter = time_iter + parameters.refine_iter_step;
 
    std::vector<double> residual_history;
    
-   while (time < parameters.final_time)
+   while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
       compute_time_step ();
       
-      std::cout << std::endl << "It=" << time_iter << ",  ";
-      std::cout << "T=" << time << ", dt=" << parameters.time_step
+      std::cout << std::endl << "It=" << time_iter+1
+                << ", T=" << elapsed_time + global_dt
+                << ", dt=" << global_dt
                 << ", cfl=" << parameters.cfl << std::endl
 		          << "   Number of active cells:       "
 		          << triangulation.n_active_cells()
@@ -647,7 +651,7 @@ void ConservationLaw<dim>::run ()
       }
       
       // Update counters
-      time += parameters.time_step;
+      elapsed_time += global_dt;
       ++time_iter;
 
       // Increase cfl
@@ -665,10 +669,11 @@ void ConservationLaw<dim>::run ()
       residual_history.push_back (res_norm);
       
       // Save solution for visualization
-      if (time >= next_output_time || time_iter == next_output_iter)
+      if (elapsed_time >= next_output_time || time_iter == next_output_iter 
+            || std::fabs(elapsed_time-parameters.final_time) < 1.0e-13)
       {
          output_results ();
-         next_output_time = time + parameters.output_time_step;
+         next_output_time = elapsed_time + parameters.output_time_step;
          next_output_iter = time_iter + parameters.output_iter_step;
       }
       
@@ -683,7 +688,7 @@ void ConservationLaw<dim>::run ()
       old_solution = current_solution;
       
       if (parameters.do_refine == true && 
-          (time >= next_refine_time || time_iter == next_refine_iter))
+          (elapsed_time >= next_refine_time || time_iter == next_refine_iter))
       {
          Vector<double> refinement_indicators (triangulation.n_active_cells());
          compute_refinement_indicators(refinement_indicators);
@@ -692,7 +697,7 @@ void ConservationLaw<dim>::run ()
          
          newton_update.reinit (dof_handler.n_dofs());
 
-         next_refine_time = time + parameters.refine_time_step;
+         next_refine_time = elapsed_time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;
 
          // We may need to reduce the cfl after refinement, only for steady state

@@ -300,7 +300,10 @@ namespace Parameters
       
       prm.enter_subsection("time stepping");
       {
-         prm.declare_entry("cfl", "1.0",
+         prm.declare_entry("stationary", "false",
+                           Patterns::Bool(),
+                           "stationary computation");
+         prm.declare_entry("cfl", "0.0",
                            Patterns::Double(0),
                            "cfl number");
          prm.declare_entry("time step type", "global",
@@ -387,16 +390,17 @@ namespace Parameters
          cfl = prm.get_double("cfl");
          time_step_type = prm.get("time step type");
          time_step = prm.get_double("time step");
-         if (time_step == 0)
+         final_time = prm.get_double("final time");
+
+         is_stationary = prm.get_bool("stationary");
+         if (is_stationary)
          {
-            is_stationary = true;
             time_step = 1.0;
             final_time = 1.0e20;
          }
          else
-            is_stationary = false;
+            AssertThrow(cfl > 0 || time_step > 0, ExcMessage("cfl and time_step zero"));
          
-         final_time = prm.get_double("final time");
          theta = prm.get_double("theta scheme value");
          max_nonlin_iter = prm.get_integer("nonlinear iterations");
       }

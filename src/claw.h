@@ -177,6 +177,10 @@ private:
 
    dealii::Vector<double>       dt;
    dealii::Vector<double>       mu_shock;
+
+   double                       global_dt;
+   double                       elapsed_time;
+   int                          time_iter;
    
    // This final set of member variables
    // (except for the object holding all

@@ -55,6 +55,7 @@ void ConservationLaw<dim>::output_results () const
    else if(parameters.output_format == "tecplot") 
       filename += ".plt";
    
+   std::cout << "Writing file " << filename << std::endl;
    std::ofstream output (filename.c_str());
    
    if(parameters.output_format == "vtk")     
