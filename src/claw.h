@@ -98,6 +98,7 @@ private:
    void apply_limiter_TVB ();
    void apply_limiter_grad ();
    void apply_positivity_limiter ();
+   void compute_shock_indicator ();
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -177,10 +178,13 @@ private:
 
    dealii::Vector<double>       dt;
    dealii::Vector<double>       mu_shock;
+   dealii::Vector<double>       shock_indicator;
+   dealii::Vector<double>       jump_indicator;
 
    double                       global_dt;
    double                       elapsed_time;
    int                          time_iter;
+   double                       jump_ind_min, jump_ind_max, jump_ind_avg;
    
    // This final set of member variables
    // (except for the object holding all

@@ -96,110 +96,113 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
    for(; cell != endc; ++cell, ++cell0)
    {
       const unsigned int c = cell_number(cell);
-      const double dx = cell->diameter() / std::sqrt(2.0);
-      const double Mdx2 = parameters.M * dx * dx;
-      
-      cell0->get_dof_indices (cell_indices);
-      
-      // Backward difference of cell averages
-      dbx = 0;
-      if(lcell[c] != endc0)
+      if(shock_indicator[c] > 1)
       {
-         get_cell_average (lcell[c], avg_nbr);
+         const double dx = cell->diameter() / std::sqrt(2.0);
+         const double Mdx2 = parameters.M * dx * dx;
+         
+         cell0->get_dof_indices (cell_indices);
+         
+         // Backward difference of cell averages
+         dbx = 0;
+         if(lcell[c] != endc0)
+         {
+            get_cell_average (lcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dbx(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfx = 0;
+         if(rcell[c] != endc0)
+         {
+            get_cell_average (rcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dfx(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+         }
+         
+         // Backward difference of cell averages
+         dby = 0;
+         if(bcell[c] != endc0)
+         {
+            get_cell_average (bcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dby(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfy = 0;
+         if(tcell[c] != endc0)
+         {
+            get_cell_average (tcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dfy(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+         }
+         
+         fe_values_x.reinit(cell);
+         fe_values_x.get_function_values(current_solution, face_values_x);
+         fe_values_y.reinit(cell);
+         fe_values_y.get_function_values(current_solution, face_values_y);
          for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            dbx(i) = cell_average(cell_indices[i]) - avg_nbr(i);
-      }
-      
-      // Forward difference of cell averages
-      dfx = 0;
-      if(rcell[c] != endc0)
-      {
-         get_cell_average (rcell[c], avg_nbr);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            dfx(i) = avg_nbr(i) - cell_average(cell_indices[i]);
-      }
-       
-      // Backward difference of cell averages
-      dby = 0;
-      if(bcell[c] != endc0)
-      {
-         get_cell_average (bcell[c], avg_nbr);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            dby(i) = cell_average(cell_indices[i]) - avg_nbr(i);
-      }
-      
-      // Forward difference of cell averages
-      dfy = 0;
-      if(tcell[c] != endc0)
-      {
-         get_cell_average (tcell[c], avg_nbr);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            dfy(i) = avg_nbr(i) - cell_average(cell_indices[i]);
-      }
-      
-      fe_values_x.reinit(cell);
-      fe_values_x.get_function_values(current_solution, face_values_x);
-      fe_values_y.reinit(cell);
-      fe_values_y.get_function_values(current_solution, face_values_y);
-      for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-      {
-         Dx(i) = face_values_x[1][i] - face_values_x[0][i];
-         Dy(i) = face_values_y[1][i] - face_values_y[0][i];
-      }
-      
-      // Transform to characteristic variables
-      typedef double EigMatrix[EulerEquations<dim>::n_components][EulerEquations<dim>::n_components];
-      EigMatrix Rx, Lx, Ry, Ly;
-      if(parameters.char_lim)
-      {
-         Vector<double> avg (EulerEquations<dim>::n_components);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            avg(i) = cell_average(cell_indices[i]);
-         EulerEquations<dim>::compute_eigen_matrix (avg, Rx, Lx, Ry, Ly);
-         EulerEquations<dim>::transform_to_char (Lx, dbx);
-         EulerEquations<dim>::transform_to_char (Lx, dfx);
-         EulerEquations<dim>::transform_to_char (Ly, dby);
-         EulerEquations<dim>::transform_to_char (Ly, dfy);
-         EulerEquations<dim>::transform_to_char (Lx, Dx);
-         EulerEquations<dim>::transform_to_char (Ly, Dy);
-      }
-      
-      // Apply minmod limiter
-      double change_x = 0;
-      double change_y = 0;
-      for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-      {
-         Dx_new(i) = minmod(Dx(i), dbx(i), dfx(i), Mdx2);
-         Dy_new(i) = minmod(Dy(i), dby(i), dfy(i), Mdx2);
-         change_x += std::fabs(Dx_new(i) - Dx(i));
-         change_y += std::fabs(Dy_new(i) - Dy(i));
-      }
-      change_x /= EulerEquations<dim>::n_components;
-      change_y /= EulerEquations<dim>::n_components;
-      
-      // If limiter is active, reduce polynomial to linear
-      if(change_x + change_y > 1.0e-10)
-      {
-         Dx_new /= dx;
-         Dy_new /= dx;
+         {
+            Dx(i) = face_values_x[1][i] - face_values_x[0][i];
+            Dy(i) = face_values_y[1][i] - face_values_y[0][i];
+         }
+         
+         // Transform to characteristic variables
+         typedef double EigMatrix[EulerEquations<dim>::n_components][EulerEquations<dim>::n_components];
+         EigMatrix Rx, Lx, Ry, Ly;
          if(parameters.char_lim)
          {
-            EulerEquations<dim>::transform_to_con (Rx, Dx_new);
-            EulerEquations<dim>::transform_to_con (Ry, Dy_new);
+            Vector<double> avg (EulerEquations<dim>::n_components);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               avg(i) = cell_average(cell_indices[i]);
+            EulerEquations<dim>::compute_eigen_matrix (avg, Rx, Lx, Ry, Ly);
+            EulerEquations<dim>::transform_to_char (Lx, dbx);
+            EulerEquations<dim>::transform_to_char (Lx, dfx);
+            EulerEquations<dim>::transform_to_char (Ly, dby);
+            EulerEquations<dim>::transform_to_char (Ly, dfy);
+            EulerEquations<dim>::transform_to_char (Lx, Dx);
+            EulerEquations<dim>::transform_to_char (Ly, Dy);
          }
-         cell->get_dof_indices(dof_indices);
-         fe_values.reinit (cell);
-         const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         
+         // Apply minmod limiter
+         double change_x = 0;
+         double change_y = 0;
+         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
          {
-            unsigned int comp_i = fe.system_to_component_index(i).first;
-            unsigned int base_i = fe.system_to_component_index(i).second;
-            Point<dim> dr = p[base_i] - cell->center();
-            current_solution(dof_indices[i]) = cell_average(cell_indices[comp_i])
-               + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
+            Dx_new(i) = minmod(Dx(i), dbx(i), dfx(i), Mdx2);
+            Dy_new(i) = minmod(Dy(i), dby(i), dfy(i), Mdx2);
+            change_x += std::fabs(Dx_new(i) - Dx(i));
+            change_y += std::fabs(Dy_new(i) - Dy(i));
          }
+         change_x /= EulerEquations<dim>::n_components;
+         change_y /= EulerEquations<dim>::n_components;
+         
+         // If limiter is active, reduce polynomial to linear
+         if(change_x + change_y > 1.0e-10)
+         {
+            Dx_new /= dx;
+            Dy_new /= dx;
+            if(parameters.char_lim)
+            {
+               EulerEquations<dim>::transform_to_con (Rx, Dx_new);
+               EulerEquations<dim>::transform_to_con (Ry, Dy_new);
+            }
+            cell->get_dof_indices(dof_indices);
+            fe_values.reinit (cell);
+            const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               unsigned int base_i = fe.system_to_component_index(i).second;
+               Point<dim> dr = p[base_i] - cell->center();
+               current_solution(dof_indices[i]) = cell_average(cell_indices[comp_i])
+                  + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
+            }
+         }
+         
       }
-      
    }
 }
 

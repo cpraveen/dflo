@@ -150,6 +150,8 @@ void ConservationLaw<dim>::setup_system ()
    dh_cell.clear();
    dh_cell.distribute_dofs (fe_cell);
    mu_shock.reinit (dh_cell.n_dofs());
+   shock_indicator.reinit (dh_cell.n_dofs());
+   jump_indicator.reinit (dh_cell.n_dofs());
 
    if(parameters.solver == Parameters::Solver::rk3)
    {

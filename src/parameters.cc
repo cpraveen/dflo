@@ -179,6 +179,9 @@ namespace Parameters
    {
       prm.enter_subsection("limiter");
       {
+         prm.declare_entry("shock indicator", "limiter",
+                           Patterns::Selection("limiter|density"),
+                           "Shock indicator type: limiter | density");
          prm.declare_entry("type", "none",
                            Patterns::Selection("none|TVB|grad"),
                            "Limiter type: none | TVB | grad");
@@ -200,6 +203,14 @@ namespace Parameters
    {
       prm.enter_subsection("limiter");
       {
+         const std::string ind = prm.get("shock indicator");
+         if(ind == "limiter")
+            shock_indicator_type = limiter;
+         else if(ind == "density")
+            shock_indicator_type = density;
+         else
+            AssertThrow (false, ExcNotImplemented());
+         
          const std::string type = prm.get("type");
          if(type == "none")
             limiter_type = none;
