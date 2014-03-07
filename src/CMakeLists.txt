@@ -45,6 +45,8 @@ One or all of these are OFF in your installation but are required for this tutor
     )
 ENDIF()
 
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-tautological-compare" )
+
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
 PROJECT(${TARGET})
 DEAL_II_INVOKE_AUTOPILOT()

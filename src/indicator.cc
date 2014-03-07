@@ -51,6 +51,7 @@ void ConservationLaw<dim>::compute_shock_indicator ()
          component = energy_component;
          break;
       default:
+         component = 0;
          AssertThrow(false, ExcNotImplemented());
    }
    
