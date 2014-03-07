@@ -42,7 +42,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          double pressure = EulerEquations<dim>::template compute_pressure<double> (W);
          eps = std::min(eps, pressure);
       }
-      AssertThrow(eps > eps_tol, ExcMessage("Fatal: Negative states"));
+      AssertThrow(eps >= eps_tol, ExcMessage("Fatal: Negative states"));
    }
    
    // Need 2N - 3 >= degree for the quadrature to be exact.
