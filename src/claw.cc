@@ -568,6 +568,9 @@ void ConservationLaw<dim>::run ()
 
    std::vector<double> residual_history;
    
+   // compute cell average of initial condition
+   compute_cell_average ();
+
    while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
@@ -594,17 +597,18 @@ void ConservationLaw<dim>::run ()
       
       // With global time stepping, we can use predictor as initial
       // guess for the implicit scheme.
-      if(parameters.time_step_type == "global")
+      if(parameters.solver != Parameters::Solver::rk3)
          current_solution = predictor;
       
       IntegratorImplicit<dim> integrator_implicit (dof_handler);
       setup_mesh_worker (integrator_implicit);
       IntegratorExplicit<dim> integrator_explicit (dof_handler);
       setup_mesh_worker (integrator_explicit);
-
+      
       // Loop for newton iterations or RK stages
       while(true)
       {
+         compute_shock_indicator ();
          if(parameters.solver == Parameters::Solver::rk3)
             assemble_system (integrator_explicit);
          else
@@ -681,7 +685,7 @@ void ConservationLaw<dim>::run ()
       
       // Compute predictor only for global time stepping
       // For local time stepping, this is meaningless
-      if(parameters.time_step_type == "global")
+      if(parameters.solver != Parameters::Solver::rk3)
       {
          predictor = current_solution;
          predictor.sadd (2.0, -1.0, old_solution);
