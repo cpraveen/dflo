@@ -319,7 +319,7 @@ ConservationLaw<dim>::compute_time_step ()
    QIterated<dim>   quadrature_formula(QTrapez<1>(), 3);
    const unsigned int   n_q_points = quadrature_formula.size();
    
-   FEValues<dim> fe_values (fe, 
+   FEValues<dim> fe_values (mapping(), fe,
                             quadrature_formula,
                             update_values);
    std::vector<Vector<double> > solution_values(n_q_points,
@@ -373,7 +373,7 @@ ConservationLaw<dim>::compute_cell_average ()
    QGauss<dim>   quadrature_formula(fe.degree+1);
    const unsigned int n_q_points = quadrature_formula.size();
    
-   FEValues<dim> fe_values (fe,
+   FEValues<dim> fe_values (mapping(), fe,
                             quadrature_formula,
                             update_values | update_JxW_values);
    std::vector<Vector<double> > solution_values(n_q_points,

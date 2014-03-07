@@ -10,7 +10,7 @@
 using namespace dealii;
 
 //-----------------------------------------------------------------------------
-// compute KXRCF shock indicator based on density
+// compute KXRCF shock indicator based on density or energy
 //-----------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator ()
@@ -26,13 +26,13 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    const unsigned int energy_component = EulerEquations<dim>::energy_component;
    
    QGauss<dim-1> quadrature(fe.degree + 1);
-   FEFaceValues<dim> fe_face_values (fe, quadrature,
+   FEFaceValues<dim> fe_face_values (mapping(), fe, quadrature,
                                      update_values | update_normal_vectors);
-   FEFaceValues<dim> fe_face_values_nbr (fe, quadrature,
+   FEFaceValues<dim> fe_face_values_nbr (mapping(), fe, quadrature,
                                          update_values);
-   FESubfaceValues<dim> fe_subface_values (fe, quadrature,
+   FESubfaceValues<dim> fe_subface_values (mapping(), fe, quadrature,
                                            update_values | update_normal_vectors);
-   FESubfaceValues<dim> fe_subface_values_nbr (fe, quadrature,
+   FESubfaceValues<dim> fe_subface_values_nbr (mapping(), fe, quadrature,
                                                update_values);
    
    std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);

@@ -50,7 +50,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    unsigned int N = fe.degree + 2;
    QGaussLobatto<dim>  quadrature_formula(N);
    const unsigned int n_q_points = quadrature_formula.size();
-   FEValues<dim> fe_values (fe, quadrature_formula, update_values);
+   FEValues<dim> fe_values (mapping(), fe, quadrature_formula, update_values);
    std::vector<double> density_values(n_q_points), energy_values(n_q_points);
    std::vector< Tensor<1,dim> > momentum_values(n_q_points);
    std::vector<unsigned int> local_dof_indices (fe.dofs_per_cell);

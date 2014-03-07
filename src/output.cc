@@ -45,7 +45,7 @@ void ConservationLaw<dim>::output_results () const
    
    data_out.add_data_vector (current_solution, postprocessor);
    
-   data_out.build_patches (fe.degree);
+   data_out.build_patches (mapping(), fe.degree);
    
    static unsigned int output_file_number = 0;
    std::string filename = "solution-" + Utilities::int_to_string (output_file_number, 3);
@@ -69,7 +69,7 @@ void ConservationLaw<dim>::output_results () const
    DataOut<dim> shock;
    shock.attach_dof_handler (dh_cell);
    shock.add_data_vector (mu_shock, "shock");
-   shock.build_patches ();
+   shock.build_patches (mapping());
    std::ofstream shock_output ("shock.plt");
    shock.write_tecplot (shock_output);
    
@@ -80,7 +80,7 @@ void ConservationLaw<dim>::output_results () const
                         EulerEquations<dim>::component_names (),
                         DataOut<dim>::type_dof_data,
                         EulerEquations<dim>::component_interpretation ());
-   avg.build_patches ();
+   avg.build_patches (mapping());
    std::ofstream avg_output ("avg.plt");
    avg.write_tecplot (avg_output);
 }

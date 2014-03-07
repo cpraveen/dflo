@@ -60,12 +60,12 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
    QTrapez<1>        q_trapez;
    QMidpoint<1>      q_midpoint;
    QAnisotropic<dim> qrule_x (q_trapez, q_midpoint);
-   FEValues<dim>     fe_values_x (fe, qrule_x, update_values);
+   FEValues<dim>     fe_values_x (mapping(), fe, qrule_x, update_values);
    QAnisotropic<dim> qrule_y (q_midpoint, q_trapez);
-   FEValues<dim>     fe_values_y (fe, qrule_y, update_values);
+   FEValues<dim>     fe_values_y (mapping(), fe, qrule_y, update_values);
    
    Quadrature<dim> qsupport (fe.get_unit_support_points());
-   FEValues<dim>   fe_values (fe, qsupport, update_q_points);
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
    
    std::vector<Vector<double> > face_values_x(2,
                                               Vector<double>(EulerEquations<dim>::n_components));
@@ -217,10 +217,10 @@ void ConservationLaw<dim>::apply_limiter_grad ()
    const unsigned int n_components = EulerEquations<dim>::n_components;
 
    QGauss<dim> qrule (fe.degree + 1);
-   FEValues<dim> fe_values_grad (fe, qrule, update_gradients | update_JxW_values);
+   FEValues<dim> fe_values_grad (mapping(), fe, qrule, update_gradients | update_JxW_values);
 
    Quadrature<dim> qsupport (fe.get_unit_support_points());
-   FEValues<dim>   fe_values (fe, qsupport, update_q_points);
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
    
    Vector<double> dfx (n_components);
    Vector<double> dbx (n_components);
