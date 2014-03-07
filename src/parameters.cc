@@ -180,8 +180,8 @@ namespace Parameters
       prm.enter_subsection("limiter");
       {
          prm.declare_entry("shock indicator", "limiter",
-                           Patterns::Selection("limiter|density"),
-                           "Shock indicator type: limiter | density");
+                           Patterns::Selection("limiter|density|energy"),
+                           "Shock indicator type: limiter | density | energy");
          prm.declare_entry("type", "none",
                            Patterns::Selection("none|TVB|grad"),
                            "Limiter type: none | TVB | grad");
@@ -208,6 +208,8 @@ namespace Parameters
             shock_indicator_type = limiter;
          else if(ind == "density")
             shock_indicator_type = density;
+         else if(ind == "energy")
+            shock_indicator_type = energy;
          else
             AssertThrow (false, ExcNotImplemented());
          

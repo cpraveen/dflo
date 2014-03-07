@@ -242,7 +242,7 @@ namespace Parameters
    struct Limiter
    {
       enum LimiterType { none, TVB, grad };
-      enum ShockIndType { limiter, density };
+      enum ShockIndType { limiter, density, energy };
       
       LimiterType  limiter_type;
       ShockIndType shock_indicator_type;
