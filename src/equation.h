@@ -108,9 +108,9 @@ struct EulerEquations
       for (unsigned int d=0; d<dim; ++d)
          velocity += *(W.begin()+d) *
                      *(W.begin()+d);
-      velocity = std::sqrt(velocity) / (*W.begin()+density_component);
+      velocity = std::sqrt(velocity) / (*(W.begin()+density_component));
 
-      return velocity + std::sqrt(gas_gamma * pressure / (*W.begin()+density_component));
+      return velocity + std::sqrt(gas_gamma * pressure / (*(W.begin()+density_component)));
    }
    
    //---------------------------------------------------------------------------
@@ -125,7 +125,7 @@ struct EulerEquations
 
       const number pressure = 
          compute_pressure<number> (W);
-      return std::sqrt(gas_gamma * pressure / (*W.begin()+density_component));
+      return std::sqrt(gas_gamma * pressure / (*(W.begin()+density_component)));
    }
    
    
