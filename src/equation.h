@@ -1066,7 +1066,7 @@ struct EulerEquations
       for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
       {
          fe_v.reinit(cell);
-         fe_v.get_function_grads (solution, dU);
+         fe_v.get_function_gradients (solution, dU);
          
          refinement_indicators(cell_no)
 	      = std::log(1+

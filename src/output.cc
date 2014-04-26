@@ -68,7 +68,8 @@ void ConservationLaw<dim>::output_results () const
    // Write shock indicator
    DataOut<dim> shock;
    shock.attach_dof_handler (dh_cell);
-   shock.add_data_vector (mu_shock, "shock");
+   shock.add_data_vector (mu_shock, "mu_shock");
+   shock.add_data_vector (shock_indicator, "shock_indicator");
    shock.build_patches (mapping());
    std::ofstream shock_output ("shock.plt");
    shock.write_tecplot (shock_output);

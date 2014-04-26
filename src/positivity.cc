@@ -41,8 +41,13 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          eps = std::min(eps, W[density_component]);
          double pressure = EulerEquations<dim>::template compute_pressure<double> (W);
          eps = std::min(eps, pressure);
+         if(eps < eps_tol)
+         {
+            std::cout << "\n Negative state at position " << cell0->center() << "\n\n";
+            AssertThrow(false, ExcMessage("Fatal: Negative states"));
+         }
       }
-      AssertThrow(eps >= eps_tol, ExcMessage("Fatal: Negative states"));
+
    }
    
    // Need 2N - 3 >= degree for the quadrature to be exact.
