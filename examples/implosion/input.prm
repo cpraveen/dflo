@@ -1,0 +1,78 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = grid.msh
+set degree = 1
+set mapping = cartesian
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+# farfield supersonic inflow boundary
+subsection boundary_1
+   set type = slip
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+   set w_0 value = 0.0
+   set w_1 value = 0.0
+   set w_2 value = 1.0*(x+y > 0.5) + 0.125*(x+y <= 0.5)
+   set w_3 value = 2.5*(x+y > 0.5) + 0.035*(x+y <= 0.5)
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = global
+  set cfl = 0.5
+  set final time = 5.0
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  set method         = rk3
+end
+
+# --------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 100
+  set schlieren plot = true
+  set format         = tecplot
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = lxf
+end
+
+subsection limiter
+   set type = TVB
+   set characteristic limiter = true
+   set positivity limiter = false
+   set M = 0
+end
