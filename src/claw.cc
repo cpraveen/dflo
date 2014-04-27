@@ -68,7 +68,7 @@ template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
                                        const unsigned int degree)
    :
-   fe (FE_DGQ<dim>(degree), EulerEquations<dim>::n_components),
+   fe (FE_DGQArbitraryNodes<dim>(QGauss<1>(degree+1)), EulerEquations<dim>::n_components),
    dof_handler (triangulation),
    fe0 (FE_DGQ<dim>(0), EulerEquations<dim>::n_components),
    dof_handler0 (triangulation),
@@ -260,20 +260,10 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorImplicit<dim>& integrato
 template <int dim>
 void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrator)
 {
-   if(parameters.pos_lim)
-   {
-      const unsigned int n_gauss_points = fe.degree + 2;
-      integrator.info_box.cell_quadrature = QGaussLobatto<dim>(n_gauss_points);
-      integrator.info_box.boundary_quadrature = QGaussLobatto<dim-1>(n_gauss_points);
-      integrator.info_box.face_quadrature = QGaussLobatto<dim-1>(n_gauss_points);
-   }
-   else
-   {
-      const unsigned int n_gauss_points = fe.degree + 1;
-      integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
-                                                      n_gauss_points,
-                                                      n_gauss_points);
-   }
+   const unsigned int n_gauss_points = fe.degree + 1;
+   integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
+                                                   n_gauss_points,
+                                                   n_gauss_points);
    
    integrator.info_box.initialize_update_flags ();
    integrator.info_box.add_update_flags_all (update_values | 
