@@ -299,8 +299,8 @@ void ConservationLaw<dim>::apply_limiter_grad ()
          for(unsigned int q=0; q<qrule.size(); ++q)
             avg_grad += grad[q][i] * fe_values_grad.JxW(q);
          avg_grad /= cell->measure();
-         Dx(i) = 0.5 * dx * avg_grad[0];
-         Dy(i) = 0.5 * dx * avg_grad[1];
+         Dx(i) = dx * avg_grad[0];
+         Dy(i) = dx * avg_grad[1];
       }
       
       // Transform to characteristic variables
@@ -336,8 +336,8 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       // If limiter is active, reduce polynomial to linear
       if(change_x + change_y > 1.0e-10)
       {
-         Dx_new /= 0.5 * dx;
-         Dy_new /= 0.5 * dx;
+         Dx_new /= dx;
+         Dy_new /= dx;
          if(parameters.char_lim)
          {
             EulerEquations<dim>::transform_to_con (Rx, Dx_new);
