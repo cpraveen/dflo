@@ -598,7 +598,6 @@ void ConservationLaw<dim>::run ()
       // Loop for newton iterations or RK stages
       while(true)
       {
-         compute_shock_indicator ();
          if(parameters.solver == Parameters::Solver::rk3)
             assemble_system (integrator_explicit);
          else
@@ -609,7 +608,9 @@ void ConservationLaw<dim>::run ()
 
          std::pair<unsigned int, double> convergence
             = solve (newton_update, res_norm);
-            
+
+         // Forward euler step in case of explicit scheme
+         // In case of implicit scheme, this is the update
          current_solution += newton_update;
 
          if(parameters.solver == Parameters::Solver::rk3)
@@ -619,6 +620,7 @@ void ConservationLaw<dim>::run ()
          }
          
          compute_cell_average ();
+         compute_shock_indicator ();
          apply_limiter ();
          if(parameters.pos_lim) apply_positivity_limiter ();
             
