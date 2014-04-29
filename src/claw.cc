@@ -547,14 +547,16 @@ void ConservationLaw<dim>::run ()
    apply_limiter();
    old_solution = current_solution;
    predictor = current_solution;
+   
+   // Reset time/iteration counters
+   elapsed_time = 0;
+   time_iter = 0;
+   
+   // Save initial condition to file
    output_results ();
    
    // We then enter into the main time
-   // stepping loop. 
-   Vector<double> newton_update (dof_handler.n_dofs());
-   
-   elapsed_time = 0;
-   time_iter = 0;
+   // stepping loop.
 
    // Setup variables to decide if we need to save solution 
    double next_output_time = elapsed_time + parameters.output_time_step;
@@ -564,6 +566,7 @@ void ConservationLaw<dim>::run ()
    double next_refine_time = elapsed_time + parameters.refine_time_step;
    int    next_refine_iter = time_iter + parameters.refine_iter_step;
 
+   Vector<double> newton_update (dof_handler.n_dofs());
    std::vector<double> residual_history;
    
    while (elapsed_time < parameters.final_time)
