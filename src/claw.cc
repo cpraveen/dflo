@@ -539,6 +539,14 @@ void ConservationLaw<dim>::run ()
          predictor = old_solution;
       }
    
+   // Cell average of initial condition
+   compute_cell_average ();
+
+   // Limit the initial condition
+   compute_shock_indicator ();
+   apply_limiter();
+   old_solution = current_solution;
+   predictor = current_solution;
    output_results ();
    
    // We then enter into the main time
@@ -558,9 +566,6 @@ void ConservationLaw<dim>::run ()
 
    std::vector<double> residual_history;
    
-   // compute cell average of initial condition
-   compute_cell_average ();
-
    while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
