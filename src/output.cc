@@ -51,7 +51,7 @@ void ConservationLaw<dim>::output_results () const
    std::string filename = "solution-" + Utilities::int_to_string (output_file_number, 3);
    
    if(parameters.output_format == "vtk")     
-      filename += ".vtk";
+      filename += ".vtu";
    else if(parameters.output_format == "tecplot") 
       filename += ".plt";
    
@@ -59,7 +59,11 @@ void ConservationLaw<dim>::output_results () const
    std::ofstream output (filename.c_str());
    
    if(parameters.output_format == "vtk")     
-      data_out.write_vtk (output);
+   {
+      DataOutBase::VtkFlags flags(elapsed_time, output_file_number);
+      data_out.set_flags(flags);
+      data_out.write_vtu (output);
+   }
    else if(parameters.output_format == "tecplot") 
       data_out.write_tecplot (output);
    
@@ -71,8 +75,16 @@ void ConservationLaw<dim>::output_results () const
    shock.add_data_vector (mu_shock, "mu_shock");
    shock.add_data_vector (shock_indicator, "shock_indicator");
    shock.build_patches (mapping());
-   std::ofstream shock_output ("shock.plt");
-   shock.write_tecplot (shock_output);
+   if(parameters.output_format == "vtk")     
+   {
+      std::ofstream shock_output ("shock.vtu");
+      shock.write_vtu (shock_output);
+   }
+   else if(parameters.output_format == "tecplot") 
+   {
+      std::ofstream shock_output ("shock.plt");
+      shock.write_tecplot (shock_output);
+   }
    
    // Write cell average solution
    DataOut<dim> avg;
@@ -82,8 +94,16 @@ void ConservationLaw<dim>::output_results () const
                         DataOut<dim>::type_dof_data,
                         EulerEquations<dim>::component_interpretation ());
    avg.build_patches (mapping());
-   std::ofstream avg_output ("avg.plt");
-   avg.write_tecplot (avg_output);
+   if(parameters.output_format == "vtk")     
+   {
+      std::ofstream avg_output ("avg.vtu");
+      avg.write_vtu (avg_output);
+   }
+   else if(parameters.output_format == "tecplot") 
+   {
+      std::ofstream avg_output ("avg.plt");
+      avg.write_tecplot (avg_output);
+   }
 }
 
 template class ConservationLaw<2>;
