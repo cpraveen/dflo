@@ -216,7 +216,7 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    
    // Now assemble the face term
    for (unsigned int i=0; i<fe_v.dofs_per_cell; ++i)
-      if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
+      //if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
       {
          double F_i = 0;
          
@@ -358,7 +358,7 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    
    // Now assemble the face term
    for (unsigned int i=0; i<dofs_per_cell; ++i)
-      if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
+      //if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
       {
          double F_i = 0;
          
@@ -399,7 +399,7 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    
    // Contributions to neighbouring cell
    for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
-      if (fe_v_neighbor.get_fe().has_support_on_face(i, face_no_neighbor) == true)
+      //if (fe_v_neighbor.get_fe().has_support_on_face(i, face_no_neighbor) == true)
       {
          double F_i = 0;
          
