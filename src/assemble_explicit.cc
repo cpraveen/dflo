@@ -44,16 +44,16 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
    Table<2,double>
       W (n_q_points, EulerEquations<dim>::n_components);
    
-   Table<3,double>
-      grad_W (n_q_points, EulerEquations<dim>::n_components, dim);
+   /*Table<3,double>
+      grad_W (n_q_points, EulerEquations<dim>::n_components, dim);*/
 
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
       {
          W[q][c] = 0.0;
-         for(unsigned int d=0; d<dim; ++d)
-            grad_W[q][c][d] = 0.0;
+         /*for(unsigned int d=0; d<dim; ++d)
+            grad_W[q][c][d] = 0.0;*/
       }
       for (unsigned int i=0; i<dofs_per_cell; ++i)
       {
@@ -62,9 +62,9 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
          W[q][c] += current_solution(dof_indices[i]) *
                     fe_v.shape_value_component(i, q, c);
          
-         for (unsigned int d = 0; d < dim; ++d)
+         /*for (unsigned int d = 0; d < dim; ++d)
             grad_W[q][c][d] += current_solution(dof_indices[i]) *
-                               fe_v.shape_grad_component(i, q, c)[d];
+                               fe_v.shape_grad_component(i, q, c)[d];*/
       }
    }
    
@@ -103,12 +103,13 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
                    fe_v.JxW(point);
          
          // Diffusion term for shocks
+         /*
          if(parameters.diffusion_coef > 0.0)
             for (unsigned int d=0; d<dim; d++)
                F_i += mu_shock(cell_no) *
                       grad_W[point][component_i][d] *
                       fe_v.shape_grad_component(i, point, component_i)[d] *
-                      fe_v.JxW(point);
+                      fe_v.JxW(point);*/
          
          /*
          F_i -= forcing[point][component_i] *
@@ -154,16 +155,16 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
       Wplus  (n_q_points, EulerEquations<dim>::n_components),
       Wminus (n_q_points, EulerEquations<dim>::n_components);
 
-   Table<3,double>
-      grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim);
+   /*Table<3,double>
+      grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim);*/
    
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
       {
          Wplus[q][c] = 0.0;
-         for(unsigned int d=0; d<dim; ++d)
-            grad_Wplus[q][c][d] = 0.0;
+         /*for(unsigned int d=0; d<dim; ++d)
+            grad_Wplus[q][c][d] = 0.0;*/
       }
       for (unsigned int i=0; i<dofs_per_cell; ++i)
       {
@@ -171,9 +172,9 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
          Wplus[q][c] += current_solution(dof_indices[i]) *
                         fe_v.shape_value_component(i, q, c);
 
-         for (unsigned int d=0; d<dim; ++d)
+         /*for (unsigned int d=0; d<dim; ++d)
             grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
-                                   fe_v.shape_grad_component(i, q, c)[d];
+                                   fe_v.shape_grad_component(i, q, c)[d];*/
       }
    }
    
@@ -215,7 +216,7 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    
    // Now assemble the face term
    for (unsigned int i=0; i<fe_v.dofs_per_cell; ++i)
-      //if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
+      if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
       {
          double F_i = 0;
          
@@ -299,17 +300,17 @@ void ConservationLaw<dim>::integrate_face_term_explicit
       Wplus  (n_q_points, EulerEquations<dim>::n_components),
       Wminus (n_q_points, EulerEquations<dim>::n_components);
 
-   Table<3,double>
+   /*Table<3,double>
       grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim),
-      grad_Wminus (n_q_points, EulerEquations<dim>::n_components, dim);
+      grad_Wminus (n_q_points, EulerEquations<dim>::n_components, dim);*/
 
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
       {
          Wplus[q][c] = 0.0;
-         for(unsigned int d=0; d<dim; ++d)
-            grad_Wplus[q][c][d] = 0.0;
+         /*for(unsigned int d=0; d<dim; ++d)
+            grad_Wplus[q][c][d] = 0.0;*/
       }
       for (unsigned int i=0; i<dofs_per_cell; ++i)
       {
@@ -317,9 +318,9 @@ void ConservationLaw<dim>::integrate_face_term_explicit
          Wplus[q][c] += current_solution(dof_indices[i]) * 
                         fe_v.shape_value_component(i, q, c);
 
-         for (unsigned int d = 0; d < dim; d++)
+         /*for (unsigned int d = 0; d < dim; d++)
             grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
-                                   fe_v.shape_grad_component(i, q, c)[d];
+                                   fe_v.shape_grad_component(i, q, c)[d];*/
       }
    }
    
@@ -329,8 +330,8 @@ void ConservationLaw<dim>::integrate_face_term_explicit
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
       {
          Wminus[q][c] = 0.0;
-         for(unsigned int d=0; d<dim; ++d)
-            grad_Wminus[q][c][d] = 0.0;
+         /*for(unsigned int d=0; d<dim; ++d)
+            grad_Wminus[q][c][d] = 0.0;*/
       }
       for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
       {
@@ -338,9 +339,9 @@ void ConservationLaw<dim>::integrate_face_term_explicit
          Wminus[q][c] += current_solution(dof_indices_neighbor[i]) *
                          fe_v_neighbor.shape_value_component(i, q, c);
 
-         for (unsigned int d = 0; d < dim; d++)
+         /*for (unsigned int d = 0; d < dim; d++)
             grad_Wminus[q][c][d] += current_solution(dof_indices_neighbor[i]) *
-                                    fe_v_neighbor.shape_grad_component(i, q, c)[d];
+                                    fe_v_neighbor.shape_grad_component(i, q, c)[d];*/
       }
    }
    
@@ -357,7 +358,7 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    
    // Now assemble the face term
    for (unsigned int i=0; i<dofs_per_cell; ++i)
-      //if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
+      if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
       {
          double F_i = 0;
          
@@ -398,7 +399,7 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    
    // Contributions to neighbouring cell
    for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
-      //if (fe_v_neighbor.get_fe().has_support_on_face(i, face_no_neighbor) == true)
+      if (fe_v_neighbor.get_fe().has_support_on_face(i, face_no_neighbor) == true)
       {
          double F_i = 0;
          

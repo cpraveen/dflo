@@ -267,11 +267,10 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize_update_flags ();
    integrator.info_box.add_update_flags_all (update_values | 
-                                             update_quadrature_points |
                                              update_JxW_values);
    integrator.info_box.add_update_flags_cell     (update_gradients);
-   integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_gradients); // TODO:ADIFF
-   integrator.info_box.add_update_flags_face     (update_normal_vectors | update_gradients); // TODO:ADIFF
+   integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points); // TODO:ADIFF
+   integrator.info_box.add_update_flags_face     (update_normal_vectors); // TODO:ADIFF
    
    integrator.info_box.initialize (fe, mapping());
    
