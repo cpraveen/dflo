@@ -194,6 +194,9 @@ namespace Parameters
          prm.declare_entry("M", "0",
                            Patterns::Double(0),
                            "TVB parameter");
+         prm.declare_entry("beta", "1.0",
+                           Patterns::Double(1.0,2.0),
+                           "limiter parameter");
       }
       prm.leave_subsection();
    }
@@ -226,6 +229,7 @@ namespace Parameters
          char_lim = prm.get_bool("characteristic limiter");
          pos_lim  = prm.get_bool("positivity limiter");
          M        = prm.get_double("M");
+         beta     = prm.get_double("beta");
       }
       prm.leave_subsection();
    }

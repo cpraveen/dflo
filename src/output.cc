@@ -87,23 +87,23 @@ void ConservationLaw<dim>::output_results () const
    }
    
    // Write cell average solution
-   DataOut<dim> avg;
-   avg.attach_dof_handler (dof_handler0);
-   avg.add_data_vector (cell_average,
-                        EulerEquations<dim>::component_names (),
-                        DataOut<dim>::type_dof_data,
-                        EulerEquations<dim>::component_interpretation ());
-   avg.build_patches (mapping());
-   if(parameters.output_format == "vtk")     
-   {
-      std::ofstream avg_output ("avg.vtu");
-      avg.write_vtu (avg_output);
-   }
-   else if(parameters.output_format == "tecplot") 
-   {
-      std::ofstream avg_output ("avg.plt");
-      avg.write_tecplot (avg_output);
-   }
+//   DataOut<dim> avg;
+//   avg.attach_dof_handler (dof_handler0);
+//   avg.add_data_vector (cell_average,
+//                        EulerEquations<dim>::component_names (),
+//                        DataOut<dim>::type_dof_data,
+//                        EulerEquations<dim>::component_interpretation ());
+//   avg.build_patches (mapping());
+//   if(parameters.output_format == "vtk")     
+//   {
+//      std::ofstream avg_output ("avg.vtu");
+//      avg.write_vtu (avg_output);
+//   }
+//   else if(parameters.output_format == "tecplot") 
+//   {
+//      std::ofstream avg_output ("avg.plt");
+//      avg.write_tecplot (avg_output);
+//   }
 }
 
 template class ConservationLaw<2>;

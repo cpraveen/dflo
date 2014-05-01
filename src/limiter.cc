@@ -84,24 +84,22 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
    Vector<double> Dy_new (EulerEquations<dim>::n_components);
    Vector<double> avg_nbr (EulerEquations<dim>::n_components);
    
-   std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
    std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end(),
-      cell0 = dof_handler0.begin_active(),
-      endc0 = dof_handler0.end();
+      endc0 = dh_cell.end();
    
-   for(; cell != endc; ++cell, ++cell0)
+   const double beta = parameters.beta;
+
+   for(; cell != endc; ++cell)
    {
       const unsigned int c = cell_number(cell);
-      if(shock_indicator[c] > 1)
+      if(shock_indicator[c] > 1.0)
       {
-         const double dx = cell->diameter() / std::sqrt(2.0);
+         const double dx = cell->diameter() / std::sqrt(1.0*dim);
          const double Mdx2 = parameters.M * dx * dx;
-         
-         cell0->get_dof_indices (cell_indices);
          
          // Backward difference of cell averages
          dbx = 0;
@@ -109,7 +107,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          {
             get_cell_average (lcell[c], avg_nbr);
             for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dbx(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+               dbx(i) = cell_average[c][i] - avg_nbr(i);
          }
          
          // Forward difference of cell averages
@@ -118,7 +116,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          {
             get_cell_average (rcell[c], avg_nbr);
             for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dfx(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+               dfx(i) = avg_nbr(i) - cell_average[c][i];
          }
          
          // Backward difference of cell averages
@@ -127,7 +125,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          {
             get_cell_average (bcell[c], avg_nbr);
             for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dby(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+               dby(i) = cell_average[c][i] - avg_nbr(i);
          }
          
          // Forward difference of cell averages
@@ -136,7 +134,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          {
             get_cell_average (tcell[c], avg_nbr);
             for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dfy(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+               dfy(i) = avg_nbr(i) - cell_average[c][i];
          }
          
          fe_values_x.reinit(cell);
@@ -154,10 +152,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          EigMatrix Rx, Lx, Ry, Ly;
          if(parameters.char_lim)
          {
-            Vector<double> avg (EulerEquations<dim>::n_components);
-            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               avg(i) = cell_average(cell_indices[i]);
-            EulerEquations<dim>::compute_eigen_matrix (avg, Rx, Lx, Ry, Ly);
+            EulerEquations<dim>::compute_eigen_matrix (cell_average[c], Rx, Lx, Ry, Ly);
             EulerEquations<dim>::transform_to_char (Lx, dbx);
             EulerEquations<dim>::transform_to_char (Lx, dfx);
             EulerEquations<dim>::transform_to_char (Ly, dby);
@@ -171,8 +166,8 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          double change_y = 0;
          for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
          {
-            Dx_new(i) = minmod(Dx(i), dbx(i), dfx(i), Mdx2);
-            Dy_new(i) = minmod(Dy(i), dby(i), dfy(i), Mdx2);
+            Dx_new(i) = minmod(Dx(i), beta*dbx(i), beta*dfx(i), Mdx2);
+            Dy_new(i) = minmod(Dy(i), beta*dby(i), beta*dfy(i), Mdx2);
             change_x += std::fabs(Dx_new(i) - Dx(i));
             change_y += std::fabs(Dy_new(i) - Dy(i));
          }
@@ -197,7 +192,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
                unsigned int comp_i = fe.system_to_component_index(i).first;
                unsigned int base_i = fe.system_to_component_index(i).second;
                Point<dim> dr = p[base_i] - cell->center();
-               current_solution(dof_indices[i]) = cell_average(cell_indices[comp_i])
+               current_solution(dof_indices[i]) = cell_average[c][comp_i]
                   + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
             }
          }
@@ -234,31 +229,30 @@ void ConservationLaw<dim>::apply_limiter_grad ()
    Vector<double> Dy_new (n_components);
    Vector<double> avg_nbr (n_components);
    
-   std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
    std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
-   std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(), std::vector< Tensor<1,dim> >(n_components));
+   std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
+                                                     std::vector< Tensor<1,dim> >(n_components));
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end(),
-      cell0 = dof_handler0.begin_active(),
-      endc0 = dof_handler0.end();
+      endc0 = dh_cell.end();
    
-   for(; cell != endc; ++cell, ++cell0)
+   const double beta = parameters.beta;
+   
+   for(; cell != endc; ++cell)
    {
       const unsigned int c = cell_number(cell);
-      const double dx = cell->diameter() / std::sqrt(2.0);
+      const double dx = cell->diameter() / std::sqrt(1.0*dim);
       const double Mdx2 = parameters.M * dx * dx;
-      
-      cell0->get_dof_indices (cell_indices);
-      
+            
       // Backward difference of cell averages
       dbx = 0;
       if(lcell[c] != endc0)
       {
          get_cell_average (lcell[c], avg_nbr);
          for(unsigned int i=0; i<n_components; ++i)
-            dbx(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+            dbx(i) = cell_average[c][i] - avg_nbr(i);
       }
       
       // Forward difference of cell averages
@@ -267,7 +261,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       {
          get_cell_average (rcell[c], avg_nbr);
          for(unsigned int i=0; i<n_components; ++i)
-            dfx(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+            dfx(i) = avg_nbr(i) - cell_average[c][i];
       }
       
       // Backward difference of cell averages
@@ -276,7 +270,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       {
          get_cell_average (bcell[c], avg_nbr);
          for(unsigned int i=0; i<n_components; ++i)
-            dby(i) = cell_average(cell_indices[i]) - avg_nbr(i);
+            dby(i) = cell_average[c][i] - avg_nbr(i);
       }
       
       // Forward difference of cell averages
@@ -285,7 +279,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       {
          get_cell_average (tcell[c], avg_nbr);
          for(unsigned int i=0; i<n_components; ++i)
-            dfy(i) = avg_nbr(i) - cell_average(cell_indices[i]);
+            dfy(i) = avg_nbr(i) - cell_average[c][i];
       }
       
       // Compute average gradient in cell
@@ -308,10 +302,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       EigMatrix Rx, Lx, Ry, Ly;
       if(parameters.char_lim)
       {
-         Vector<double> avg (n_components);
-         for(unsigned int i=0; i<n_components; ++i)
-            avg(i) = cell_average(cell_indices[i]);
-         EulerEquations<dim>::compute_eigen_matrix (avg, Rx, Lx, Ry, Ly);
+         EulerEquations<dim>::compute_eigen_matrix (cell_average[c], Rx, Lx, Ry, Ly);
          EulerEquations<dim>::transform_to_char (Lx, dbx);
          EulerEquations<dim>::transform_to_char (Lx, dfx);
          EulerEquations<dim>::transform_to_char (Ly, dby);
@@ -325,8 +316,8 @@ void ConservationLaw<dim>::apply_limiter_grad ()
       double change_y = 0;
       for(unsigned int i=0; i<n_components; ++i)
       {
-         Dx_new(i) = minmod(Dx(i), dbx(i), dfx(i), Mdx2);
-         Dy_new(i) = minmod(Dy(i), dby(i), dfy(i), Mdx2);
+         Dx_new(i) = minmod(Dx(i), beta*dbx(i), beta*dfx(i), Mdx2);
+         Dy_new(i) = minmod(Dy(i), beta*dby(i), beta*dfy(i), Mdx2);
          change_x += std::fabs(Dx_new(i) - Dx(i));
          change_y += std::fabs(Dy_new(i) - Dy(i));
       }
@@ -351,7 +342,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
             unsigned int comp_i = fe.system_to_component_index(i).first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             Point<dim> dr = p[base_i] - cell->center();
-            current_solution(dof_indices[i]) = cell_average(cell_indices[comp_i])
+            current_solution(dof_indices[i]) = cell_average[c][comp_i]
                + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
          }
       }

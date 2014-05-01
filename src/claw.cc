@@ -70,8 +70,6 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    :
    fe (FE_DGQArbitraryNodes<dim>(QGauss<1>(degree+1)), EulerEquations<dim>::n_components),
    dof_handler (triangulation),
-   fe0 (FE_DGQ<dim>(0), EulerEquations<dim>::n_components),
-   dof_handler0 (triangulation),
    fe_cell (FE_DGQ<dim>(0)),
    dh_cell (triangulation),
    verbose_cout (std::cout, false)
@@ -142,9 +140,8 @@ void ConservationLaw<dim>::setup_system ()
    predictor.reinit (dof_handler.n_dofs());
    right_hand_side.reinit (dof_handler.n_dofs());
    
-   dof_handler0.clear();
-   dof_handler0.distribute_dofs (fe0);
-   cell_average.reinit (dof_handler0.n_dofs());
+   cell_average.resize (triangulation.n_active_cells(),
+                        Vector<double>(EulerEquations<dim>::n_components));
    
    // Used for cell data like time step
    dh_cell.clear();
@@ -180,6 +177,7 @@ void ConservationLaw<dim>::setup_system ()
 
    // For each cell, find neighbourig cell
    // This is needed for limiter
+   // CHECK: Should the size be n_active_cells() ?
    lcell.resize(triangulation.n_cells());
    rcell.resize(triangulation.n_cells());
    bcell.resize(triangulation.n_cells());
@@ -187,8 +185,8 @@ void ConservationLaw<dim>::setup_system ()
 
    const double EPS = 1.0e-10;
    typename DoFHandler<dim>::active_cell_iterator
-      cell = dof_handler0.begin_active(),
-      endc = dof_handler0.end();
+      cell = dh_cell.begin_active(),
+      endc = dh_cell.end();
    for (; cell!=endc; ++cell)
    {
       unsigned int c = cell_number(cell);
@@ -196,7 +194,7 @@ void ConservationLaw<dim>::setup_system ()
       rcell[c] = endc;
       bcell[c] = endc;
       tcell[c] = endc;
-      double dx = cell->diameter() / std::sqrt(2.0);
+      double dx = cell->diameter() / std::sqrt(1.0*dim);
 
       for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
          if (! cell->at_boundary(face_no))
@@ -367,29 +365,24 @@ ConservationLaw<dim>::compute_cell_average ()
                             update_values | update_JxW_values);
    std::vector<Vector<double> > solution_values(n_q_points,
                                                 Vector<double>(EulerEquations<dim>::n_components));
-   std::vector<unsigned int> cell_dofs(fe0.dofs_per_cell);
-   
-   cell_average = 0;
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
-      endc = dof_handler.end(),
-      cell0= dof_handler0.begin_active();
+      endc = dof_handler.end();
    
-   for (; cell!=endc; ++cell, ++cell0)
+   for (; cell!=endc; ++cell)
    {
       fe_values.reinit (cell);
       fe_values.get_function_values (current_solution, solution_values);
       
-      cell0->get_dof_indices(cell_dofs);
+      unsigned int cell_no = cell_number(cell);
+      cell_average[cell_no] = 0.0;
       
       for (unsigned int q=0; q<n_q_points; ++q)
          for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-            cell_average(cell_dofs[c]) += solution_values[q][c] * fe_values.JxW(q);
+            cell_average[cell_no][c] += solution_values[q][c] * fe_values.JxW(q);
       
-      for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-         cell_average(cell_dofs[c]) /= cell->measure();
-      
+      cell_average[cell_no] /= cell->measure();
    }
    
 }

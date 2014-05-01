@@ -136,10 +136,6 @@ private:
    const dealii::FESystem<dim>  fe;
    dealii::DoFHandler<dim>      dof_handler;
    
-   // For cell average solution
-   const dealii::FESystem<dim>  fe0;
-   dealii::DoFHandler<dim>      dof_handler0;
-   
    // Degree zero FE for storing data on each cell
    const dealii::FE_DGQ<dim>    fe_cell;
    dealii::DoFHandler<dim>      dh_cell;
@@ -172,7 +168,7 @@ private:
    dealii::Vector<double>       old_solution;
    dealii::Vector<double>       current_solution;
    dealii::Vector<double>       predictor;
-   dealii::Vector<double>       cell_average;
+   std::vector< dealii::Vector<double> >       cell_average;
    
    dealii::Vector<double>       right_hand_side;
 
@@ -290,13 +286,11 @@ private:
    void get_cell_average(const typename dealii::DoFHandler<dim>::cell_iterator& cell,
                          dealii::Vector<double>& avg) const
    {
-      std::vector<unsigned int> dof_indices(fe0.dofs_per_cell);
-      
       if(cell->active())
       {
-         cell->get_dof_indices(dof_indices);
+         unsigned int cell_no = cell_number(cell);
          for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-            avg(c) = cell_average(dof_indices[c]);
+            avg(c) = cell_average[cell_no][c];
       }
       else
       {  // compute average solution on child cells
@@ -306,9 +300,9 @@ private:
          double measure = 0;
          for(unsigned int i=0; i<child_cells.size(); ++i)
          {
-            child_cells[i]->get_dof_indices(dof_indices);
+            unsigned int child_cell_no = cell_number(child_cells[i]);
             for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-               avg(c) += cell_average(dof_indices[c]) * child_cells[i]->measure();
+               avg(c) += cell_average[child_cell_no][c] * child_cells[i]->measure();
             measure += child_cells[i]->measure();
          }
          avg /= measure;

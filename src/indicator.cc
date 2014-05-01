@@ -35,8 +35,6 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    FESubfaceValues<dim> fe_subface_values_nbr (mapping(), fe, quadrature,
                                                update_values);
    
-   std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
-   
    unsigned int n_q_points = quadrature.size();
    std::vector<double> face_values(n_q_points), face_values_nbr(n_q_points);
 
@@ -59,14 +57,13 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
-      endc = dof_handler.end(),
-      cell0 = dof_handler0.begin_active();
+      endc = dof_handler.end();
    
    jump_ind_min = 1.0e20;
    jump_ind_max = 0.0;
    jump_ind_avg = 0.0;
    
-   for(; cell != endc; ++cell, ++cell0)
+   for(; cell != endc; ++cell)
    {
       unsigned int c = cell_number(cell);
       double& cell_shock_ind = shock_indicator (c);
@@ -79,10 +76,8 @@ void ConservationLaw<dim>::compute_shock_indicator ()
       // velocity based on cell average. we use this to determine inflow/outflow
       // parts of the cell boundary.
       Point<dim> vel;
-      cell0->get_dof_indices(cell_indices);
       for(unsigned int i=0; i<dim; ++i)
-         vel(i) = cell_average(cell_indices[i])
-                / cell_average(cell_indices[density_component]);
+         vel(i) = cell_average[c][i] / cell_average[c][density_component];
       
       for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
          if (cell->at_boundary(f) == false)
@@ -156,7 +151,7 @@ void ConservationLaw<dim>::compute_shock_indicator ()
          }
       
       // normalized shock indicator
-      double cell_norm = cell_average(cell_indices[component]);
+      double cell_norm = cell_average[c][component];
       double denominator = std::pow(cell->diameter(), 0.5*(fe.degree+1)) *
                            inflow_measure *
                            cell_norm;

@@ -26,24 +26,14 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    const double eps_tol = 1.0e-13;
    double eps = eps_tol;
    {
-      std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
-      
-      typename DoFHandler<dim>::active_cell_iterator
-         cell0 = dof_handler0.begin_active(),
-         endc0 = dof_handler0.end();
-      
-      for (; cell0 != endc0; ++cell0)
+      for (unsigned int c=0; c<triangulation.n_active_cells(); ++c)
       {
-         cell0->get_dof_indices (cell_indices);
-         std::vector<double> W(EulerEquations<dim>::n_components);
-         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-            W[i] = cell_average(cell_indices[i]);
-         eps = std::min(eps, W[density_component]);
-         double pressure = EulerEquations<dim>::template compute_pressure<double> (W);
+         eps = std::min(eps, cell_average[c][density_component]);
+         double pressure = EulerEquations<dim>::template compute_pressure<double> (cell_average[c]);
          eps = std::min(eps, pressure);
          if(eps < eps_tol)
          {
-            std::cout << "\n Negative state at position " << cell0->center() << "\n\n";
+            //std::cout << "\n Negative state at position " << cell0->center() << "\n\n";
             AssertThrow(false, ExcMessage("Fatal: Negative states"));
          }
       }
@@ -59,7 +49,6 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    std::vector<double> density_values(n_q_points), energy_values(n_q_points);
    std::vector< Tensor<1,dim> > momentum_values(n_q_points);
    std::vector<unsigned int> local_dof_indices (fe.dofs_per_cell);
-   std::vector<unsigned int> cell_indices (fe0.dofs_per_cell);
    
    const FEValuesExtractors::Scalar density  (density_component);
    const FEValuesExtractors::Scalar energy   (energy_component);
@@ -67,15 +56,13 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
-      endc = dof_handler.end(),
-      cell0 = dof_handler0.begin_active(),
-      endc0 = dof_handler0.end();
+      endc = dof_handler.end();
    
-   for(; cell != endc; ++cell, ++cell0)
+   for(; cell != endc; ++cell)
    {
+      unsigned int c = cell_number(cell);
       fe_values.reinit(cell);
       cell->get_dof_indices (local_dof_indices);
-      cell0->get_dof_indices (cell_indices);
       
       // First limit density
       fe_values[density].get_function_values(current_solution, density_values);
@@ -85,7 +72,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       for(unsigned int q=0; q<n_q_points; ++q)
          rho_min = std::min(rho_min, density_values[q]);
       
-      double density_average = cell_average(cell_indices[density_component]);
+      double density_average = cell_average[c][density_component];
       double rat = std::fabs(density_average - eps) /
                    (std::fabs(density_average - rho_min) + 1.0e-13);
       double theta1 = std::min(rat, 1.0);
@@ -104,10 +91,10 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       fe_values[momentum].get_function_values(current_solution, momentum_values);
       fe_values[energy].get_function_values(current_solution, energy_values);
       
-      double energy_average = cell_average(cell_indices[energy_component]);
+      double energy_average = cell_average[c][energy_component];
       Tensor<1,dim> momentum_average;
       for(unsigned int i=0; i<dim; ++i)
-         momentum_average[i] = cell_average(cell_indices[i]);
+         momentum_average[i] = cell_average[c][i];
       
       double theta2 = 1.0;
       for(unsigned int q=0; q<n_q_points; ++q)
@@ -162,7 +149,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          unsigned int comp_i = fe.system_to_component_index(i).first;
          current_solution(local_dof_indices[i]) =
                theta2         * current_solution(local_dof_indices[i])
-            + (1.0 - theta2)  * cell_average(cell_indices[comp_i]);
+            + (1.0 - theta2)  * cell_average[c][comp_i];
       }
       
    }

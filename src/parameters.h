@@ -249,6 +249,7 @@ namespace Parameters
       bool         char_lim;
       bool         pos_lim;
       double       M;
+      double       beta;
       
       static void declare_parameters (dealii::ParameterHandler &prm);
       void parse_parameters (dealii::ParameterHandler &prm);
