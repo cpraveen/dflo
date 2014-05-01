@@ -971,8 +971,7 @@ struct EulerEquations
             
             for (unsigned int c = 0; c < dim; ++c)
             {
-               Wminus[c] = Wplus[c] - vdotn * normal_vector[c];
-               Wplus[c]  = Wminus[c];
+               Wminus[c] = Wplus[c] - 2.0 * vdotn * normal_vector[c];
             }
 
             Wminus[density_component] = Wplus[density_component];
