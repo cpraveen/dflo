@@ -4,10 +4,10 @@ Mesh.RecombinationAlgorithm=1; //blossom
 Lx = 1.0;
 
 nx = 101; // number of points along x
-ny = 10;  // number of points along y
+ny = 11;  // number of points along y
 
 dx = Lx/(nx-1);
-Ly = dx*ny;
+Ly = dx*(ny-1);
 
 Point(1) = {0,  0,  0};
 Point(2) = {Lx, 0,  0};
