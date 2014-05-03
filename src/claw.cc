@@ -581,7 +581,7 @@ void ConservationLaw<dim>::run ()
    
    setup_system();
    
-   VectorTools::interpolate(dof_handler,
+   VectorTools::interpolate(mapping(), dof_handler,
                             parameters.initial_conditions, old_solution);
    current_solution = old_solution;
    predictor = old_solution;
@@ -595,7 +595,7 @@ void ConservationLaw<dim>::run ()
          compute_refinement_indicators(refinement_indicators);
          refine_grid(refinement_indicators);
          
-         VectorTools::interpolate(dof_handler,
+         VectorTools::interpolate(mapping(), dof_handler,
                                   parameters.initial_conditions, old_solution);
          current_solution = old_solution;
          predictor = old_solution;
