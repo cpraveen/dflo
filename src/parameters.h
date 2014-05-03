@@ -383,6 +383,8 @@ namespace Parameters
       double diffusion_power;
       double diffusion_coef;
       
+      double gravity;
+      
       unsigned int degree;
       enum MappingType { q1, q2, cartesian };
       MappingType mapping_type;

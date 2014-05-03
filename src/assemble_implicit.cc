@@ -151,15 +151,13 @@ void ConservationLaw<dim>::integrate_cell_term (DoFInfo& dinfo,
    typedef Sacado::Fad::DFad<double> FluxMatrix[EulerEquations<dim>::n_components][dim];
    FluxMatrix *flux = new FluxMatrix[n_q_points];
    
-   /*
    typedef Sacado::Fad::DFad<double> ForcingVector[EulerEquations<dim>::n_components];
    ForcingVector *forcing = new ForcingVector[n_q_points];
-   */
    
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       EulerEquations<dim>::compute_flux_matrix (W_theta[q], flux[q]);
-      //EulerEquations<dim>::compute_forcing_vector (W_theta[q], forcing[q]);
+      EulerEquations<dim>::compute_forcing_vector (W_theta[q], forcing[q]);
    }
    
    
@@ -244,11 +242,10 @@ void ConservationLaw<dim>::integrate_cell_term (DoFInfo& dinfo,
                       fe_v.shape_grad_component(i, point, component_i)[d] *
                       fe_v.JxW(point);
          
-         /*
-         F_i -= forcing[point][component_i] *
+         F_i -= parameters.gravity *
+                forcing[point][component_i] *
                 fe_v.shape_value_component(i, point, component_i) *
                 fe_v.JxW(point);
-                */
       }
       
       // At the end of the loop, we have to
@@ -271,7 +268,7 @@ void ConservationLaw<dim>::integrate_cell_term (DoFInfo& dinfo,
       local_vector (i) -= F_i.val();
    }
    
-   //delete[] forcing;
+   delete[] forcing;
    delete[] flux;
    
 }

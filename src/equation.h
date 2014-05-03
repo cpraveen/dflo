@@ -809,9 +809,7 @@ struct EulerEquations
    void compute_forcing_vector (const InputVector &W,
                                 number            (&forcing)[n_components])
    {
-      //const double gravity = -1.0;
-      const double gravity = 0.0;
-
+      const double gravity = -1.0;
       
       for (unsigned int c=0; c<n_components; ++c)
       switch (c)

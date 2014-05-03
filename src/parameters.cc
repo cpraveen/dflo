@@ -314,6 +314,10 @@ namespace Parameters
                         Patterns::Double(),
                         "coefficient of shock capturing term");
       
+      prm.declare_entry("gravity", "0.0",
+                        Patterns::Double(0.0),
+                        "gravitational force");
+      
       
       prm.enter_subsection("time stepping");
       {
@@ -391,6 +395,7 @@ namespace Parameters
       diffusion_power = prm.get_double("diffusion power");
       diffusion_coef = prm.get_double("diffusion coefficient");
       degree = prm.get_integer("degree");
+      gravity = prm.get_double("gravity");
       
       std::string map = prm.get("mapping");
       if(map == "q1")
