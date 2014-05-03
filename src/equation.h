@@ -819,9 +819,7 @@ struct EulerEquations
             break;
 
 	      case energy_component:
-            forcing[c] = gravity *
-                         W[density_component] *
-                         W[dim-1];
+            forcing[c] = gravity * W[dim-1];
             break;
 
 	      default:
