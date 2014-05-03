@@ -212,6 +212,8 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
       numerical_normal_flux(fe_v.normal_vector(q),
                             Wplus[q], 
                             Wminus[q],
+                            cell_average[cell_no],
+                            cell_average[cell_no],
                             normal_fluxes[q]);
    
    // Now assemble the face term
@@ -354,6 +356,8 @@ void ConservationLaw<dim>::integrate_face_term_explicit
       numerical_normal_flux(fe_v.normal_vector(q),
                             Wplus[q], 
                             Wminus[q],
+                            cell_average[cell_no],
+                            cell_average[neighbor_cell_no],
                             normal_fluxes[q]);
    
    // Now assemble the face term

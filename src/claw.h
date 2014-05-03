@@ -93,6 +93,8 @@ private:
    void assemble_system (IntegratorImplicit<dim>& integrator);
 
    void compute_time_step ();
+   void compute_time_step_cartesian ();
+   void compute_time_step_q ();
    void compute_cell_average ();
    void apply_limiter ();
    void apply_limiter_TVB ();
@@ -221,6 +223,8 @@ private:
       const dealii::Point<dim>         &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
+      const dealii::Vector<double>     &Aplus,
+      const dealii::Vector<double>     &Aminus,
       typename InputVector::value_type (&normal_flux)[EulerEquations<dim>::n_components]
    ) const
    {
@@ -230,6 +234,8 @@ private:
             EulerEquations<dim>::lxf_flux (normal,
                                            Wplus,
                                            Wminus,
+                                           Aplus,
+                                           Aminus,
                                            normal_flux);
             break;
 

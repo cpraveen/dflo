@@ -51,7 +51,8 @@
 #include "claw.h"
 
 // Coefficients for 2-stage RK scheme
-const double ark[3] = {0.0, 3.0/4.0, 1.0/3.0};
+double ark[3];
+unsigned int n_rk;
 
 using namespace dealii;
 
@@ -85,6 +86,26 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    // Save all parameters in xml format
    std::ofstream xml_file ("input.xml");
    prm.print_parameters (xml_file,  ParameterHandler::XML);
+   
+   // Set coefficients for SSPRK
+   if(degree == 0)
+   {
+      ark[0] = 0.0;
+      n_rk = 1;
+   }
+   else if(degree == 1)
+   {
+      ark[0] = 0.0;
+      ark[1] = 0.5;
+      n_rk = 2;
+   }
+   else
+   {
+      ark[0] = 0.0;
+      ark[1] = 3.0/4.0;
+      ark[2] = 1.0/3.0;
+      n_rk = 3;
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -301,7 +322,67 @@ ConservationLaw<dim>::compute_time_step ()
       return;
    }
 
+   if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
+      compute_time_step_cartesian();
+   else
+      compute_time_step_q();
 
+
+   // For global time step, use the minimum value
+   if(parameters.time_step_type == "global")
+   {
+      if(global_dt > 0 && parameters.time_step > 0)
+         global_dt = std::min(global_dt, parameters.time_step);
+      if(elapsed_time + global_dt > parameters.final_time)
+         global_dt = parameters.final_time - elapsed_time;
+      dt = global_dt;
+   }
+
+}
+
+//------------------------------------------------------------------------------
+// Compute local time step for each cell
+// We compute speed at quadrature points and take maximum over these values.
+// This speed is used to compute time step in each cell.
+//------------------------------------------------------------------------------
+template <int dim>
+void
+ConservationLaw<dim>::compute_time_step_cartesian ()
+{
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   global_dt = 1.0e20;
+   
+   for (; cell!=endc; ++cell)
+   {
+      const unsigned int c = cell_number (cell);
+      const double h = cell->diameter() / std::sqrt(1.0*dim);
+      const double sonic = EulerEquations<dim>::sound_speed(cell_average[c]);
+      const double density = cell_average[c][EulerEquations<dim>::density_component];
+      
+      double max_eigenvalue = 0.0;
+      for (unsigned int d=0; d<dim; ++d)
+         max_eigenvalue += (sonic + std::fabs(cell_average[c][d]/density))/h;
+      
+      dt(c) = parameters.cfl / max_eigenvalue / (2.0*fe.degree + 1.0);
+      
+      global_dt = std::min(global_dt, dt(c));
+   }
+   
+}
+
+//------------------------------------------------------------------------------
+// Compute local time step for each cell
+// We compute speed at quadrature points and take maximum over these values.
+// This speed is used to compute time step in each cell.
+//------------------------------------------------------------------------------
+template <int dim>
+void
+ConservationLaw<dim>::compute_time_step_q ()
+{
    //QGaussLobatto<dim>   quadrature_formula(fe.degree+1);
    QIterated<dim>   quadrature_formula(QTrapez<1>(), 3);
    const unsigned int   n_q_points = quadrature_formula.size();
@@ -315,9 +396,9 @@ ConservationLaw<dim>::compute_time_step ()
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
-
+   
    global_dt = 1.0e20;
-
+   
    for (; cell!=endc; ++cell)
    {
       fe_values.reinit (cell);
@@ -333,21 +414,10 @@ ConservationLaw<dim>::compute_time_step ()
       const unsigned int c = cell_number (cell);
       const double h = cell->diameter() / std::sqrt(1.0*dim);
       dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0);
-
+      
       global_dt = std::min(global_dt, dt(c));
    }
-
-
-   // For global time step, use the minimum value
-   if(parameters.time_step_type == "global")
-   {
-      if(global_dt > 0 && parameters.time_step > 0)
-         global_dt = std::min(global_dt, parameters.time_step);
-      if(elapsed_time + global_dt > parameters.final_time)
-         global_dt = parameters.final_time - elapsed_time;
-      dt = global_dt;
-   }
-
+   
 }
 
 //------------------------------------------------------------------------------
@@ -638,7 +708,7 @@ void ConservationLaw<dim>::run ()
 
          // check stopping criterion
          if(parameters.solver == Parameters::Solver::rk3 &&
-            nonlin_iter == 3) // 3-stage RK
+            nonlin_iter == n_rk) // 3-stage RK
             break;
          else if(parameters.solver == Parameters::Solver::gmres &&
                  (nonlin_iter == parameters.max_nonlin_iter ||

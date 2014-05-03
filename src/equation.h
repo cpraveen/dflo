@@ -114,6 +114,29 @@ struct EulerEquations
    }
    
    //---------------------------------------------------------------------------
+   // Compute maximum eigenvalue in normal direction
+   //---------------------------------------------------------------------------
+   template <typename InputVector>
+   static
+   typename InputVector::value_type
+   max_eigenvalue (const InputVector        &W,
+                   const dealii::Point<dim> &normal)
+   {
+      typedef typename InputVector::value_type number;
+      
+      const number pressure = compute_pressure<number> (W);
+      const number sonic = std::sqrt(gas_gamma * pressure / (*(W.begin()+density_component)));
+      
+      number velocity = 0;
+      for (unsigned int d=0; d<dim; ++d)
+         velocity += *(W.begin()+d) * normal[d];
+      
+      velocity /=  (*(W.begin()+density_component));
+      
+      return std::fabs(velocity) + sonic;
+   }
+   
+   //---------------------------------------------------------------------------
    // Compute sound speed
    //---------------------------------------------------------------------------
    template <typename InputVector>
@@ -283,6 +306,8 @@ struct EulerEquations
     const dealii::Point<dim>         &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
+    const dealii::Vector<double>     &Aplus,
+    const dealii::Vector<double>     &Aminus,
     typename InputVector::value_type (&normal_flux)[n_components]
    )
    {
@@ -307,10 +332,8 @@ struct EulerEquations
       p_minus = compute_pressure<number> (Wminus);
       
       // Maximum eigenvalue at cell face
-      number lambda_plus = std::fabs(vdotn_plus)
-                         + std::sqrt(gas_gamma * p_plus / Wplus[density_component]);
-      number lambda_minus = std::fabs(vdotn_minus)
-                          + std::sqrt(gas_gamma * p_minus / Wminus[density_component]);
+      number lambda_plus = max_eigenvalue (Aplus, normal);
+      number lambda_minus = max_eigenvalue (Aminus, normal);
       number lambda = std::max(lambda_plus, lambda_minus);
       
       // Momentum flux
