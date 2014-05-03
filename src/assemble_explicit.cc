@@ -47,6 +47,15 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
    /*Table<3,double>
       grad_W (n_q_points, EulerEquations<dim>::n_components, dim);*/
 
+   // Compute cartesian components of flux
+   typedef double FluxMatrix[EulerEquations<dim>::n_components][dim];
+   FluxMatrix *flux = new FluxMatrix[n_q_points];
+   
+   /*
+    typedef double ForcingVector[EulerEquations<dim>::n_components];
+    ForcingVector *forcing = new ForcingVector[n_q_points];
+    */
+   
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
@@ -66,20 +75,7 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
             grad_W[q][c][d] += current_solution(dof_indices[i]) *
                                fe_v.shape_grad_component(i, q, c)[d];*/
       }
-   }
-   
-
-   // Compute cartesian components of flux
-   typedef double FluxMatrix[EulerEquations<dim>::n_components][dim];
-   FluxMatrix *flux = new FluxMatrix[n_q_points];
-   
-   /*
-   typedef double ForcingVector[EulerEquations<dim>::n_components];
-   ForcingVector *forcing = new ForcingVector[n_q_points];
-   */
-   
-   for (unsigned int q=0; q<n_q_points; ++q)
-   {
+      
       EulerEquations<dim>::compute_flux_matrix (W[q], flux[q]);
       //EulerEquations<dim>::compute_forcing_vector (W_theta[q], forcing[q]);
    }
@@ -158,6 +154,28 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    /*Table<3,double>
       grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim);*/
    
+   // On the other side of face, we have boundary. We get Wminus from
+   // boundary conditions
+   
+   Assert (boundary_id < Parameters::AllParameters<dim>::max_n_boundaries,
+           ExcIndexRange (boundary_id, 0,
+                          Parameters::AllParameters<dim>::max_n_boundaries));
+   
+   std::vector<Vector<double> >
+   boundary_values(n_q_points, Vector<double>(EulerEquations<dim>::n_components));
+   parameters.boundary_conditions[boundary_id]
+   .values.vector_value_list(fe_v.get_quadrature_points(),
+                             boundary_values);
+   
+   
+   typename EulerEquations<dim>::BoundaryKind boundary_kind =
+   parameters.boundary_conditions[boundary_id].kind;
+   
+   
+   // Compute numerical flux at all quadrature points
+   typedef double NormalFlux[EulerEquations<dim>::n_components];
+   NormalFlux *normal_fluxes = new NormalFlux[n_q_points];
+   
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
@@ -176,45 +194,19 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
             grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
                                    fe_v.shape_grad_component(i, q, c)[d];*/
       }
-   }
-   
-
-   // On the other side of face, we have boundary. We get Wminus from
-   // boundary conditions
-
-   Assert (boundary_id < Parameters::AllParameters<dim>::max_n_boundaries,
-           ExcIndexRange (boundary_id, 0,
-                          Parameters::AllParameters<dim>::max_n_boundaries));
-   
-   std::vector<Vector<double> >
-   boundary_values(n_q_points, Vector<double>(EulerEquations<dim>::n_components));
-   parameters.boundary_conditions[boundary_id]
-   .values.vector_value_list(fe_v.get_quadrature_points(),
-                             boundary_values);
-   
-   
-   typename EulerEquations<dim>::BoundaryKind boundary_kind = 
-      parameters.boundary_conditions[boundary_id].kind;
-
-   for (unsigned int q = 0; q < n_q_points; q++)
+      
       EulerEquations<dim>::compute_Wminus (boundary_kind,
                                            fe_v.normal_vector(q),
                                            Wplus[q],
                                            boundary_values[q],
                                            Wminus[q]);
-   
-   
-   // Compute numerical flux at all quadrature points
-   typedef double NormalFlux[EulerEquations<dim>::n_components];
-   NormalFlux *normal_fluxes = new NormalFlux[n_q_points];
-
-   for (unsigned int q=0; q<n_q_points; ++q)
       numerical_normal_flux(fe_v.normal_vector(q),
-                            Wplus[q], 
+                            Wplus[q],
                             Wminus[q],
                             cell_average[cell_no],
                             cell_average[cell_no],
                             normal_fluxes[q]);
+   }
    
    // Now assemble the face term
    for (unsigned int i=0; i<fe_v.dofs_per_cell; ++i)
@@ -306,6 +298,11 @@ void ConservationLaw<dim>::integrate_face_term_explicit
       grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim),
       grad_Wminus (n_q_points, EulerEquations<dim>::n_components, dim);*/
 
+   // Compute numerical flux at all quadrature points
+   typedef double NormalFlux[EulerEquations<dim>::n_components];
+   NormalFlux *normal_fluxes = new NormalFlux[n_q_points];
+   
+   // Wminus is Neighbouring cell value
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
@@ -313,6 +310,10 @@ void ConservationLaw<dim>::integrate_face_term_explicit
          Wplus[q][c] = 0.0;
          /*for(unsigned int d=0; d<dim; ++d)
             grad_Wplus[q][c][d] = 0.0;*/
+         
+         Wminus[q][c] = 0.0;
+         /*for(unsigned int d=0; d<dim; ++d)
+          grad_Wminus[q][c][d] = 0.0;*/
       }
       for (unsigned int i=0; i<dofs_per_cell; ++i)
       {
@@ -324,41 +325,23 @@ void ConservationLaw<dim>::integrate_face_term_explicit
             grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
                                    fe_v.shape_grad_component(i, q, c)[d];*/
       }
-   }
-   
-   // Wminus is Neighbouring cell value
-   for (unsigned int q=0; q<n_q_points; ++q)
-   {
-      for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-      {
-         Wminus[q][c] = 0.0;
-         /*for(unsigned int d=0; d<dim; ++d)
-            grad_Wminus[q][c][d] = 0.0;*/
-      }
       for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
       {
          const unsigned int c = fe_v_neighbor.get_fe().system_to_component_index(i).first;
          Wminus[q][c] += current_solution(dof_indices_neighbor[i]) *
                          fe_v_neighbor.shape_value_component(i, q, c);
-
+         
          /*for (unsigned int d = 0; d < dim; d++)
-            grad_Wminus[q][c][d] += current_solution(dof_indices_neighbor[i]) *
-                                    fe_v_neighbor.shape_grad_component(i, q, c)[d];*/
+          grad_Wminus[q][c][d] += current_solution(dof_indices_neighbor[i]) *
+                                  fe_v_neighbor.shape_grad_component(i, q, c)[d];*/
       }
-   }
-   
-   
-   // Compute numerical flux at all quadrature points
-   typedef double NormalFlux[EulerEquations<dim>::n_components];
-   NormalFlux *normal_fluxes = new NormalFlux[n_q_points];
-   
-   for (unsigned int q=0; q<n_q_points; ++q)
       numerical_normal_flux(fe_v.normal_vector(q),
-                            Wplus[q], 
+                            Wplus[q],
                             Wminus[q],
                             cell_average[cell_no],
                             cell_average[neighbor_cell_no],
                             normal_fluxes[q]);
+   }
    
    // Now assemble the face term
    for (unsigned int i=0; i<dofs_per_cell; ++i)
