@@ -49,6 +49,7 @@
 #include <memory>
 
 #include "claw.h"
+#include "ic.h"
 
 // Coefficients for 2-stage RK scheme
 double ark[3];
@@ -300,6 +301,23 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
 }
 
 //------------------------------------------------------------------------------
+// Sets initial condition based on input file
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition ()
+{
+   if(parameters.ic_function == "rt")
+      VectorTools::interpolate(mapping(), dof_handler,
+                               RayleighTaylor<dim>(parameters.gravity), old_solution);
+   else
+      VectorTools::interpolate(mapping(), dof_handler,
+                               parameters.initial_conditions, old_solution);
+   
+   current_solution = old_solution;
+   predictor = old_solution;
+}
+
+//------------------------------------------------------------------------------
 // Compute local time step for each cell
 // We compute speed at quadrature points and take maximum over these values.
 // This speed is used to compute time step in each cell.
@@ -540,6 +558,8 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
    
    return std::pair<unsigned int, double> (0,0);
 }
+
+
 //------------------------------------------------------------------------------
 // @sect4{ConservationLaw::run}
 
@@ -581,10 +601,7 @@ void ConservationLaw<dim>::run ()
    
    setup_system();
    
-   VectorTools::interpolate(mapping(), dof_handler,
-                            parameters.initial_conditions, old_solution);
-   current_solution = old_solution;
-   predictor = old_solution;
+   set_initial_condition ();
    
    // Refine the initial mesh
    if (parameters.do_refine == true)
@@ -595,10 +612,7 @@ void ConservationLaw<dim>::run ()
          compute_refinement_indicators(refinement_indicators);
          refine_grid(refinement_indicators);
          
-         VectorTools::interpolate(mapping(), dof_handler,
-                                  parameters.initial_conditions, old_solution);
-         current_solution = old_solution;
-         predictor = old_solution;
+         set_initial_condition ();
       }
    
    // Cell average of initial condition

@@ -68,6 +68,8 @@ private:
    void setup_mesh_worker (IntegratorImplicit<dim>&);
    void setup_mesh_worker (IntegratorExplicit<dim>&);
    
+   void set_initial_condition ();
+   
    std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
    
    void compute_refinement_indicators (dealii::Vector<double> &indicator) const;

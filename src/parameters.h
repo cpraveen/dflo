@@ -399,6 +399,7 @@ namespace Parameters
       std::string mesh_type;
       std::string mesh_filename;
       
+      std::string ic_function;
       dealii::FunctionParser<dim> initial_conditions;
       BoundaryConditions  boundary_conditions[max_n_boundaries];
       

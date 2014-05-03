@@ -40,10 +40,7 @@ end
 # the coordinate variables.
 
 subsection initial condition
-   set w_0 value = 0.0
-   set w_1 value = 0.0
-   set w_2 value = 1.0*(y < 0.0) + 2.0*(y >= 0.0)
-   set w_3 value = 2.5*(x+y > 0.5) + 0.035*(x+y <= 0.5)
+   set function = rt
 end
 
 # --------------------------------------------------

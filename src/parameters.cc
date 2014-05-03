@@ -370,6 +370,10 @@ namespace Parameters
       
       prm.enter_subsection("initial condition");
       {
+         prm.declare_entry("function", "none",
+                           Patterns::Selection("none|rt"),
+                           "function for initial condition");
+         
          for (unsigned int di=0; di<EulerEquations<dim>::n_components; ++di)
             prm.declare_entry("w_" + Utilities::int_to_string(di) + " value",
                               "0.0",
@@ -472,6 +476,7 @@ namespace Parameters
       
       prm.enter_subsection("initial condition");
       {
+         ic_function = prm.get("function");
          std::vector<std::string> expressions (EulerEquations<dim>::n_components,
                                                "0.0");
          for (unsigned int di = 0; di < EulerEquations<dim>::n_components; di++)
