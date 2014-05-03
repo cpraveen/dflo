@@ -190,10 +190,10 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               unsigned int base_i = fe.system_to_component_index(i).second;
-               Point<dim> dr = p[base_i] - cell->center();
+               Point<dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
-                  + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
+                                                  + dr[0] * Dx_new(comp_i)
+                                                  + dr[1] * Dy_new(comp_i);
             }
          }
          
@@ -340,10 +340,10 @@ void ConservationLaw<dim>::apply_limiter_grad ()
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
             unsigned int comp_i = fe.system_to_component_index(i).first;
-            unsigned int base_i = fe.system_to_component_index(i).second;
-            Point<dim> dr = p[base_i] - cell->center();
+            Point<dim> dr = p[i] - cell->center();
             current_solution(dof_indices[i]) = cell_average[c][comp_i]
-               + dr[0] * Dx_new(comp_i) + dr[1] * Dy_new(comp_i);
+                                               + dr[0] * Dx_new(comp_i)
+                                               + dr[1] * Dy_new(comp_i);
          }
       }
       
