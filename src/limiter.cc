@@ -243,110 +243,112 @@ void ConservationLaw<dim>::apply_limiter_grad ()
    for(; cell != endc; ++cell)
    {
       const unsigned int c = cell_number(cell);
-      const double dx = cell->diameter() / std::sqrt(1.0*dim);
-      const double Mdx2 = parameters.M * dx * dx;
-            
-      // Backward difference of cell averages
-      dbx = 0;
-      if(lcell[c] != endc0)
+      if(shock_indicator[c] > 1.0)
       {
-         get_cell_average (lcell[c], avg_nbr);
+         const double dx = cell->diameter() / std::sqrt(1.0*dim);
+         const double Mdx2 = parameters.M * dx * dx;
+         
+         // Backward difference of cell averages
+         dbx = 0;
+         if(lcell[c] != endc0)
+         {
+            get_cell_average (lcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dbx(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfx = 0;
+         if(rcell[c] != endc0)
+         {
+            get_cell_average (rcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dfx(i) = avg_nbr(i) - cell_average[c][i];
+         }
+         
+         // Backward difference of cell averages
+         dby = 0;
+         if(bcell[c] != endc0)
+         {
+            get_cell_average (bcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dby(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfy = 0;
+         if(tcell[c] != endc0)
+         {
+            get_cell_average (tcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dfy(i) = avg_nbr(i) - cell_average[c][i];
+         }
+         
+         // Compute average gradient in cell
+         fe_values_grad.reinit(cell);
+         fe_values_grad.get_function_gradients(current_solution, grad);
+         Tensor<1,dim> avg_grad;
+         
          for(unsigned int i=0; i<n_components; ++i)
-            dbx(i) = cell_average[c][i] - avg_nbr(i);
-      }
-      
-      // Forward difference of cell averages
-      dfx = 0;
-      if(rcell[c] != endc0)
-      {
-         get_cell_average (rcell[c], avg_nbr);
-         for(unsigned int i=0; i<n_components; ++i)
-            dfx(i) = avg_nbr(i) - cell_average[c][i];
-      }
-      
-      // Backward difference of cell averages
-      dby = 0;
-      if(bcell[c] != endc0)
-      {
-         get_cell_average (bcell[c], avg_nbr);
-         for(unsigned int i=0; i<n_components; ++i)
-            dby(i) = cell_average[c][i] - avg_nbr(i);
-      }
-      
-      // Forward difference of cell averages
-      dfy = 0;
-      if(tcell[c] != endc0)
-      {
-         get_cell_average (tcell[c], avg_nbr);
-         for(unsigned int i=0; i<n_components; ++i)
-            dfy(i) = avg_nbr(i) - cell_average[c][i];
-      }
-      
-      // Compute average gradient in cell
-      fe_values_grad.reinit(cell);
-      fe_values_grad.get_function_gradients(current_solution, grad);
-      Tensor<1,dim> avg_grad;
-
-      for(unsigned int i=0; i<n_components; ++i)
-      {
-         avg_grad = 0;
-         for(unsigned int q=0; q<qrule.size(); ++q)
-            avg_grad += grad[q][i] * fe_values_grad.JxW(q);
-         avg_grad /= cell->measure();
-         Dx(i) = dx * avg_grad[0];
-         Dy(i) = dx * avg_grad[1];
-      }
-      
-      // Transform to characteristic variables
-      typedef double EigMatrix[n_components][n_components];
-      EigMatrix Rx, Lx, Ry, Ly;
-      if(parameters.char_lim)
-      {
-         EulerEquations<dim>::compute_eigen_matrix (cell_average[c], Rx, Lx, Ry, Ly);
-         EulerEquations<dim>::transform_to_char (Lx, dbx);
-         EulerEquations<dim>::transform_to_char (Lx, dfx);
-         EulerEquations<dim>::transform_to_char (Ly, dby);
-         EulerEquations<dim>::transform_to_char (Ly, dfy);
-         EulerEquations<dim>::transform_to_char (Lx, Dx);
-         EulerEquations<dim>::transform_to_char (Ly, Dy);
-      }
-      
-      // Apply minmod limiter
-      double change_x = 0;
-      double change_y = 0;
-      for(unsigned int i=0; i<n_components; ++i)
-      {
-         Dx_new(i) = minmod(Dx(i), beta*dbx(i), beta*dfx(i), Mdx2);
-         Dy_new(i) = minmod(Dy(i), beta*dby(i), beta*dfy(i), Mdx2);
-         change_x += std::fabs(Dx_new(i) - Dx(i));
-         change_y += std::fabs(Dy_new(i) - Dy(i));
-      }
-      change_x /= n_components;
-      change_y /= n_components;
-      
-      // If limiter is active, reduce polynomial to linear
-      if(change_x + change_y > 1.0e-10)
-      {
-         Dx_new /= dx;
-         Dy_new /= dx;
+         {
+            avg_grad = 0;
+            for(unsigned int q=0; q<qrule.size(); ++q)
+               avg_grad += grad[q][i] * fe_values_grad.JxW(q);
+            avg_grad /= cell->measure();
+            Dx(i) = dx * avg_grad[0];
+            Dy(i) = dx * avg_grad[1];
+         }
+         
+         // Transform to characteristic variables
+         typedef double EigMatrix[n_components][n_components];
+         EigMatrix Rx, Lx, Ry, Ly;
          if(parameters.char_lim)
          {
-            EulerEquations<dim>::transform_to_con (Rx, Dx_new);
-            EulerEquations<dim>::transform_to_con (Ry, Dy_new);
+            EulerEquations<dim>::compute_eigen_matrix (cell_average[c], Rx, Lx, Ry, Ly);
+            EulerEquations<dim>::transform_to_char (Lx, dbx);
+            EulerEquations<dim>::transform_to_char (Lx, dfx);
+            EulerEquations<dim>::transform_to_char (Ly, dby);
+            EulerEquations<dim>::transform_to_char (Ly, dfy);
+            EulerEquations<dim>::transform_to_char (Lx, Dx);
+            EulerEquations<dim>::transform_to_char (Ly, Dy);
          }
-         cell->get_dof_indices(dof_indices);
-         fe_values.reinit (cell);
-         const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         
+         // Apply minmod limiter
+         double change_x = 0;
+         double change_y = 0;
+         for(unsigned int i=0; i<n_components; ++i)
          {
-            unsigned int comp_i = fe.system_to_component_index(i).first;
-            Point<dim> dr = p[i] - cell->center();
-            current_solution(dof_indices[i]) = cell_average[c][comp_i]
-                                               + dr[0] * Dx_new(comp_i)
-                                               + dr[1] * Dy_new(comp_i);
+            Dx_new(i) = minmod(Dx(i), beta*dbx(i), beta*dfx(i), Mdx2);
+            Dy_new(i) = minmod(Dy(i), beta*dby(i), beta*dfy(i), Mdx2);
+            change_x += std::fabs(Dx_new(i) - Dx(i));
+            change_y += std::fabs(Dy_new(i) - Dy(i));
+         }
+         change_x /= n_components;
+         change_y /= n_components;
+         
+         // If limiter is active, reduce polynomial to linear
+         if(change_x + change_y > 1.0e-10)
+         {
+            Dx_new /= dx;
+            Dy_new /= dx;
+            if(parameters.char_lim)
+            {
+               EulerEquations<dim>::transform_to_con (Rx, Dx_new);
+               EulerEquations<dim>::transform_to_con (Ry, Dy_new);
+            }
+            cell->get_dof_indices(dof_indices);
+            fe_values.reinit (cell);
+            const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               Point<dim> dr = p[i] - cell->center();
+               current_solution(dof_indices[i]) = cell_average[c][comp_i]
+                                                  + dr[0] * Dx_new(comp_i)
+                                                  + dr[1] * Dy_new(comp_i);
+            }
          }
       }
-      
    }
 }
 
