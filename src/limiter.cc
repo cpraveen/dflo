@@ -101,42 +101,6 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          const double dx = cell->diameter() / std::sqrt(1.0*dim);
          const double Mdx2 = parameters.M * dx * dx;
          
-         // Backward difference of cell averages
-         dbx = 0;
-         if(lcell[c] != endc0)
-         {
-            get_cell_average (lcell[c], avg_nbr);
-            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dbx(i) = cell_average[c][i] - avg_nbr(i);
-         }
-         
-         // Forward difference of cell averages
-         dfx = 0;
-         if(rcell[c] != endc0)
-         {
-            get_cell_average (rcell[c], avg_nbr);
-            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dfx(i) = avg_nbr(i) - cell_average[c][i];
-         }
-         
-         // Backward difference of cell averages
-         dby = 0;
-         if(bcell[c] != endc0)
-         {
-            get_cell_average (bcell[c], avg_nbr);
-            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dby(i) = cell_average[c][i] - avg_nbr(i);
-         }
-         
-         // Forward difference of cell averages
-         dfy = 0;
-         if(tcell[c] != endc0)
-         {
-            get_cell_average (tcell[c], avg_nbr);
-            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
-               dfy(i) = avg_nbr(i) - cell_average[c][i];
-         }
-         
          fe_values_x.reinit(cell);
          fe_values_x.get_function_values(current_solution, face_values_x);
          fe_values_y.reinit(cell);
@@ -145,6 +109,42 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
          {
             Dx(i) = face_values_x[1][i] - face_values_x[0][i];
             Dy(i) = face_values_y[1][i] - face_values_y[0][i];
+         }
+         
+         // Backward difference of cell averages
+         dbx = Dx;
+         if(lcell[c] != endc0)
+         {
+            get_cell_average (lcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dbx(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfx = Dx;
+         if(rcell[c] != endc0)
+         {
+            get_cell_average (rcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dfx(i) = avg_nbr(i) - cell_average[c][i];
+         }
+         
+         // Backward difference of cell averages
+         dby = Dy;
+         if(bcell[c] != endc0)
+         {
+            get_cell_average (bcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dby(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfy = Dy;
+         if(tcell[c] != endc0)
+         {
+            get_cell_average (tcell[c], avg_nbr);
+            for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+               dfy(i) = avg_nbr(i) - cell_average[c][i];
          }
          
          // Transform to characteristic variables
@@ -248,42 +248,6 @@ void ConservationLaw<dim>::apply_limiter_grad ()
          const double dx = cell->diameter() / std::sqrt(1.0*dim);
          const double Mdx2 = parameters.M * dx * dx;
          
-         // Backward difference of cell averages
-         dbx = 0;
-         if(lcell[c] != endc0)
-         {
-            get_cell_average (lcell[c], avg_nbr);
-            for(unsigned int i=0; i<n_components; ++i)
-               dbx(i) = cell_average[c][i] - avg_nbr(i);
-         }
-         
-         // Forward difference of cell averages
-         dfx = 0;
-         if(rcell[c] != endc0)
-         {
-            get_cell_average (rcell[c], avg_nbr);
-            for(unsigned int i=0; i<n_components; ++i)
-               dfx(i) = avg_nbr(i) - cell_average[c][i];
-         }
-         
-         // Backward difference of cell averages
-         dby = 0;
-         if(bcell[c] != endc0)
-         {
-            get_cell_average (bcell[c], avg_nbr);
-            for(unsigned int i=0; i<n_components; ++i)
-               dby(i) = cell_average[c][i] - avg_nbr(i);
-         }
-         
-         // Forward difference of cell averages
-         dfy = 0;
-         if(tcell[c] != endc0)
-         {
-            get_cell_average (tcell[c], avg_nbr);
-            for(unsigned int i=0; i<n_components; ++i)
-               dfy(i) = avg_nbr(i) - cell_average[c][i];
-         }
-         
          // Compute average gradient in cell
          fe_values_grad.reinit(cell);
          fe_values_grad.get_function_gradients(current_solution, grad);
@@ -297,6 +261,42 @@ void ConservationLaw<dim>::apply_limiter_grad ()
             avg_grad /= cell->measure();
             Dx(i) = dx * avg_grad[0];
             Dy(i) = dx * avg_grad[1];
+         }
+         
+         // Backward difference of cell averages
+         dbx = Dx;
+         if(lcell[c] != endc0)
+         {
+            get_cell_average (lcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dbx(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfx = Dx;
+         if(rcell[c] != endc0)
+         {
+            get_cell_average (rcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dfx(i) = avg_nbr(i) - cell_average[c][i];
+         }
+         
+         // Backward difference of cell averages
+         dby = Dy;
+         if(bcell[c] != endc0)
+         {
+            get_cell_average (bcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dby(i) = cell_average[c][i] - avg_nbr(i);
+         }
+         
+         // Forward difference of cell averages
+         dfy = Dy;
+         if(tcell[c] != endc0)
+         {
+            get_cell_average (tcell[c], avg_nbr);
+            for(unsigned int i=0; i<n_components; ++i)
+               dfy(i) = avg_nbr(i) - cell_average[c][i];
          }
          
          // Transform to characteristic variables
