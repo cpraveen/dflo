@@ -26,7 +26,7 @@ subsection boundary_2
 end
 
 subsection boundary_3
-   set type = outflow
+   set type = slip
 end
 
 subsection boundary_4
