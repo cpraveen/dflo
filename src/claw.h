@@ -63,6 +63,7 @@ public:
    
 private:
    const dealii::Mapping<dim,dim>& mapping() const;
+   void compute_inv_mass_matrix();
    void setup_system ();
    
    void setup_mesh_worker (IntegratorImplicit<dim>&);
@@ -212,7 +213,7 @@ private:
    dealii::SparseMatrix<double> system_matrix;
    dealii::SparsityPattern      sparsity_pattern;
 
-   dealii::PreconditionBlockJacobi<dealii::SparseMatrix<double>,double> inv_mass_matrix;
+   std::vector< dealii::Vector<double> > inv_mass_matrix;
    
    Parameters::AllParameters<dim>  parameters;
    dealii::ConditionalOStream      verbose_cout;

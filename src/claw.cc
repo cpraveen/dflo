@@ -138,6 +138,44 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
 
 }
+
+//------------------------------------------------------------------------------
+// Our nodal basis uses Gauss points and we use Gauss quadrature with degree+1
+// nodes. Then the mass matrix is diagonal. The mass matrix is integrated exactly
+// for Cartesian cells but not exact for general cells.
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_inv_mass_matrix ()
+{
+   QGauss<dim> quadrature(fe.degree+1);
+   unsigned int n_q_points = quadrature.size();
+   FEValues<dim> fe_values(mapping(), fe, quadrature, update_values | update_JxW_values);
+   
+   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   inv_mass_matrix.resize(triangulation.n_active_cells(),
+                          Vector<double>(fe.dofs_per_cell));
+   for (; cell!=endc; ++cell)
+   {
+      unsigned int c = cell_number(cell);
+      cell->get_dof_indices (dof_indices);
+      fe_values.reinit(cell);
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+      {
+         inv_mass_matrix[c][i] = 0.0;
+         for(unsigned int q=0; q<n_q_points; ++q)
+            inv_mass_matrix[c][i] += fe_values.shape_value(i,q) *
+                                     fe_values.shape_value(i,q) *
+                                     fe_values.JxW(q);
+         inv_mass_matrix[c][i] = 1.0 / inv_mass_matrix[c][i];
+      }
+   }
+}
+
 //------------------------------------------------------------------------------
 // @sect4{ConservationLaw::setup_system}
 //
@@ -175,18 +213,7 @@ void ConservationLaw<dim>::setup_system ()
    if(parameters.solver == Parameters::Solver::rk3)
    {
       std::cout << "Creating mass matrix ...\n";
-      CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
-      DoFTools::make_sparsity_pattern (dof_handler, c_sparsity);
-      sparsity_pattern.copy_from(c_sparsity);
-      system_matrix.reinit (sparsity_pattern);
-      MatrixCreator::create_mass_matrix (mapping(),
-                                         dof_handler, 
-                                         QGauss<dim>(fe.degree+1), 
-                                         system_matrix);
-      // Compute the inverse of the blocks
-      inv_mass_matrix.initialize (system_matrix, fe.dofs_per_cell);
-      // Once inv_mass_matrix is created, we can delete system_matrix
-      system_matrix.clear();
+      compute_inv_mass_matrix ();
    }
    else
    {
@@ -534,8 +561,6 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
       // We have equation M*du/dt = rhs, where M = mass matrix
       case Parameters::Solver::rk3:
       {
-         inv_mass_matrix.vmult (newton_update, right_hand_side);
-
          // Multiply newton_update by time step dt
          std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
          typename DoFHandler<dim>::active_cell_iterator
@@ -547,7 +572,9 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
 
             cell->get_dof_indices (dof_indices);
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-               newton_update(dof_indices[i]) *= dt(cell_no);
+               newton_update(dof_indices[i]) = dt(cell_no) *
+                                               right_hand_side(dof_indices[i]) *
+                                               inv_mass_matrix[cell_no][i];
          }
          return std::pair<unsigned int, double> (0,0);
       }
