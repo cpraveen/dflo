@@ -193,6 +193,28 @@ struct EulerEquations
    }
    
    //---------------------------------------------------------------------------
+   // Compute flux along normal
+   //---------------------------------------------------------------------------
+   template <typename InputVector, typename number>
+   static
+   void normal_flux (const InputVector        &W,
+                     const dealii::Point<dim> &normal,
+                     number                   (&flux)[n_components])
+   {
+      const number pressure = compute_pressure<number> (W);
+      
+      number vdotn = 0.0;
+      for (unsigned int d=0; d<dim; ++d)
+         vdotn += W[d] * normal[d];
+      vdotn /= W[density_component];
+      
+      flux[density_component] = W[density_component] * vdotn;
+      flux[energy_component] = (W[energy_component] + pressure) * vdotn;
+      for (unsigned int d=0; d<dim; ++d)
+         flux[d] = W[d] * vdotn;
+   }
+   
+   //---------------------------------------------------------------------------
    // Left and right eigenvector matrices
    // Lx, Rx = along x direction
    // Ly, Ry = along y direction
