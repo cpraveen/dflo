@@ -45,6 +45,8 @@ void ConservationLaw<dim>::apply_limiter ()
       case Parameters::Limiter::grad:
          apply_limiter_grad ();
          break;
+      default:
+         AssertThrow(false, ExcMessage("Unknown limiter_type"));
    }
 }
 
@@ -214,6 +216,7 @@ void ConservationLaw<dim>::apply_limiter_grad ()
    QGauss<dim> qrule (fe.degree + 1);
    FEValues<dim> fe_values_grad (mapping(), fe, qrule, update_gradients | update_JxW_values);
 
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
    Quadrature<dim> qsupport (fe.get_unit_support_points());
    FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
    
