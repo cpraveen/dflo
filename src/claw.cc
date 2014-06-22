@@ -407,8 +407,7 @@ ConservationLaw<dim>::compute_time_step ()
 
 //------------------------------------------------------------------------------
 // Compute local time step for each cell
-// We compute speed at quadrature points and take maximum over these values.
-// This speed is used to compute time step in each cell.
+// This function is specified to cartesian cells.
 //------------------------------------------------------------------------------
 template <int dim>
 void
