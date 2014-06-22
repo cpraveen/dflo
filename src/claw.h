@@ -94,6 +94,15 @@ private:
    void integrate_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);
    void assemble_system (IntegratorImplicit<dim>& integrator);
+   void iterate_explicit (IntegratorExplicit<dim>& integrator,
+                          dealii::Vector<double>& newton_update,
+                          double& res_norm0, double& res_norm);
+   void iterate_mood     (IntegratorExplicit<dim>& integrator,
+                          dealii::Vector<double>& newton_update,
+                          double& res_norm0, double& res_norm);
+   void iterate_implicit (IntegratorImplicit<dim>& integrator,
+                          dealii::Vector<double>& newton_update,
+                          double& res_norm0, double& res_norm);
 
    void compute_time_step ();
    void compute_time_step_cartesian ();
@@ -104,6 +113,13 @@ private:
    void apply_limiter_grad ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
+   
+   void compute_reduction_matrices();
+   void compute_min_max_mood_var();
+   bool apply_mood(unsigned int&, unsigned int&, unsigned int&);
+   void reduce_degree(const typename dealii::DoFHandler<dim>::cell_iterator&,
+                      const unsigned int,
+                      dealii::FEValues<dim>&);
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -173,6 +189,7 @@ private:
    dealii::Vector<double>       old_solution;
    dealii::Vector<double>       current_solution;
    dealii::Vector<double>       predictor;
+   dealii::Vector<double>       work1;
    std::vector< dealii::Vector<double> >       cell_average;
    
    dealii::Vector<double>       right_hand_side;
@@ -212,6 +229,12 @@ private:
    // distributing the degrees of freedom.
    dealii::SparseMatrix<double> system_matrix;
    dealii::SparsityPattern      sparsity_pattern;
+   
+   // MOOD data
+   std::vector<unsigned int> cell_degree;
+   std::vector<bool> re_update;
+   std::vector<dealii::FullMatrix<double> > Rmatrix;
+   dealii::Vector<double> min_mood_var, max_mood_var;
 
    std::vector< dealii::Vector<double> > inv_mass_matrix;
    

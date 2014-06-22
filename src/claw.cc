@@ -107,6 +107,10 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
       ark[2] = 1.0/3.0;
       n_rk = 3;
    }
+   
+   // For MOOD method compute degree reduction matrices
+   if(parameters.solver == Parameters::Solver::mood)
+      compute_reduction_matrices ();
 }
 
 //------------------------------------------------------------------------------
@@ -132,7 +136,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
    else
    {
-      AssertThrow (false, ExcNotImplemented());
+      AssertThrow (false, ExcMessage("Requested mapping type is unknown"));
       static MappingQ1<dim> m;
       return m;
    }
@@ -210,7 +214,7 @@ void ConservationLaw<dim>::setup_system ()
    shock_indicator.reinit (dh_cell.n_dofs());
    jump_indicator.reinit (dh_cell.n_dofs());
 
-   if(parameters.solver == Parameters::Solver::rk3)
+   if(parameters.implicit == false)
    {
       std::cout << "Creating mass matrix ...\n";
       compute_inv_mass_matrix ();
@@ -222,6 +226,22 @@ void ConservationLaw<dim>::setup_system ()
       sparsity_pattern.copy_from(c_sparsity);
 
       system_matrix.reinit (sparsity_pattern);
+   }
+   
+   // Allocate memory for MOOD variables
+   if(parameters.solver == Parameters::Solver::mood)
+   {
+      min_mood_var.reinit(triangulation.n_active_cells());
+      max_mood_var.reinit(triangulation.n_active_cells());
+      work1.reinit (dof_handler.n_dofs());
+   }
+   
+   cell_degree.resize(triangulation.n_active_cells());
+   re_update.resize(triangulation.n_active_cells());
+   for(unsigned int i=0; i<triangulation.n_active_cells(); ++i)
+   {
+      cell_degree[i] = fe.degree;
+      re_update[i] = true;
    }
 
    // For each cell, find neighbourig cell
@@ -487,17 +507,20 @@ ConservationLaw<dim>::compute_cell_average ()
    
    for (; cell!=endc; ++cell)
    {
-      fe_values.reinit (cell);
-      fe_values.get_function_values (current_solution, solution_values);
-      
       unsigned int cell_no = cell_number(cell);
-      cell_average[cell_no] = 0.0;
-      
-      for (unsigned int q=0; q<n_q_points; ++q)
-         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-            cell_average[cell_no][c] += solution_values[q][c] * fe_values.JxW(q);
-      
-      cell_average[cell_no] /= cell->measure();
+      if(re_update[cell_no])
+      {
+         fe_values.reinit (cell);
+         fe_values.get_function_values (current_solution, solution_values);
+         
+         cell_average[cell_no] = 0.0;
+         
+         for (unsigned int q=0; q<n_q_points; ++q)
+            for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+               cell_average[cell_no][c] += solution_values[q][c] * fe_values.JxW(q);
+         
+         cell_average[cell_no] /= cell->measure();
+      }
    }
    
 }
@@ -560,6 +583,7 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
 
       // We have equation M*du/dt = rhs, where M = mass matrix
       case Parameters::Solver::rk3:
+      case Parameters::Solver::mood:
       {
          // Multiply newton_update by time step dt
          std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
@@ -586,6 +610,180 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
    return std::pair<unsigned int, double> (0,0);
 }
 
+//------------------------------------------------------------------------------
+// Perform RK update
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator,
+                                             Vector<double>& newton_update,
+                                             double& res_norm0, double& res_norm)
+{
+   
+   // Loop for newton iterations or RK stages
+   for(unsigned int rk=0; rk<n_rk; ++rk)
+   {
+      assemble_system (integrator);
+      
+      res_norm = right_hand_side.l2_norm();
+      if(rk == 0) res_norm0 = res_norm;
+      
+      std::pair<unsigned int, double> convergence
+      = solve (newton_update, res_norm);
+      
+      // Forward euler step in case of explicit scheme
+      // In case of implicit scheme, this is the update
+      current_solution += newton_update;
+      
+      // current_solution = ark*old_solution + (1-ark)*current_solution
+      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
+      
+      compute_cell_average ();
+      compute_shock_indicator ();
+      apply_limiter ();
+      
+      if(parameters.pos_lim) apply_positivity_limiter ();
+      
+      std::printf("   %-16.3e %04d        %-5.2e\n",
+                  res_norm, convergence.first, convergence.second);
+      
+   }
+}
+
+//------------------------------------------------------------------------------
+// Perform SSPRK step using MOOD method
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
+                                         Vector<double>& newton_update,
+                                         double& res_norm0, double& res_norm)
+{
+   std::pair<unsigned int, double> convergence;
+   
+   // Loop for RK stages
+   for(unsigned int rk=0; rk<n_rk; ++rk)
+   {
+      std::cout << "RK stage " << rk+1 << std::endl;
+      std::cout << "\t Iter       n_reduce     n_re_update     n_reset\n";
+      compute_min_max_mood_var();
+      
+      // iterate forward euler until DMP is satisfied
+      bool terminate = false;
+      unsigned int mood_iter = 0;
+      predictor = current_solution;
+      while(!terminate)
+      {         
+         assemble_system (integrator);
+         
+         res_norm = right_hand_side.l2_norm();
+         if(rk == 0) res_norm0 = res_norm;
+         
+         convergence = solve (newton_update, res_norm);
+         
+         if(mood_iter == 0)
+         {
+            // In first iteration all cells must be updated
+            current_solution += newton_update;
+            work1 = current_solution;
+         }
+         else
+         {
+            // Update cells with re_update == true
+            std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+            typename DoFHandler<dim>::active_cell_iterator
+               cell = dof_handler.begin_active(),
+               endc = dof_handler.end();
+            for(; cell != endc; ++cell)
+            {
+               unsigned int c = cell_number(cell);
+               if(re_update[c] == true)
+               {
+                  cell->get_dof_indices( dof_indices );
+                  for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+                  {
+                     current_solution(dof_indices[i]) += newton_update(dof_indices[i]);
+                     work1(dof_indices[i]) = current_solution(dof_indices[i]);
+                  }
+               }
+            }
+         }
+
+         compute_cell_average ();
+         unsigned int n_reduce=0, n_re_update=0, n_reset=0;
+         terminate = apply_mood (n_reduce, n_re_update, n_reset);
+         
+         ++mood_iter;
+         std::printf("%12d %12d %12d %12d\n", mood_iter, n_reduce, n_re_update, n_reset);
+      }
+      
+      // Forward euler has been accepted.
+      // Now update rk stage.
+      current_solution = work1;
+      
+      // current_solution = ark*old_solution + (1-ark)*current_solution
+      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
+      
+      // Reset degree and update flags
+      for(unsigned int i=0; i<triangulation.n_active_cells(); ++i)
+      {
+         cell_degree[i] = fe.degree;
+         re_update[i] = true;
+      }
+      compute_cell_average ();
+      if(parameters.pos_lim) apply_positivity_limiter ();
+   }
+}
+
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::iterate_implicit (IntegratorImplicit<dim>& integrator,
+                                             Vector<double>& newton_update,
+                                             double& res_norm0, double& res_norm)
+{
+   unsigned int nonlin_iter = 0;
+
+   // Loop for newton iterations or RK stages
+   while(true)
+   {
+      
+      assemble_system (integrator);
+      
+      res_norm = right_hand_side.l2_norm();
+      if(nonlin_iter == 0) res_norm0 = res_norm;
+      
+      std::pair<unsigned int, double> convergence
+      = solve (newton_update, res_norm);
+      
+      // Forward euler step in case of explicit scheme
+      // In case of implicit scheme, this is the update
+      current_solution += newton_update;
+      
+      compute_cell_average ();
+      compute_shock_indicator ();
+      apply_limiter ();
+      
+      if(parameters.pos_lim) apply_positivity_limiter ();
+      
+      std::printf("   %-16.3e %04d        %-5.2e\n",
+                  res_norm, convergence.first, convergence.second);
+      
+      ++nonlin_iter;
+      
+      // Check that newton iterations converged
+      if(parameters.solver == Parameters::Solver::gmres &&
+         nonlin_iter == parameters.max_nonlin_iter &&
+         std::fabs(res_norm) > 1.0e-10)
+         AssertThrow (nonlin_iter <= parameters.max_nonlin_iter,
+                      ExcMessage ("No convergence in nonlinear solver"));
+      
+      // check stopping criterion
+      if(parameters.solver == Parameters::Solver::gmres &&
+         (nonlin_iter == parameters.max_nonlin_iter ||
+          std::fabs(res_norm) <= 1.0e-10))
+         break;
+      else if(parameters.solver == Parameters::Solver::umfpack)
+         break;
+   }
+}
 
 //------------------------------------------------------------------------------
 // @sect4{ConservationLaw::run}
@@ -689,74 +887,32 @@ void ConservationLaw<dim>::run ()
 		          << std::endl
 		          << std::endl;
       
-      std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
-                << "   _____________________________________" << std::endl;
-      
       unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;
       double res_norm  = 1.0;
       
-      // With global time stepping, we can use predictor as initial
-      // guess for the implicit scheme.
-      if(parameters.solver != Parameters::Solver::rk3)
-         current_solution = predictor;
-      
-      IntegratorImplicit<dim> integrator_implicit (dof_handler);
-      setup_mesh_worker (integrator_implicit);
-      IntegratorExplicit<dim> integrator_explicit (dof_handler);
-      setup_mesh_worker (integrator_explicit);
-      
-      // Loop for newton iterations or RK stages
-      while(true)
+      if(parameters.solver == Parameters::Solver::rk3)
       {
-         if(parameters.solver == Parameters::Solver::rk3)
-            assemble_system (integrator_explicit);
-         else
-            assemble_system (integrator_implicit);
-         
-         res_norm = right_hand_side.l2_norm();
-         if(nonlin_iter == 0) res_norm0 = res_norm;
-
-         std::pair<unsigned int, double> convergence
-            = solve (newton_update, res_norm);
-
-         // Forward euler step in case of explicit scheme
-         // In case of implicit scheme, this is the update
-         current_solution += newton_update;
-
-         if(parameters.solver == Parameters::Solver::rk3)
-         {
-            // current_solution = ark*old_solution + (1-ark)*current_solution
-            current_solution.sadd (1.0-ark[nonlin_iter], ark[nonlin_iter], old_solution);
-         }
-         
-         compute_cell_average ();
-         compute_shock_indicator ();
-         apply_limiter ();
-         if(parameters.pos_lim) apply_positivity_limiter ();
-            
-         std::printf("   %-16.3e %04d        %-5.2e\n",
-                     res_norm, convergence.first, convergence.second);
-         
-         ++nonlin_iter;
-
-         // Check that newton iterations converged
-         if(parameters.solver == Parameters::Solver::gmres &&
-            nonlin_iter == parameters.max_nonlin_iter &&
-            std::fabs(res_norm) > 1.0e-10)
-            AssertThrow (nonlin_iter <= parameters.max_nonlin_iter, 
-                         ExcMessage ("No convergence in nonlinear solver"));
-
-         // check stopping criterion
-         if(parameters.solver == Parameters::Solver::rk3 &&
-            nonlin_iter == n_rk) // 3-stage RK
-            break;
-         else if(parameters.solver == Parameters::Solver::gmres &&
-                 (nonlin_iter == parameters.max_nonlin_iter ||
-                  std::fabs(res_norm) <= 1.0e-10))
-            break;
-         else if(parameters.solver == Parameters::Solver::umfpack)
-            break;
+         IntegratorExplicit<dim> integrator_explicit (dof_handler);
+         setup_mesh_worker (integrator_explicit);
+         iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
+      }
+      else if(parameters.solver == Parameters::Solver::mood)
+      {
+         IntegratorExplicit<dim> integrator_explicit (dof_handler);
+         setup_mesh_worker (integrator_explicit);
+         iterate_mood(integrator_explicit, newton_update, res_norm0, res_norm);
+      }
+      else
+      {
+         std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
+         << "   _____________________________________" << std::endl;
+         // With global time stepping, we can use predictor as initial
+         // guess for the implicit scheme.
+         current_solution = predictor;
+         IntegratorImplicit<dim> integrator_implicit (dof_handler);
+         setup_mesh_worker (integrator_implicit);
+         iterate_implicit(integrator_implicit, newton_update, res_norm0, res_norm);
       }
       
       // Update counters
@@ -788,7 +944,7 @@ void ConservationLaw<dim>::run ()
       
       // Compute predictor only for global time stepping
       // For local time stepping, this is meaningless
-      if(parameters.solver != Parameters::Solver::rk3)
+      if(parameters.implicit)
       {
          predictor = current_solution;
          predictor.sadd (2.0, -1.0, old_solution);

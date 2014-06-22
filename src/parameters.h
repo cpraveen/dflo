@@ -164,8 +164,9 @@ namespace Parameters
    // <code>declare_parameters()</code>.
    struct Solver
    {
-      enum SolverType { gmres, direct, umfpack, rk3 };
+      enum SolverType { gmres, direct, umfpack, rk3, mood };
       SolverType solver;
+      bool implicit;
       
       enum  OutputType { quiet, verbose };
       OutputType output;

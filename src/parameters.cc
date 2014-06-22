@@ -15,10 +15,10 @@ namespace Parameters
                            Patterns::Selection("quiet|verbose"),
                            "State whether output from solver runs should be printed. "
                            "Choices are <quiet|verbose>.");
-         prm.declare_entry("method", "gmres",
-                           Patterns::Selection("gmres|direct|umfpack|rk3"),
+         prm.declare_entry("method", "rk3",
+                           Patterns::Selection("gmres|direct|umfpack|rk3|mood"),
                            "The kind of solver for the linear system. "
-                           "Choices are <gmres|direct|umfpack|rk3>.");
+                           "Choices are <gmres|direct|umfpack|rk3|mood>.");
          prm.declare_entry("residual", "1e-10",
                            Patterns::Double(),
                            "Linear solver residual");
@@ -56,13 +56,30 @@ namespace Parameters
          
          const std::string sv = prm.get("method");
          if (sv == "direct")
+         {
             solver = direct;
+            implicit = true;
+         }
          else if (sv == "gmres")
+         {
             solver = gmres;
+            implicit = true;
+         }
          else if (sv == "umfpack")
+         {
             solver = umfpack;
+            implicit = true;
+         }
          else if (sv == "rk3")
+         {
             solver = rk3;
+            implicit = false;
+         }
+         else if (sv == "mood")
+         {
+            solver = mood;
+            implicit = false;
+         }
          
          linear_residual = prm.get_double("residual");
          max_iterations  = prm.get_integer("max iters");
@@ -493,6 +510,10 @@ namespace Parameters
       Parameters::Flux::parse_parameters (prm);
       Parameters::Limiter::parse_parameters (prm);
       Parameters::Output::parse_parameters (prm);
+      
+      // Do some checking of parameters
+      if(solver == mood)
+         AssertThrow(time_step_type == "global", ExcMessage("MOOD requires global time step"));
    }
 }
 
