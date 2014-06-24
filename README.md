@@ -10,6 +10,8 @@ Discontinuous Galerkin solver for compressible flows. Some features of the code 
 * Flux functions: Lax-Friedrichs, Roe, HLLC, KFVS
 
 ### To compile
+You have to first compile deal.II with Trilinos library, UMFPACK, threads. Serial versions of these libraries are sufficient since dflo is at present only serial.
+
 * ```cd dflo/src```
 * You must set the variable ```DEAL_II_DIR``` to your deal.II installation directory. It is good to set this in your bashrc file.
 * ```cmake .```
