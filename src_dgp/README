@@ -1,3 +1,5 @@
+This version of the code uses Legendre polynomials and should be used only on Cartesian grids (set mapping = cartesian).
+
 Set environment variable DEAL_II_DIR=/path/to/dealii/installation
 
 To compile
