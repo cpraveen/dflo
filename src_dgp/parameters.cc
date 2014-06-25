@@ -183,8 +183,8 @@ namespace Parameters
                            Patterns::Selection("limiter|density|energy"),
                            "Shock indicator type: limiter | density | energy");
          prm.declare_entry("type", "none",
-                           Patterns::Selection("none|TVB|grad"),
-                           "Limiter type: none | TVB | grad");
+                           Patterns::Selection("none|TVB"),
+                           "Limiter type: none | TVB");
          prm.declare_entry("characteristic limiter", "false",
                            Patterns::Bool(),
                            "whether to use characteristic limiter");
