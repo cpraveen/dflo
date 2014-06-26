@@ -31,11 +31,24 @@ int main (int argc, char *argv[])
       AssertThrow( status, ExcFileNotOpen(argv[1]) );
       prm.print_parameters(std::cout, ParameterHandler::Text);
       unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
-      ConservationLaw<2> cons (argv[1], degree);
+      std::string basis = prm.get("basis");
+      
       Timer timer;
       timer.start ();
-      cons.run ();
+      if(basis=="Qk")
+      {
+         const FE_DGQArbitraryNodes<2> fe_scalar(QGauss<1>(degree+1));
+         ConservationLaw<2> cons (argv[1], degree, fe_scalar);
+         cons.run ();
+      }
+      else
+      {
+         const FE_DGP<2> fe_scalar(degree);
+         ConservationLaw<2> cons (argv[1], degree, fe_scalar);
+         cons.run ();
+      }
       timer.stop ();
+
       std::cout << std::endl;
       std::cout << "Elapsed CPU time : " << timer()/60 << " min.\n";
       std::cout << "Elapsed wall time: " << timer.wall_time()/60 << " min.\n";

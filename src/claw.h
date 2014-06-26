@@ -26,6 +26,7 @@
 #include <fe/fe_system.h>
 #include <fe/mapping_q1.h>
 #include <fe/fe_dgq.h>
+#include <fe/fe_dgp.h>
 
 #include <vector>
 
@@ -58,7 +59,11 @@ class ConservationLaw
 {
 public:
    ConservationLaw (const char *input_filename,
-                    const unsigned int degree);
+                    const unsigned int degree,
+                    const dealii::FE_DGQArbitraryNodes<dim> &fe_scalar);
+   ConservationLaw (const char *input_filename,
+                    const unsigned int degree,
+                    const dealii::FE_DGP<dim> &fe_scalar);
    void run ();
    
 private:
@@ -70,6 +75,8 @@ private:
    void setup_mesh_worker (IntegratorExplicit<dim>&);
    
    void set_initial_condition ();
+   void set_initial_condition_Qk ();
+   void set_initial_condition_Pk ();
    
    std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
    
@@ -110,6 +117,7 @@ private:
    void compute_cell_average ();
    void apply_limiter ();
    void apply_limiter_TVB ();
+   void apply_limiter_TVB_Pk ();
    void apply_limiter_grad ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
@@ -120,6 +128,12 @@ private:
    void reduce_degree(const typename dealii::DoFHandler<dim>::cell_iterator&,
                       const unsigned int,
                       dealii::FEValues<dim>&);
+   void reduce_degree_Pk(const typename dealii::DoFHandler<dim>::cell_iterator&,
+                         const unsigned int,
+                         dealii::FEValues<dim>&);
+   void reduce_degree_Qk(const typename dealii::DoFHandler<dim>::cell_iterator&,
+                         const unsigned int,
+                         dealii::FEValues<dim>&);
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -237,6 +251,9 @@ private:
    dealii::Vector<double> min_mood_var, max_mood_var;
 
    std::vector< dealii::Vector<double> > inv_mass_matrix;
+   
+   // For FE_DGP, maps dof index to its degree
+   std::vector<unsigned int> index_to_degree;
    
    Parameters::AllParameters<dim>  parameters;
    dealii::ConditionalOStream      verbose_cout;

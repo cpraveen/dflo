@@ -26,6 +26,7 @@
 #include <fe/mapping_q1.h>
 #include <fe/mapping_cartesian.h>
 #include <fe/fe_dgq.h>
+#include <fe/fe_dgp.h>
 
 #include <numerics/vector_tools.h>
 #include <numerics/solution_transfer.h>
@@ -68,9 +69,10 @@ using namespace dealii;
 //------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
-                                       const unsigned int degree)
+                                       const unsigned int degree,
+                                       const FE_DGQArbitraryNodes<dim> &fe_scalar)
    :
-   fe (FE_DGQArbitraryNodes<dim>(QGauss<1>(degree+1)), EulerEquations<dim>::n_components),
+   fe (fe_scalar, EulerEquations<dim>::n_components),
    dof_handler (triangulation),
    fe_cell (FE_DGQ<dim>(0)),
    dh_cell (triangulation),
@@ -111,6 +113,67 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    // For MOOD method compute degree reduction matrices
    if(parameters.solver == Parameters::Solver::mood)
       compute_reduction_matrices ();
+}
+
+//------------------------------------------------------------------------------
+template <int dim>
+ConservationLaw<dim>::ConservationLaw (const char *input_filename,
+                                       const unsigned int degree,
+                                       const FE_DGP<dim> &fe_scalar)
+:
+fe (fe_scalar, EulerEquations<dim>::n_components),
+dof_handler (triangulation),
+fe_cell (FE_DGQ<dim>(0)),
+dh_cell (triangulation),
+verbose_cout (std::cout, false)
+{
+   ParameterHandler prm;
+   Parameters::AllParameters<dim>::declare_parameters (prm);
+   
+   prm.read_input (input_filename);
+   parameters.parse_parameters (prm);
+   
+   verbose_cout.set_condition (parameters.output == Parameters::Solver::verbose);
+   
+   // Save all parameters in xml format
+   std::ofstream xml_file ("input.xml");
+   prm.print_parameters (xml_file,  ParameterHandler::XML);
+   
+   // Set coefficients for SSPRK
+   if(degree == 0)
+   {
+      ark[0] = 0.0;
+      n_rk = 1;
+   }
+   else if(degree == 1)
+   {
+      ark[0] = 0.0;
+      ark[1] = 0.5;
+      n_rk = 2;
+   }
+   else
+   {
+      ark[0] = 0.0;
+      ark[1] = 3.0/4.0;
+      ark[2] = 1.0/3.0;
+      n_rk = 3;
+   }
+   
+   // create map from dof index to total degree of basis function
+   index_to_degree.resize(fe.base_element(0).dofs_per_cell);
+   unsigned int c = 0;
+   if(dim==2)
+   {
+      for(unsigned int j=0; j<=degree; ++j)
+         for(unsigned int i=0; i<=degree-j; ++i)
+         {
+            index_to_degree[c++] = i+j;
+         }
+   }
+   else
+   {
+      AssertThrow(false, ExcMessage("Not implemented for dim=3"));
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -348,10 +411,11 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
 }
 
 //------------------------------------------------------------------------------
-// Sets initial condition based on input file
+// Sets initial condition based on input file.
+// For Qk basis we can just do interpolation.
 //------------------------------------------------------------------------------
 template <int dim>
-void ConservationLaw<dim>::set_initial_condition ()
+void ConservationLaw<dim>::set_initial_condition_Qk ()
 {
    if(parameters.ic_function == "rt")
       VectorTools::interpolate(mapping(), dof_handler,
@@ -362,6 +426,53 @@ void ConservationLaw<dim>::set_initial_condition ()
    
    current_solution = old_solution;
    predictor = old_solution;
+}
+
+//------------------------------------------------------------------------------
+// Sets initial condition based on input file.
+// For Pk basis we have to do an L2 projection.
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition_Pk ()
+{
+   if(parameters.ic_function == "rt")
+      VectorTools::create_right_hand_side (mapping(), dof_handler,
+                                           QGauss<dim>(fe.degree+1),
+                                           RayleighTaylor<dim>(parameters.gravity),
+                                           current_solution);
+   else
+      VectorTools::create_right_hand_side (mapping(), dof_handler,
+                                           QGauss<dim>(fe.degree+1),
+                                           parameters.initial_conditions,
+                                           current_solution);
+   
+   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for (; cell!=endc; ++cell)
+   {
+      cell->get_dof_indices(dof_indices);
+      unsigned int c = cell_number(cell);
+      
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         old_solution(dof_indices[i]) = current_solution(dof_indices[i]) *
+                                        inv_mass_matrix[c][i];
+   }
+   
+   current_solution = old_solution;
+   predictor = old_solution;
+}
+
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition ()
+{
+   if(parameters.basis == Parameters::AllParameters<dim>::Qk)
+      set_initial_condition_Qk();
+   else
+      set_initial_condition_Pk();
 }
 
 //------------------------------------------------------------------------------
@@ -700,6 +811,9 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
                   for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
                   {
                      current_solution(dof_indices[i]) += newton_update(dof_indices[i]);
+                     unsigned int base_i = fe.system_to_component_index(i).second;
+                     if(index_to_degree[base_i] > cell_degree[c])
+                        current_solution(dof_indices[i]) = 0.0;
                      work1(dof_indices[i]) = current_solution(dof_indices[i]);
                   }
                }

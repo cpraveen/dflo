@@ -387,6 +387,8 @@ namespace Parameters
       double gravity;
       
       unsigned int degree;
+      enum BasisType { Qk, Pk };
+      BasisType basis;
       enum MappingType { q1, q2, cartesian };
       MappingType mapping_type;
       

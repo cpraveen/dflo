@@ -112,9 +112,9 @@ void ConservationLaw<dim>::compute_min_max_mood_var()
 
 //--------------------------------------------------------------------------------------------
 template <int dim>
-void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_iterator &cell,
-                                         const unsigned int cell_no,
-                                         FEValues<dim> &fe_values)
+void ConservationLaw<dim>::reduce_degree_Qk(const typename DoFHandler<dim>::cell_iterator &cell,
+                                            const unsigned int cell_no,
+                                            FEValues<dim> &fe_values)
 {
    --cell_degree[cell_no];
    
@@ -158,6 +158,38 @@ void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_it
                                        - cell_avg_reduced(comp_i);
    }
    
+}
+
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::reduce_degree_Pk(const typename DoFHandler<dim>::cell_iterator &cell,
+                                            const unsigned int cell_no,
+                                            FEValues<dim> &fe_values)
+{
+   --cell_degree[cell_no];
+   
+   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   cell->get_dof_indices (dof_indices);
+   for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+   {
+      unsigned int base_i = fe.system_to_component_index(i).second;
+      unsigned int deg = index_to_degree[base_i];
+      if(deg > cell_degree[cell_no])
+         current_solution(dof_indices[i]) = 0.0;
+   }
+   
+}
+
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_iterator &cell,
+                                         const unsigned int cell_no,
+                                         FEValues<dim> &fe_values)
+{
+   if(parameters.basis == Parameters::AllParameters<dim>::Qk)
+      reduce_degree_Qk(cell, cell_no, fe_values);
+   else
+      reduce_degree_Pk(cell, cell_no, fe_values);
 }
 
 //--------------------------------------------------------------------------------------------

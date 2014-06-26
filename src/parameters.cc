@@ -319,6 +319,10 @@ namespace Parameters
                         Patterns::Integer(),
                         "degree of DG space");
       
+      prm.declare_entry("basis", "Qk",
+                        Patterns::Selection("Qk|Pk"),
+                        "Qk or Pk basis");
+      
       prm.declare_entry("mapping", "q1",
                         Patterns::Selection("q1|q2|cartesian"),
                         "mapping type to reference element");
@@ -428,6 +432,12 @@ namespace Parameters
       else
          AssertThrow (false, ExcNotImplemented());
       
+      std::string basis_type = prm.get("basis");
+      if(basis_type=="Qk")
+         basis = Qk;
+      else
+         basis = Pk;
+      
       prm.enter_subsection("time stepping");
       {
          cfl = prm.get_double("cfl");
@@ -514,6 +524,18 @@ namespace Parameters
       // Do some checking of parameters
       if(solver == mood)
          AssertThrow(time_step_type == "global", ExcMessage("MOOD requires global time step"));
+      
+      if(solver == mood)
+         AssertThrow(basis == Pk, ExcMessage("MOOD is implemented only for Pk"));
+      
+      if(limiter_type == TVB || limiter_type == grad)
+         AssertThrow(mapping_type == cartesian, ExcMessage("TVB limiter works on cartesian grids only"));
+      
+      if(basis == Pk)
+         AssertThrow(mapping_type == cartesian, ExcMessage("Pk basis can only be used with Cartesian grids"));
+      
+      if(basis == Pk)
+         AssertThrow(do_refine == false, ExcMessage("Refinement does not work for Pk basis"));
    }
 }
 
