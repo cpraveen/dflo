@@ -1,0 +1,84 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = grid.msh
+set degree = 1
+set mapping = cartesian
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+# farfield supersonic inflow boundary
+subsection boundary_1
+   set type = farfield
+   set w_0 value = 0.0
+   set w_1 value = 0.0
+   set w_2 value = 1.0
+   set w_3 value = 1.0e-10
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+   set w_0 value = 0.0
+   set w_1 value = 0.0
+   set w_2 value = 1.0
+   set w_3 value = 3.2e8*(abs(x) < 0.02)*(abs(y) < 0.02) + 1e-10
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = global
+  set cfl = 0.5
+  set final time = 0.1
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  set method         = rk3
+end
+
+# --------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 100
+  set schlieren plot = true
+  set format         = vtk #tecplot
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = lxf
+end
+
+subsection limiter
+   set shock indicator = limiter
+   set type = grad
+   set characteristic limiter = true
+   set positivity limiter = true
+   set M = 0
+   set beta = 1
+end
