@@ -4,7 +4,8 @@ dflo
 Discontinuous Galerkin solver for compressible flows. Some features of the code are
 
 * cartesian and quadrilateral cells
-* nodal Lagrange basis on Gauss points
+* Qk basis: nodal Lagrange polynomials on Gauss points
+* Pk basis: Legendre polynomials
 * TVB limiter
 * Positivity preserving limiter
 * Flux functions: Lax-Friedrichs, Roe, HLLC, KFVS
