@@ -52,7 +52,7 @@
 #include "claw.h"
 #include "ic.h"
 
-// Coefficients for 2-stage RK scheme
+// Coefficients for SSP-RK scheme
 double ark[3];
 unsigned int n_rk;
 
@@ -78,43 +78,15 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    dh_cell (triangulation),
    verbose_cout (std::cout, false)
 {
-   ParameterHandler prm;
-   Parameters::AllParameters<dim>::declare_parameters (prm);
-   
-   prm.read_input (input_filename);
-   parameters.parse_parameters (prm);
-   
-   verbose_cout.set_condition (parameters.output == Parameters::Solver::verbose);
-
-   // Save all parameters in xml format
-   std::ofstream xml_file ("input.xml");
-   prm.print_parameters (xml_file,  ParameterHandler::XML);
-   
-   // Set coefficients for SSPRK
-   if(degree == 0)
-   {
-      ark[0] = 0.0;
-      n_rk = 1;
-   }
-   else if(degree == 1)
-   {
-      ark[0] = 0.0;
-      ark[1] = 0.5;
-      n_rk = 2;
-   }
-   else
-   {
-      ark[0] = 0.0;
-      ark[1] = 3.0/4.0;
-      ark[2] = 1.0/3.0;
-      n_rk = 3;
-   }
+   read_parameters (input_filename);
    
    // For MOOD method compute degree reduction matrices
    if(parameters.solver == Parameters::Solver::mood)
       compute_reduction_matrices ();
 }
 
+//------------------------------------------------------------------------------
+// Constructor for Pk basis
 //------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
@@ -127,37 +99,7 @@ fe_cell (FE_DGQ<dim>(0)),
 dh_cell (triangulation),
 verbose_cout (std::cout, false)
 {
-   ParameterHandler prm;
-   Parameters::AllParameters<dim>::declare_parameters (prm);
-   
-   prm.read_input (input_filename);
-   parameters.parse_parameters (prm);
-   
-   verbose_cout.set_condition (parameters.output == Parameters::Solver::verbose);
-   
-   // Save all parameters in xml format
-   std::ofstream xml_file ("input.xml");
-   prm.print_parameters (xml_file,  ParameterHandler::XML);
-   
-   // Set coefficients for SSPRK
-   if(degree == 0)
-   {
-      ark[0] = 0.0;
-      n_rk = 1;
-   }
-   else if(degree == 1)
-   {
-      ark[0] = 0.0;
-      ark[1] = 0.5;
-      n_rk = 2;
-   }
-   else
-   {
-      ark[0] = 0.0;
-      ark[1] = 3.0/4.0;
-      ark[2] = 1.0/3.0;
-      n_rk = 3;
-   }
+   read_parameters (input_filename);
    
    // create map from dof index to total degree of basis function
    index_to_degree.resize(fe.base_element(0).dofs_per_cell);
@@ -173,6 +115,41 @@ verbose_cout (std::cout, false)
    else
    {
       AssertThrow(false, ExcMessage("Not implemented for dim=3"));
+   }
+}
+
+//------------------------------------------------------------------------------
+// Read parameters from file and set some other parameters.
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::read_parameters (const char *input_filename)
+{
+   AssertThrow(dim == 2, ExcMessage("Only works for 2-D"));
+   
+   ParameterHandler prm;
+   Parameters::AllParameters<dim>::declare_parameters (prm);
+   
+   prm.read_input (input_filename);
+   parameters.parse_parameters (prm);
+   
+   verbose_cout.set_condition (parameters.output == Parameters::Solver::verbose);
+   
+   // Save all parameters in xml format
+   //std::ofstream xml_file ("input.xml");
+   //prm.print_parameters (xml_file,  ParameterHandler::XML);
+   
+   // Set coefficients for SSPRK
+   if(fe.degree == 0)
+   {
+      ark[0] = 0.0;
+      n_rk = 1;
+   }
+   else
+   {
+      ark[0] = 0.0;
+      ark[1] = 3.0/4.0;
+      ark[2] = 1.0/3.0;
+      n_rk = 3;
    }
 }
 
