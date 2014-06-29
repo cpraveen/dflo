@@ -214,6 +214,9 @@ namespace Parameters
          prm.declare_entry("beta", "1.0",
                            Patterns::Double(1.0,2.0),
                            "limiter parameter");
+         prm.declare_entry("conserve angular momentum", "false",
+                           Patterns::Bool(),
+                           "conserve angular momentum during limiting");
       }
       prm.leave_subsection();
    }
@@ -247,6 +250,7 @@ namespace Parameters
          pos_lim  = prm.get_bool("positivity limiter");
          M        = prm.get_double("M");
          beta     = prm.get_double("beta");
+         conserve_angular_momentum = prm.get_bool("conserve angular momentum");
       }
       prm.leave_subsection();
    }

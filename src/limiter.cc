@@ -422,6 +422,9 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
                Dy(comp_i) = current_solution(dof_indices[i]) * sqrt_3;
          }
          
+         // angular momentum for square cells = v_x - u_y
+         const double ang_mom = Dx(1) - Dy(0);
+         
          // Backward difference of cell averages
          dbx = Dx;
          if(lcell[c] != endc0)
@@ -492,6 +495,11 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
             {
                EulerEquations<dim>::transform_to_con (Rx, Dx_new);
                EulerEquations<dim>::transform_to_con (Ry, Dy_new);
+            }
+            if(parameters.conserve_angular_momentum)
+            {
+               Dy_new(0) = 0.5 * (Dy_new(0) - (ang_mom - Dx_new(1)));
+               Dx_new(1) = ang_mom + Dy_new(0);
             }
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {

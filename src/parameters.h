@@ -251,6 +251,7 @@ namespace Parameters
       bool         pos_lim;
       double       M;
       double       beta;
+      bool         conserve_angular_momentum;
       
       static void declare_parameters (dealii::ParameterHandler &prm);
       void parse_parameters (dealii::ParameterHandler &prm);
