@@ -184,6 +184,35 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
 }
 
 //------------------------------------------------------------------------------
+// Compute dx, dy, dz for cartesian meshes.
+// At present it only checks that dx == dy
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_cartesian_mesh_size ()
+{
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for (; cell!=endc; ++cell)
+   {
+      double xmin = 1.0e20, xmax = -1.0e20;
+      double ymin = 1.0e20, ymax = -1.0e20;
+      for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
+      {
+         const Point<dim>& p = cell->face(f)->center();
+         xmin = std::min(xmin, p[0]);
+         xmax = std::max(xmax, p[0]);
+         ymin = std::min(ymin, p[1]);
+         ymax = std::min(ymax, p[1]);
+      }
+      double dx = xmax - xmin;
+      double dy = ymax - ymin;
+      AssertThrow(std::fabs(dx-dy) < 1.0e-14, ExcMessage("Cell is not square"));
+   }
+}
+
+//------------------------------------------------------------------------------
 // Our nodal basis uses Gauss points and we use Gauss quadrature with degree+1
 // nodes. Then the mass matrix is diagonal. The mass matrix is integrated exactly
 // for Cartesian cells but not exact for general cells.
@@ -283,6 +312,9 @@ void ConservationLaw<dim>::setup_system ()
       cell_degree[i] = fe.degree;
       re_update[i] = true;
    }
+   
+   if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
+      compute_cartesian_mesh_size ();
 
    // For each cell, find neighbourig cell
    // This is needed for limiter

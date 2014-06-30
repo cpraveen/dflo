@@ -69,6 +69,7 @@ public:
 private:
    void read_parameters (const char *file_name);
    const dealii::Mapping<dim,dim>& mapping() const;
+   void compute_cartesian_mesh_size ();
    void compute_inv_mass_matrix();
    void setup_system ();
    
