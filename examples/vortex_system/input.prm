@@ -35,8 +35,8 @@ end
 # Time stepping control
 subsection time stepping
   set time step type = global
-  set cfl = 0.5
-  set final time = 0.1
+  set cfl = 0.9
+  set final time = 6.0
   set nonlinear iterations = 1
 end
 
@@ -48,9 +48,10 @@ end
 # --------------------------------------------------
 # Output frequency and kind
 subsection output
-  set iter step      = 100
+  set iter step      = 50
   set schlieren plot = true
   set format         = vtk #tecplot
+  set compute angular momentum = 1
 end
 
 # --------------------------------------------------
@@ -70,9 +71,10 @@ end
 
 subsection limiter
    set shock indicator = limiter
-   set type = none
+   set type = TVB
    set characteristic limiter = true
    set positivity limiter = false
    set M = 0
    set beta = 2
+   set conserve angular momentum = false
 end

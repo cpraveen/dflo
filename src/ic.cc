@@ -85,7 +85,8 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
    vey /= 3.0;
    pre = std::pow(rho, gamma) / gamma;
    
-   //if(std::fabs(p[0]) < 0.1 && std::fabs(p[1]) < 0.1) pre = 100.0;
+   // Put large pressure in the region { |x| < 0.1 and |y| < 0.1 }
+   if(std::fabs(p[0]) < 0.1 && std::fabs(p[1]) < 0.1) pre = 50.0;
    
    values[0] = rho * vex;
    values[1] = rho * vey;

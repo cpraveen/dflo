@@ -616,8 +616,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
       }
    }
    
-   std::cout << "Total angular momentum: " << elapsed_time << "   "
-             << angular_momentum << std::endl;
+   printf("Total angular momentum: %18.8e %24.14e\n", elapsed_time, angular_momentum);
 }
 
 //------------------------------------------------------------------------------
