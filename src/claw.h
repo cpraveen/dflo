@@ -116,6 +116,7 @@ private:
    void compute_time_step ();
    void compute_time_step_cartesian ();
    void compute_time_step_q ();
+   void compute_angular_momentum ();
    void compute_cell_average ();
    void apply_limiter ();
    void apply_limiter_TVB ();

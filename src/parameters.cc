@@ -273,6 +273,9 @@ namespace Parameters
          prm.declare_entry("format", "vtk",
                            Patterns::Selection("vtk|tecplot"),
                            "Output format for visualization: vtk, tecplot");
+         prm.declare_entry("compute angular momentum", "10000000",
+                           Patterns::Integer(),
+                           "Compute angular momentum once per this iteration period");
       }
       prm.leave_subsection();
    }
@@ -287,6 +290,7 @@ namespace Parameters
          output_time_step = prm.get_double("time step");
          output_iter_step = prm.get_double("iter step");
          output_format = prm.get("format");
+         ang_mom_step = prm.get_double("compute angular momentum");
       }
       prm.leave_subsection();
    }

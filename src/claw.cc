@@ -582,6 +582,45 @@ ConservationLaw<dim>::compute_cell_average ()
 }
 
 //------------------------------------------------------------------------------
+// Computes total angular momentum in the computational domain
+//------------------------------------------------------------------------------
+template <int dim>
+void
+ConservationLaw<dim>::compute_angular_momentum ()
+{
+   AssertThrow(dim==2, ExcNotImplemented());
+   
+   QGauss<dim>   quadrature_formula(fe.degree+1);
+   const unsigned int n_q_points = quadrature_formula.size();
+   
+   FEValues<dim> fe_values (mapping(), fe,
+                            quadrature_formula,
+                            update_values | update_q_points | update_JxW_values);
+   const FEValuesExtractors::Vector momentum (0);
+   std::vector< Tensor<1,dim> > momentum_values(n_q_points);
+   
+   double angular_momentum = 0;
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for (; cell!=endc; ++cell)
+   {
+      fe_values.reinit(cell);
+      fe_values[momentum].get_function_values(current_solution, momentum_values);
+      const std::vector<Point<dim> >& qp = fe_values.get_quadrature_points();
+      for(unsigned int q=0; q<n_q_points; ++q)
+      {
+         double cross = qp[q][0] * momentum_values[q][1] - qp[q][1] * momentum_values[q][0];
+         angular_momentum += cross * fe_values.JxW(q);
+      }
+   }
+   
+   std::cout << "Total angular momentum: " << elapsed_time << "   "
+             << angular_momentum << std::endl;
+}
+
+//------------------------------------------------------------------------------
 // @sect4{ConservationLaw::solve}
 //
 // Here, we actually solve the linear system,
@@ -977,6 +1016,9 @@ void ConservationLaw<dim>::run ()
       // Update counters
       elapsed_time += global_dt;
       ++time_iter;
+      
+      if(time_iter % parameters.ang_mom_step == 0)
+         compute_angular_momentum();
 
       // Increase cfl
       if(parameters.solver == Parameters::Solver::gmres && 

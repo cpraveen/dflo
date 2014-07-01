@@ -273,6 +273,7 @@ namespace Parameters
       double output_time_step;
       int output_iter_step;
       std::string output_format;
+      unsigned int ang_mom_step;
       
       static void declare_parameters (dealii::ParameterHandler &prm);
       void parse_parameters (dealii::ParameterHandler &prm);
