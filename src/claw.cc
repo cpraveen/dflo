@@ -190,6 +190,8 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
 template <int dim>
 void ConservationLaw<dim>::compute_cartesian_mesh_size ()
 {
+   const double geom_tol = 1.0e-12;
+   
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
@@ -204,11 +206,11 @@ void ConservationLaw<dim>::compute_cartesian_mesh_size ()
          xmin = std::min(xmin, p[0]);
          xmax = std::max(xmax, p[0]);
          ymin = std::min(ymin, p[1]);
-         ymax = std::min(ymax, p[1]);
+         ymax = std::max(ymax, p[1]);
       }
       double dx = xmax - xmin;
       double dy = ymax - ymin;
-      AssertThrow(std::fabs(dx-dy) < 1.0e-14, ExcMessage("Cell is not square"));
+      AssertThrow(std::fabs(dx-dy) < geom_tol, ExcMessage("Cell is not square"));
    }
 }
 
