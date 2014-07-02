@@ -1,0 +1,95 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = bstep.msh
+set degree = 0
+set mapping = cartesian
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+#
+# inflow, left state of riemann problem
+subsection boundary_1
+   set type = inflow
+   set w_0 value = 28.72565
+   set w_1 value = 0.0
+   set w_2 value = 7.0406
+   set w_3 value = 133.74782
+end
+
+# Bottom and top walls
+subsection boundary_2
+   set type = slip
+end
+
+# outflow boundary
+subsection boundary_3
+   set type = outflow
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+   set w_0 value = 28.72565 # *(x<=0.5) + 0.0*(x>0.5)
+   set w_1 value = 0.0
+   set w_2 value = 7.0406 # *(x<=0.5) + 1.4*(x>0.5)
+   set w_3 value = 133.74782 # *(x<=0.5) + 2.5*(x>0.5)
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = global
+  set cfl = 0.9
+  set final time = 2.3
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  set method         = rk3
+end
+
+# --------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 10
+  set schlieren plot = false
+  set format         = vtk
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = lxf
+end
+
+subsection limiter
+   set type = none
+   set shock indicator = limiter
+   set characteristic limiter = true
+   set positivity limiter = false
+   set M = 0.0
+   set beta = 1.0
+end
