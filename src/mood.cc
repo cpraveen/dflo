@@ -43,6 +43,8 @@ endfor
 using namespace dealii;
 
 //--------------------------------------------------------------------------------------------
+// For Qk basis, compute degree reduction matrices
+//--------------------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::compute_reduction_matrices()
 {
@@ -111,6 +113,9 @@ void ConservationLaw<dim>::compute_min_max_mood_var()
 }
 
 //--------------------------------------------------------------------------------------------
+// Reduce degree of Qk solution. Interpolate to lower degree and interpolate back
+// to original degree. Adjust to preserve cell average value.
+//--------------------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::reduce_degree_Qk(const typename DoFHandler<dim>::cell_iterator &cell,
                                             const unsigned int cell_no,
@@ -161,6 +166,9 @@ void ConservationLaw<dim>::reduce_degree_Qk(const typename DoFHandler<dim>::cell
 }
 
 //--------------------------------------------------------------------------------------------
+// Reduce degree of Pk solution by one. All coefficients higher than this degree are set
+// to zero.
+//--------------------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::reduce_degree_Pk(const typename DoFHandler<dim>::cell_iterator &cell,
                                             const unsigned int cell_no,
@@ -181,6 +189,8 @@ void ConservationLaw<dim>::reduce_degree_Pk(const typename DoFHandler<dim>::cell
 }
 
 //--------------------------------------------------------------------------------------------
+// Reduce degree of solution by one
+//--------------------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_iterator &cell,
                                          const unsigned int cell_no,
@@ -192,6 +202,9 @@ void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_it
       reduce_degree_Pk(cell, cell_no, fe_values);
 }
 
+//--------------------------------------------------------------------------------------------
+// Returns second order coefficients of density in its legendre expansion
+// NOTE: We should divide by dx*dx etc. for adaptive meshes.
 //--------------------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::get_mood_second_derivatives
@@ -212,6 +225,8 @@ void ConservationLaw<dim>::get_mood_second_derivatives
    D2[1] = current_solution(dof_indices[shift+2*fe.degree+1]);
 }
 
+//--------------------------------------------------------------------------------------------
+// Apply u2 test of Diot on cell. If satisfied, return true, else return false.
 //--------------------------------------------------------------------------------------------
 template <int dim>
 bool ConservationLaw<dim>::test_u2(const typename DoFHandler<dim>::cell_iterator &cell)

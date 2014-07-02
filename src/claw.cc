@@ -834,6 +834,8 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
 }
 
 //------------------------------------------------------------------------------
+// Perform one step of implicit scheme
+//------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_implicit (IntegratorImplicit<dim>& integrator,
                                              Vector<double>& newton_update,
@@ -925,7 +927,6 @@ void ConservationLaw<dim>::run ()
    */
    
    setup_system();
-   
    set_initial_condition ();
    
    // Refine the initial mesh
@@ -1006,7 +1007,7 @@ void ConservationLaw<dim>::run ()
       else
       {
          std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
-         << "   _____________________________________" << std::endl;
+                   << "   _____________________________________" << std::endl;
          // With global time stepping, we can use predictor as initial
          // guess for the implicit scheme.
          current_solution = predictor;
@@ -1046,8 +1047,9 @@ void ConservationLaw<dim>::run ()
       }
       
       // Compute predictor only for global time stepping
-      // For local time stepping, this is meaningless
-      if(parameters.implicit)
+      // For local time stepping, this is meaningless.
+      // If time step is changing, then also this is not correct.
+      if(parameters.implicit || parameters.time_step_type == "global")
       {
          predictor = current_solution;
          predictor.sadd (2.0, -1.0, old_solution);
