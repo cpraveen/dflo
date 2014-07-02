@@ -193,6 +193,75 @@ void ConservationLaw<dim>::reduce_degree(const typename DoFHandler<dim>::cell_it
 }
 
 //--------------------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::get_mood_second_derivatives
+   (const typename DoFHandler<dim>::cell_iterator &cell,
+    std::vector<double>& D2)
+{
+   Assert(dim == 2, ExcNotImplemented());
+   Assert(parameters.basis_type == Parameters::AllParameters<dim>::Pk,
+          ExcNotImplemented());
+   
+   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   cell->get_dof_indices(dof_indices);
+   
+   // This gets rho_xx and rho_yy
+   unsigned int ndofs = fe.dofs_per_cell / EulerEquations<dim>::n_components;
+   unsigned int shift = ndofs * EulerEquations<dim>::density_component;
+   D2[0] = current_solution(dof_indices[shift+2]);
+   D2[1] = current_solution(dof_indices[shift+2*fe.degree+1]);
+}
+
+//--------------------------------------------------------------------------------------------
+template <int dim>
+bool ConservationLaw<dim>::test_u2(const typename DoFHandler<dim>::cell_iterator &cell)
+{
+   // If degree < 2, then we should not apply this test.
+   // Hence always return false.
+   if(fe.degree < 2) return false;
+   
+   std::vector<double> D2(dim);
+   get_mood_second_derivatives (cell, D2);
+   
+   std::vector<double> D2_min(D2), D2_max(D2);
+   
+   for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
+   {
+      if (cell->at_boundary(f) == false)
+         if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
+         {
+            get_mood_second_derivatives (cell->neighbor(f), D2);
+            for(unsigned int d=0; d<dim; ++d)
+            {
+               D2_min[d] = std::min(D2_min[d], D2[d]);
+               D2_max[d] = std::max(D2_max[d], D2[d]);
+            }
+         }
+         else
+         {
+            for (unsigned int subface=0; subface<cell->face(f)->n_children(); ++subface)
+            {
+               get_mood_second_derivatives (cell->neighbor_child_on_subface(f,subface), D2);
+               for(unsigned int d=0; d<dim; ++d)
+               {
+                  D2_min[d] = std::min(D2_min[d], D2[d]);
+                  D2_max[d] = std::max(D2_max[d], D2[d]);
+               }
+            }
+         }
+   }
+   
+   static const double eps = 0.5;
+   static const double fact = 1.0 - eps;
+   for(unsigned int d=0; d<dim; ++d)
+   {
+      if(D2_min[d]*D2_max[d] < 0) return false;
+      if(std::fabs(D2_min[d]) < std::fabs(D2_max[d]) * fact) return false;
+   }
+   
+   return true;
+}
+//--------------------------------------------------------------------------------------------
 // For each cell, if re_update = true, then check DMP property. If not satisfied, reduce
 // polynomial degree.
 //
@@ -232,15 +301,23 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
          {
             re_update_new[c] = false;
          }
+         else if(test_u2(cell) == true)
+         {
+            re_update_new[c] = false;
+         }
          else
          {
-            re_update_new[c] = true;
-            
-            if(cell_degree[c] > 0)
+            if(cell_degree[c] > 1)
             {
                // restrict solution
                reduce_degree(cell, c, fe_values);
+               re_update_new[c] = true;
                terminate = false;
+            }
+            else if(cell_degree[c] == 1 && shock_indicator[c] < 1.0)
+            {
+               shock_indicator[c] = 1.0e20; // switch on limiter for this cell
+               re_update_new[c] = false;
             }
             else
             {
@@ -252,12 +329,20 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                      if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
                      {
                         unsigned int cn = cell_number(cell->neighbor(f));
-                        if(cell_degree[cn] > 0 && re_update_new[cn]==false)
+                        if(cell_degree[cn] > 1 && re_update_new[cn]==false)
                         {
                            // restrict solution
                            reduce_degree(cell->neighbor(f), cn, fe_values);
                            re_update_new[cn] = true;
                            terminate = false;
+                           ++c;
+                        }
+                        else if(cell_degree[cn] == 1 &&
+                                re_update_new[cn]==false &&
+                                shock_indicator[cn] < 1.0)
+                        {
+                           shock_indicator[cn] = 1.0e20;
+                           re_update_new[cn] = false;
                            ++c;
                         }
                      }
@@ -266,12 +351,20 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                         for (unsigned int subface=0; subface<cell->face(f)->n_children(); ++subface)
                         {
                            unsigned int cn = cell_number(cell->neighbor_child_on_subface (f, subface));
-                           if(cell_degree[cn] > 0 && re_update_new[cn]==false)
+                           if(cell_degree[cn] > 1 && re_update_new[cn]==false)
                            {
                               // restrict solution
                               reduce_degree(cell->neighbor_child_on_subface(f,subface), cn, fe_values);
                               re_update_new[cn] = true;
                               terminate = false;
+                              ++c;
+                           }
+                           else if(cell_degree[cn] == 1 &&
+                                   re_update_new[cn]==false &&
+                                   shock_indicator[cn] < 1.0)
+                           {
+                              shock_indicator[cn] = 1.0e20;
+                              re_update_new[cn] = false;
                               ++c;
                            }
                         }

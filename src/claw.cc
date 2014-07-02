@@ -764,6 +764,8 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
       bool terminate = false;
       unsigned int mood_iter = 0;
       predictor = current_solution;
+      shock_indicator = 0;
+      
       while(!terminate)
       {         
          assemble_system (integrator);
@@ -826,6 +828,7 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
          re_update[i] = true;
       }
       compute_cell_average ();
+      apply_limiter();
       if(parameters.pos_lim) apply_positivity_limiter ();
    }
 }

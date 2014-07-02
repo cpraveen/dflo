@@ -137,6 +137,9 @@ private:
    void reduce_degree_Qk(const typename dealii::DoFHandler<dim>::cell_iterator&,
                          const unsigned int,
                          dealii::FEValues<dim>&);
+   void get_mood_second_derivatives(const typename dealii::DoFHandler<dim>::cell_iterator &cell,
+                                    std::vector<double>& D2);
+   bool test_u2(const typename dealii::DoFHandler<dim>::cell_iterator &cell);
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
