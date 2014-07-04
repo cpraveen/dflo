@@ -212,7 +212,7 @@ void ConservationLaw<dim>::get_mood_second_derivatives
     std::vector<double>& D2)
 {
    Assert(dim == 2, ExcNotImplemented());
-   Assert(parameters.basis_type == Parameters::AllParameters<dim>::Pk,
+   Assert(parameters.basis == Parameters::AllParameters<dim>::Pk,
           ExcNotImplemented());
    
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
