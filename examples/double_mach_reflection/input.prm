@@ -65,7 +65,7 @@ end
 # Time stepping control
 subsection time stepping
   set time step type = global
-  set cfl = 0.5
+  set cfl = 0.9
   set final time = 0.2
   set nonlinear iterations = 1
 end
@@ -102,7 +102,7 @@ subsection limiter
    set type = grad
    set shock indicator = limiter
    set characteristic limiter = true
-   set positivity limiter = true
-   set M = 0.0
+   set positivity limiter = false
+   set M = 100.0
    set beta = 1.0
 end
