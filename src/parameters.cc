@@ -467,6 +467,9 @@ namespace Parameters
       }
       prm.leave_subsection();
       
+      std::string variables = "x,y,t";
+      if(dim==3) variables = "x,y,z,t";
+      
       for (unsigned int boundary_id=0; boundary_id<max_n_boundaries;
            ++boundary_id)
       {
@@ -502,9 +505,10 @@ namespace Parameters
             }
             
             boundary_conditions[boundary_id].values.initialize 
-               (FunctionParser<dim>::default_variable_names(),
+               (variables,
                 expressions,
-                std::map<std::string, double>());
+                std::map<std::string, double>(),
+                true);
          }
          prm.leave_subsection();
       }
