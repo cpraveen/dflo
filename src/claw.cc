@@ -716,6 +716,14 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
    // Loop for newton iterations or RK stages
    for(unsigned int rk=0; rk<n_rk; ++rk)
    {
+      // set time in boundary condition
+      // NOTE: We need to check if this is time accurate.
+      for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
+           ++boundary_id)
+      {
+         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+      }
+      
       assemble_system (integrator);
       
       res_norm = right_hand_side.l2_norm();
@@ -758,6 +766,15 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
    {
       std::cout << "RK stage " << rk+1 << std::endl;
       std::cout << "\t Iter       n_reduce     n_re_update     n_reset\n";
+      
+      // set time in boundary condition
+      // NOTE: We need to check if this is time accurate.
+      for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
+           ++boundary_id)
+      {
+         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+      }
+      
       compute_min_max_mood_var();
       
       // iterate forward euler until DMP is satisfied
@@ -834,11 +851,21 @@ void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
 }
 
 //------------------------------------------------------------------------------
+// Perform one step of implicit scheme
+//------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_implicit (IntegratorImplicit<dim>& integrator,
                                              Vector<double>& newton_update,
                                              double& res_norm0, double& res_norm)
 {
+   // set time in boundary condition
+   // NOTE: We need to check if this is time accurate.
+   for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
+        ++boundary_id)
+   {
+      parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+   }
+   
    unsigned int nonlin_iter = 0;
 
    // Loop for newton iterations or RK stages
@@ -925,7 +952,6 @@ void ConservationLaw<dim>::run ()
    */
    
    setup_system();
-   
    set_initial_condition ();
    
    // Refine the initial mesh
@@ -1006,7 +1032,7 @@ void ConservationLaw<dim>::run ()
       else
       {
          std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
-         << "   _____________________________________" << std::endl;
+                   << "   _____________________________________" << std::endl;
          // With global time stepping, we can use predictor as initial
          // guess for the implicit scheme.
          current_solution = predictor;
@@ -1046,8 +1072,9 @@ void ConservationLaw<dim>::run ()
       }
       
       // Compute predictor only for global time stepping
-      // For local time stepping, this is meaningless
-      if(parameters.implicit)
+      // For local time stepping, this is meaningless.
+      // If time step is changing, then also this is not correct.
+      if(parameters.implicit || parameters.time_step_type == "global")
       {
          predictor = current_solution;
          predictor.sadd (2.0, -1.0, old_solution);

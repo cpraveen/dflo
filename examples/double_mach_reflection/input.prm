@@ -1,0 +1,108 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = grid.msh
+set degree = 1
+set mapping = cartesian
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+#
+# Bottom and top walls
+subsection boundary_0
+   set type = outflow
+end
+
+subsection boundary_1
+   set type = slip
+end
+
+# outflow boundary
+subsection boundary_2
+   set type = outflow
+end
+
+# Top boundary
+subsection boundary_3
+   set type = inflow
+   set w_0 value =  57.1576766498*(x<1.0/6.0+(1+20*t)/sqrt(3)) + 0.0
+   set w_1 value =  -33.0*(x<1.0/6.0+(1+20*t)/sqrt(3)) + 0.0
+   set w_2 value =  8.0*(x<1.0/6.0+(1+20*t)/sqrt(3)) + 1.4*(x>=1.0/6.0+(1+20*t)/sqrt(3))
+   set w_3 value =  563.5*(x<1.0/6.0+(1+20*t)/sqrt(3)) + 2.5*(x>=1.0/6.0+(1+20*t)/sqrt(3))
+end
+
+# inflow, left state of riemann problem
+subsection boundary_4
+   set type = inflow
+   set w_0 value =  57.1576766498
+   set w_1 value =  -33.0
+   set w_2 value =  8.0
+   set w_3 value =  563.5
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+   set w_0 value =  57.1576766498*(x<1.0/6.0+y/sqrt(3)) + 0.0
+   set w_1 value =  -33.0*(x<1.0/6.0+y/sqrt(3)) + 0.0
+   set w_2 value =  8.0*(x<1.0/6.0+y/sqrt(3)) + 1.4*(x>=1.0/6.0+y/sqrt(3))
+   set w_3 value =  563.5*(x<1.0/6.0+y/sqrt(3)) + 2.5*(x>=1.0/6.0+y/sqrt(3))
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = global
+  set cfl = 0.9
+  set final time = 0.2
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  set method         = rk3
+end
+
+# ------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 100
+  set schlieren plot = true
+  set format         = vtk
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = hllc
+end
+
+subsection limiter
+   set type = grad
+   set shock indicator = limiter
+   set characteristic limiter = true
+   set positivity limiter = false
+   set M = 100.0
+   set beta = 1.0
+end

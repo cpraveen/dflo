@@ -104,4 +104,32 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    current_solution = old_solution;
 }
 
+//---------------------------------------------------------------------------
+// Refine cells near the corner of forward step problem
+//---------------------------------------------------------------------------
+template <int dim>
+void
+ConservationLaw<dim>::refine_forward_step ()
+{
+   const double radius = 0.05;
+   const Point<dim> corner(0.6, 0.2);
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
+   {
+      cell->clear_coarsen_flag();
+      cell->clear_refine_flag();
+   
+      Point<dim> dr = cell->center() - corner;
+      if(dr.norm() < radius)
+         cell->set_refine_flag();
+   }
+   
+   triangulation.prepare_coarsening_and_refinement();
+   triangulation.execute_coarsening_and_refinement ();
+}
+
 template class ConservationLaw<2>;

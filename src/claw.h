@@ -84,6 +84,7 @@ private:
    
    void compute_refinement_indicators (dealii::Vector<double> &indicator) const;
    void refine_grid (const dealii::Vector<double> &indicator);
+   void refine_forward_step ();
    
    void output_results () const;
    
