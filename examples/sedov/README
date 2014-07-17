@@ -1,0 +1,17 @@
+Extract solution along line
+
+$ visit -cli -nowin -s lineout_extract.py
+
+This creates the files
+   Density.curve
+   Pressure.curve
+   Energy.curve
+
+Run sedov3.f
+
+$ gfortran sedov3.f
+$ ./a.out
+
+In gnuplot do
+
+gnuplot> load "plot.gnu"

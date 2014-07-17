@@ -49,19 +49,19 @@ c..standard cases
 c..spherical constant density should reach r=1 at t=1
 
       nstep = 400
-      eblast = 3.2q6
+      eblast = 1.0q0
       xgeom  = 2.0q0
       omega  = 0.0q0
       outfile = 'spherical_standard_omega0p00.dat'
 
 
 c..input parameters in cgs
-      time   = 0.001q0
+      time   = 1.0q0
       rho0   = 1.0q0
       vel0   = 0.0q0
       ener0  = 1.0q-12
       gamma  = 1.4q0
-      pres0  = 1.0q-12 * (gamma - 1.0q0)
+      pres0  = ener0 * (gamma - 1.0q0)
       cs0    = sqrt(gamma * pres0 / rho0)
 
 
