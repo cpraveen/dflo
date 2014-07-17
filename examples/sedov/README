@@ -12,6 +12,10 @@ Run sedov3.f
 $ gfortran sedov3.f
 $ ./a.out
 
-In gnuplot do
+Plot using gnuplot
 
-gnuplot> load "plot.gnu"
+$ gnuplot plot.gnu
+
+Open sedov.eps file
+
+$ gv sedov.eps
