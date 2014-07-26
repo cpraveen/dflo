@@ -40,13 +40,13 @@ Line Loop(1) = {1, 10, 7, 8};
 Plane Surface(1) = {1};
 Transfinite Surface(1) = {1,2,7,8};
 
-Line Loop(2) = {2, 3, 4, -9};
+Line Loop(2) = {3, 4, -9, 2};
 Plane Surface(2) = {2};
-Transfinite Surface(2) = {2,3,4,5};
+Transfinite Surface(2) = {3,4,5,2};
 
-Line Loop(3) = {5, 6, -10, 9};
+Line Loop(3) = {9, 5, 6, -10};
 Plane Surface(3) = {3};
-Transfinite Surface(3) = {5,6,7,2};
+Transfinite Surface(3) = {2,5,6,7};
 
 Transfinite Line{1, -7} = n1;
 Transfinite Line{3, 9, -6} = n2;
