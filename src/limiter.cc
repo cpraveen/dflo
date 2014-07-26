@@ -42,10 +42,7 @@ void ConservationLaw<dim>::apply_limiter ()
          case Parameters::Limiter::none:
             break;
          case Parameters::Limiter::TVB:
-            apply_limiter_TVB ();
-            break;
-         case Parameters::Limiter::grad:
-            apply_limiter_grad ();
+            apply_limiter_TVB_Qk ();
             break;
          default:
             AssertThrow(false, ExcMessage("Unknown limiter_type"));
@@ -72,7 +69,7 @@ void ConservationLaw<dim>::apply_limiter ()
 // Note: This is implemented only for 2-D.
 //-----------------------------------------------------------------------------
 template <int dim>
-void ConservationLaw<dim>::apply_limiter_TVB ()
+void ConservationLaw<dim>::apply_limiter_TVB_Qk_deprecated ()
 {
    if(fe.degree == 0) return;
    
@@ -225,7 +222,7 @@ void ConservationLaw<dim>::apply_limiter_TVB ()
 // Note: This is implemented only for 2-D.
 //-----------------------------------------------------------------------------
 template <int dim>
-void ConservationLaw<dim>::apply_limiter_grad ()
+void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
 {
    if(fe.degree == 0) return;
    const unsigned int n_components = EulerEquations<dim>::n_components;

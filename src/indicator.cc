@@ -19,9 +19,37 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    if(parameters.shock_indicator_type == Parameters::Limiter::limiter)
    {
       shock_indicator = 1e20;
-      return;
    }
+   else if(parameters.shock_indicator_type == Parameters::Limiter::u2)
+   {
+      compute_shock_indicator_u2();
+   }
+   else
+   {
+      compute_shock_indicator_kxrcf();
+   }
+}
+
+//-----------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_shock_indicator_u2 ()
+{
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
    
+   for(; cell != endc; ++cell)
+   {
+      bool u2 = test_u2(cell);
+      unsigned int c = cell_number(cell);
+      shock_indicator[c] = (u2) ? 0.0 : 1.0e20;
+   }
+}
+
+//-----------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
+{
    const unsigned int density_component = EulerEquations<dim>::density_component;
    const unsigned int energy_component = EulerEquations<dim>::energy_component;
    
@@ -37,7 +65,7 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    
    unsigned int n_q_points = quadrature.size();
    std::vector<double> face_values(n_q_points), face_values_nbr(n_q_points);
-
+   
    // select indicator variable
    unsigned int component;
    switch(parameters.shock_indicator_type)
@@ -156,7 +184,7 @@ void ConservationLaw<dim>::compute_shock_indicator ()
                            inflow_measure *
                            cell_norm;
       cell_shock_ind = std::fabs(cell_shock_ind) / denominator;
-
+      
       
       double dx = cell->diameter() / std::sqrt(1.0*dim);
       // TODO: normalization needs to be done properly

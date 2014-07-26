@@ -197,11 +197,11 @@ namespace Parameters
       prm.enter_subsection("limiter");
       {
          prm.declare_entry("shock indicator", "limiter",
-                           Patterns::Selection("limiter|density|energy"),
-                           "Shock indicator type: limiter | density | energy");
+                           Patterns::Selection("limiter|density|energy|u2"),
+                           "Shock indicator type: limiter | density | energy | u2");
          prm.declare_entry("type", "none",
-                           Patterns::Selection("none|TVB|grad"),
-                           "Limiter type: none | TVB | grad");
+                           Patterns::Selection("none|TVB"),
+                           "Limiter type: none | TVB");
          prm.declare_entry("characteristic limiter", "false",
                            Patterns::Bool(),
                            "whether to use characteristic limiter");
@@ -233,6 +233,8 @@ namespace Parameters
             shock_indicator_type = density;
          else if(ind == "energy")
             shock_indicator_type = energy;
+         else if(ind == "u2")
+            shock_indicator_type = u2;
          else
             AssertThrow (false, ExcNotImplemented());
          
@@ -241,8 +243,6 @@ namespace Parameters
             limiter_type = none;
          else if(type == "TVB")
             limiter_type = TVB;
-         else if(type == "grad")
-            limiter_type = grad;
          else
             AssertThrow (false, ExcNotImplemented());
          
@@ -540,7 +540,7 @@ namespace Parameters
       if(solver == mood)
          AssertThrow(basis == Pk, ExcMessage("MOOD is implemented only for Pk"));
       
-      if(limiter_type == TVB || limiter_type == grad)
+      if(limiter_type == TVB)
          AssertThrow(mapping_type == cartesian, ExcMessage("TVB limiter works on cartesian grids only"));
       
       if(basis == Pk)

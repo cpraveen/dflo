@@ -17,9 +17,7 @@
 #include <lac/trilinos_precondition.h>
 #include <lac/trilinos_solver.h>
 
-
 #include <Sacado.hpp>
-
 
 #include <iostream>
 #include <fstream>
@@ -87,10 +85,7 @@ compute_derived_quantities_vector (const std::vector<Vector<double> >           
    
    if (do_schlieren_plot == true)
       Assert (duh.size() == n_quadrature_points,
-              ExcInternalError())
-      else
-         Assert (duh.size() == 0,
-                 ExcInternalError());
+              ExcInternalError());
    
    Assert (computed_quantities.size() == n_quadrature_points,
            ExcInternalError());
@@ -120,14 +115,13 @@ compute_derived_quantities_vector (const std::vector<Vector<double> >           
       const double density = uh[q](density_component);
       
       for (unsigned int d=0; d<dim; ++d)
-         computed_quantities[q](d)
-         = uh[q](d) / density;
+         computed_quantities[q](d) = uh[q](d) / density;
       
       computed_quantities[q](dim) = compute_pressure<double> (uh[q]);
       
       if (do_schlieren_plot == true)
          computed_quantities[q](dim+1) = duh[q][density_component] *
-         duh[q][density_component];
+                                         duh[q][density_component];
    }
 }
 

@@ -120,11 +120,13 @@ private:
    void compute_angular_momentum ();
    void compute_cell_average ();
    void apply_limiter ();
-   void apply_limiter_TVB ();
+   void apply_limiter_TVB_Qk_deprecated ();
+   void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
-   void apply_limiter_grad ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
+   void compute_shock_indicator_u2 ();
+   void compute_shock_indicator_kxrcf ();
    
    void compute_reduction_matrices();
    void compute_min_max_mood_var();

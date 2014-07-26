@@ -144,6 +144,12 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
       ark[0] = 0.0;
       n_rk = 1;
    }
+   else if(fe.degree==1)
+   {
+      ark[0] = 0.0;
+      ark[1] = 1.0/2.0;
+      n_rk = 2;
+   }
    else
    {
       ark[0] = 0.0;
@@ -945,7 +951,14 @@ void ConservationLaw<dim>::run ()
       else if(parameters.mesh_type == "gmsh")
          grid_in.read_msh(input_file);
    }
-
+   
+//   {
+//      // Use this refine around corner in forward step
+//      unsigned int nrefine = 2;
+//      for(unsigned int i=0; i<nrefine; ++i)
+//         refine_forward_step ();
+//   }
+   
    /*
    static const HyperBallBoundary<dim> boundary_description;
    triangulation.set_boundary (1, boundary_description);
