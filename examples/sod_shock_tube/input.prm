@@ -52,7 +52,7 @@ end
 # Time stepping control
 subsection time stepping
   set time step type = global
-  set cfl = 0.5
+  set cfl = 0.9
   set final time = 0.2
   set nonlinear iterations = 1
 end
@@ -67,7 +67,7 @@ end
 subsection output
   set iter step      = 100
   set schlieren plot = true
-  set format         = tecplot
+  set format         = vtk
 end
 
 # --------------------------------------------------
@@ -91,4 +91,5 @@ subsection limiter
    set characteristic limiter = true
    set positivity limiter = false
    set M = 0.0
+   set beta = 2.0
 end
