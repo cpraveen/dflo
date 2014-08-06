@@ -4,7 +4,7 @@ ymin = -0.75;
 ymax = +0.75;
 
 // y length is 3 times x length
-nx = 101;
+nx = 201;
 ny = (nx-1)*3 + 1;
 
 Point(1) = {xmin, ymin, 0};
