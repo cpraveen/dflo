@@ -24,6 +24,10 @@ private:
    const double Ly = 1.5;  // size of domain in y
    const double A  = 0.01; // y velocity perturbation amplitude
    const double P0 = 2.5;  // pressure at y=0
+   const double rho_l = 1.0;
+   const double rho_u = 2.0;
+   const double y_l = -0.75; // y_l and y_m must be same as in the grid
+   const double y_m =  0.0;
 };
 
 //------------------------------------------------------------------------
