@@ -211,7 +211,7 @@ struct EulerEquations
       flux[density_component] = W[density_component] * vdotn;
       flux[energy_component] = (W[energy_component] + pressure) * vdotn;
       for (unsigned int d=0; d<dim; ++d)
-         flux[d] = W[d] * vdotn;
+         flux[d] = pressure * normal[d] + W[d] * vdotn;
    }
    
    //---------------------------------------------------------------------------
