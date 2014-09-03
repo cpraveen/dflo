@@ -84,15 +84,16 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
          const unsigned int index = fe_v.get_fe().component_to_system_index(component_i, point);
          for (unsigned int d=0; d<dim; d++)
             F_i += flux[point][component_i][d] *
-                   fe_v.shape_grad_component(index, support_i, component_i)[d];
+                   fe_v.shape_grad_component(index, support_i, component_i)[d] *
+                   fe_v.JxW(support_i);
          
-//         F_i -= parameters.gravity *
-//                forcing[point][component_i] *
-//                fe_v.shape_value_component(i, point, component_i) *
-//                fe_v.JxW(point);
+           F_i -= parameters.gravity *
+                  forcing[point][component_i] *
+                  fe_v.shape_value_component(i, point, component_i) *
+                  fe_v.JxW(point);
       }
       
-      local_vector (i) -= F_i * fe_v.JxW(support_i);
+      local_vector (i) -= F_i;
    }
    
    delete[] forcing;

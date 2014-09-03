@@ -543,6 +543,7 @@ ConservationLaw<dim>::compute_time_step_q ()
       const unsigned int c = cell_number (cell);
       const double h = cell->diameter() / std::sqrt(1.0*dim);
       dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0);
+      dt(c) /= dim;
       
       global_dt = std::min(global_dt, dt(c));
    }
