@@ -37,6 +37,43 @@ void RayleighTaylor<dim>::vector_value (const Point<dim> &p,
 }
 
 //--------------------------------------------------------------------------------------------
+template <int dim>
+void RadialRayleighTaylor<dim>::vector_value (const Point<dim> &p,
+                                              Vector<double>   &values) const
+{
+   double r = p.norm();
+   double theta = std::atan2(p[1],p[0]);
+   double alpha = std::exp(-r0)/(std::exp(-r0) + drho);
+   double factor = std::exp(r0*(1.0-alpha)/alpha);
+   
+   double pressure;
+   
+   if(r < r0)
+   {
+      pressure = std::exp(-r);
+   }
+   else
+   {
+      pressure = factor * std::exp(-r/alpha);
+   }
+   
+   double ds = 0.01; // smoothing length = 2*ds
+   double ri = r0*(1.0 + eta*cos(k*theta));
+   double smoothH = 0.5*(1.0 - std::tanh((r-ri)/ds));
+   
+   values[EulerEquations<dim>::density_component]
+      = std::exp(-r) * smoothH
+        + factor/alpha * std::exp(-r/alpha) * (1.0 - smoothH);
+
+   // Momentum
+   for(unsigned int d=0; d<dim; ++d)
+      values[d] = 0.0;
+   
+   // Energy
+   values[EulerEquations<dim>::energy_component] =  pressure/(EulerEquations<dim>::gas_gamma - 1.0);
+}
+
+//--------------------------------------------------------------------------------------------
 // Initial condition for isentropic vortex problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
@@ -106,6 +143,9 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    if(parameters.ic_function == "rt")
       VectorTools::interpolate(mapping(), dof_handler,
                                RayleighTaylor<dim>(parameters.gravity), old_solution);
+   else if(parameters.ic_function == "rrt")
+      VectorTools::interpolate(mapping(), dof_handler,
+                               RadialRayleighTaylor<dim>(), old_solution);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
                                IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);

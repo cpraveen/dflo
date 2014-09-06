@@ -25,6 +25,25 @@ private:
    const double A  = 0.01; // y velocity perturbation amplitude
    const double P0 = 2.5;  // pressure at y=0
 };
+//------------------------------------------------------------------------
+
+template <int dim>
+class RadialRayleighTaylor : public dealii::Function<dim>
+{
+public:
+   RadialRayleighTaylor ()
+   :
+   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   {}
+   virtual void vector_value (const dealii::Point<dim>  &p,
+                              dealii::Vector<double>  &values) const;
+   
+private:
+   const double r0 = 0.6;
+   const double eta = 0.02;
+   const double k  = 20.0;
+   const double drho  = 0.1;
+};
 
 //------------------------------------------------------------------------
 // Isentropic vortex, just rotates about itself

@@ -54,8 +54,15 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
    
    typedef double ForcingVector[EulerEquations<dim>::n_components];
    ForcingVector *forcing = new ForcingVector[n_q_points];
+   std::vector<double> potential(n_q_points), exp_potential(n_q_points);
+   std::vector< Vector<double> > grad_exp(n_q_points, Vector<double>(dim));
    
-
+   parameters.potential.value_list(fe_v.get_quadrature_points(),
+                                   potential);
+   double rho_avg = cell_average[cell_no][EulerEquations<dim>::density_component];
+   double pre_avg = EulerEquations<dim>::template compute_pressure<double>(cell_average[cell_no]);
+   double RT = pre_avg / rho_avg;
+   
    for (unsigned int i=0; i<dofs_per_cell; ++i)
    {
       const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
@@ -63,13 +70,40 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
       
       W[q][c] = current_solution(dof_indices[i]);
    }
-   
+      
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       EulerEquations<dim>::compute_flux_matrix (W[q], flux[q]);
-      EulerEquations<dim>::compute_forcing_vector (W[q], forcing[q]);
+      //EulerEquations<dim>::compute_forcing_vector (W[q], forcing[q]);
+      exp_potential[q] = std::exp(-potential[q]/RT);
    }
-
+   
+   // compute gradient of exp(-phi/RT)
+   // we use shape_grad corresponding to component = 0
+   for (unsigned int q=0; q<n_q_points; ++q)
+   {
+      for(unsigned int d=0; d<dim; ++d) grad_exp[q][d] = 0;
+      for(unsigned int i=0; i<n_q_points; ++i)
+      {
+         const unsigned int index = fe_v.get_fe().component_to_system_index(0, i);
+         for(unsigned int d=0; d<dim; ++d)
+            grad_exp[q][d] += exp_potential[i] *
+                              fe_v.shape_grad_component(index, q, 0)[d];
+      }
+      
+      double pressure = W[q][EulerEquations<dim>::density_component] * RT;
+      double factor = pressure / exp_potential[q];
+      
+      forcing[q][EulerEquations<dim>::energy_component] = 0.0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         forcing[q][d] = factor * grad_exp[q][d];
+         double u = W[q][d] / W[q][EulerEquations<dim>::density_component];
+         forcing[q][EulerEquations<dim>::energy_component] += u * forcing[q][d];
+      }
+      forcing[q][EulerEquations<dim>::density_component] = 0.0;
+   }
+   
    for (unsigned int i=0; i<dofs_per_cell; ++i)
    {
       double F_i = 0;
@@ -78,20 +112,16 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
       component_i = fe_v.get_fe().system_to_component_index(i).first;
       const unsigned int
       support_i = fe_v.get_fe().system_to_component_index(i).second;
-            
+
       for (unsigned int point=0; point<n_q_points; ++point)
       {
          const unsigned int index = fe_v.get_fe().component_to_system_index(component_i, point);
          for (unsigned int d=0; d<dim; d++)
             F_i += flux[point][component_i][d] *
-                   fe_v.shape_grad_component(index, support_i, component_i)[d] *
-                   fe_v.JxW(support_i);
-         
-           F_i -= parameters.gravity *
-                  forcing[point][component_i] *
-                  fe_v.shape_value_component(i, point, component_i) *
-                  fe_v.JxW(point);
+                   fe_v.shape_grad_component(index, support_i, component_i)[d];
       }
+
+      F_i = (F_i - forcing[support_i][component_i]) * fe_v.JxW(support_i);
       
       local_vector (i) -= F_i;
    }
@@ -448,8 +478,7 @@ void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
                 this, _1, _2),
     boost::bind(&ConservationLaw<dim>::integrate_face_term_explicit,
                 this, _1, _2, _3, _4),
-    integrator.assembler, 
-    false);
+    integrator.assembler);
 }
 
 template class ConservationLaw<2>;

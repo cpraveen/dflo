@@ -347,6 +347,10 @@ namespace Parameters
                         Patterns::Double(0.0),
                         "gravitational force");
       
+      prm.declare_entry("potential", "0.0",
+                        Patterns::Anything(),
+                        "expression in x,y,z");
+      
       
       prm.enter_subsection("time stepping");
       {
@@ -400,7 +404,7 @@ namespace Parameters
       prm.enter_subsection("initial condition");
       {
          prm.declare_entry("function", "none",
-                           Patterns::Selection("none|rt|isenvort|vortsys"),
+                           Patterns::Selection("none|rt|rrt|isenvort|vortsys"),
                            "function for initial condition");
          
          for (unsigned int di=0; di<EulerEquations<dim>::n_components; ++di)
@@ -429,6 +433,10 @@ namespace Parameters
       diffusion_coef = prm.get_double("diffusion coefficient");
       degree = prm.get_integer("degree");
       gravity = prm.get_double("gravity");
+      std::string potential_function = prm.get("potential");
+      potential.initialize(FunctionParser<dim>::default_variable_names(),
+                           potential_function,
+                           std::map<std::string, double>());
       
       std::string map = prm.get("mapping");
       if(map == "q1")
