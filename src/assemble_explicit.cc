@@ -448,8 +448,7 @@ void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
                 this, _1, _2),
     boost::bind(&ConservationLaw<dim>::integrate_face_term_explicit,
                 this, _1, _2, _3, _4),
-    integrator.assembler, 
-    false);
+    integrator.assembler);
 }
 
 template class ConservationLaw<2>;

@@ -324,6 +324,9 @@ void ConservationLaw<dim>::setup_system ()
    if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
       compute_cartesian_mesh_size ();
 
+   if(parameters.mapping_type != Parameters::AllParameters<dim>::cartesian)
+      return;
+
    // For each cell, find neighbourig cell
    // This is needed for limiter
    // CHECK: Should the size be n_active_cells() ?

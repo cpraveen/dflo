@@ -323,8 +323,7 @@ void ConservationLaw<dim>::compute_mu_shock ()
                 this, _1, _2),
     boost::bind(&ConservationLaw<dim>::shock_face_term,
                 this, _1, _2, _3, _4),
-    integrator.assembler, 
-    false);
+    integrator.assembler);
 
    MeshWorker::loop<dim,dim,MeshWorker::DoFInfo<dim>,MeshWorker::IntegrationInfoBox<dim> >
    (dof_handler.begin_active(),
@@ -335,8 +334,7 @@ void ConservationLaw<dim>::compute_mu_shock ()
                 this, _1, _2),
     0,
     0,
-    integrator.assembler, 
-    false);
+    integrator.assembler);
 
    return;
 
