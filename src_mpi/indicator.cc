@@ -20,29 +20,9 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    {
       shock_indicator = 1e20;
    }
-   else if(parameters.shock_indicator_type == Parameters::Limiter::u2)
-   {
-      compute_shock_indicator_u2();
-   }
    else
    {
       compute_shock_indicator_kxrcf();
-   }
-}
-
-//-----------------------------------------------------------------------------
-template <int dim>
-void ConservationLaw<dim>::compute_shock_indicator_u2 ()
-{
-   typename DoFHandler<dim>::active_cell_iterator
-      cell = dof_handler.begin_active(),
-      endc = dof_handler.end();
-   
-   for(; cell != endc; ++cell)
-   {
-      bool u2 = test_u2(cell);
-      unsigned int c = cell_number(cell);
-      shock_indicator[c] = (u2) ? 0.0 : 1.0e20;
    }
 }
 

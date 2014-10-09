@@ -79,10 +79,6 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    verbose_cout (std::cout, false)
 {
    read_parameters (input_filename);
-   
-   // For MOOD method compute degree reduction matrices
-   if(parameters.solver == Parameters::Solver::mood)
-      compute_reduction_matrices ();
 }
 
 //------------------------------------------------------------------------------
@@ -100,22 +96,6 @@ dh_cell (triangulation),
 verbose_cout (std::cout, false)
 {
    read_parameters (input_filename);
-   
-   // create map from dof index to total degree of basis function
-   index_to_degree.resize(fe.base_element(0).dofs_per_cell);
-   unsigned int c = 0;
-   if(dim==2)
-   {
-      for(unsigned int j=0; j<=degree; ++j)
-         for(unsigned int i=0; i<=degree-j; ++i)
-         {
-            index_to_degree[c++] = i+j;
-         }
-   }
-   else
-   {
-      AssertThrow(false, ExcMessage("Not implemented for dim=3"));
-   }
 }
 
 //------------------------------------------------------------------------------
@@ -305,21 +285,10 @@ void ConservationLaw<dim>::setup_system ()
       system_matrix.reinit (sparsity_pattern);
    }
    
-   // Allocate memory for MOOD variables
-   if(parameters.solver == Parameters::Solver::mood)
-   {
-      min_mood_var.reinit(triangulation.n_active_cells());
-      max_mood_var.reinit(triangulation.n_active_cells());
-      work1.reinit (dof_handler.n_dofs());
-   }
-   
-   cell_degree.resize(triangulation.n_active_cells());
-   re_update.resize(triangulation.n_active_cells());
-   for(unsigned int i=0; i<triangulation.n_active_cells(); ++i)
-   {
-      cell_degree[i] = fe.degree;
-      re_update[i] = true;
-   }
+   unsigned int index=0;
+   for (typename DoFHandler<dim>::active_cell_iterator cell=dof_handler.begin_active();
+        cell!=dof_handler.end(); ++cell, ++index)
+      cell_number_map.insert (std::make_pair (std::pair<int,int>(cell->level(),cell->index()), index));
    
    if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
       compute_cartesian_mesh_size ();
@@ -573,7 +542,6 @@ ConservationLaw<dim>::compute_cell_average ()
    for (; cell!=endc; ++cell)
    {
       unsigned int cell_no = cell_number(cell);
-      if(re_update[cell_no])
       {
          fe_values.reinit (cell);
          fe_values.get_function_values (current_solution, solution_values);
@@ -761,105 +729,6 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
 }
 
 //------------------------------------------------------------------------------
-// Perform SSPRK step using MOOD method
-//------------------------------------------------------------------------------
-template <int dim>
-void ConservationLaw<dim>::iterate_mood (IntegratorExplicit<dim>& integrator,
-                                         Vector<double>& newton_update,
-                                         double& res_norm0, double& res_norm)
-{
-   std::pair<unsigned int, double> convergence;
-   
-   // Loop for RK stages
-   for(unsigned int rk=0; rk<n_rk; ++rk)
-   {
-      std::cout << "RK stage " << rk+1 << std::endl;
-      std::cout << "\t Iter       n_reduce     n_re_update     n_reset\n";
-      
-      // set time in boundary condition
-      // NOTE: We need to check if this is time accurate.
-      for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
-           ++boundary_id)
-      {
-         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
-      }
-      
-      compute_min_max_mood_var();
-      
-      // iterate forward euler until DMP is satisfied
-      bool terminate = false;
-      unsigned int mood_iter = 0;
-      predictor = current_solution;
-      shock_indicator = 0;
-      
-      while(!terminate)
-      {         
-         assemble_system (integrator);
-         
-         res_norm = right_hand_side.l2_norm();
-         if(rk == 0) res_norm0 = res_norm;
-         
-         convergence = solve (newton_update, res_norm);
-         
-         if(mood_iter == 0)
-         {
-            // In first iteration all cells must be updated
-            current_solution += newton_update;
-            work1 = current_solution;
-         }
-         else
-         {
-            // Update cells with re_update == true
-            std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-            typename DoFHandler<dim>::active_cell_iterator
-               cell = dof_handler.begin_active(),
-               endc = dof_handler.end();
-            for(; cell != endc; ++cell)
-            {
-               unsigned int c = cell_number(cell);
-               if(re_update[c] == true)
-               {
-                  cell->get_dof_indices( dof_indices );
-                  for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-                  {
-                     current_solution(dof_indices[i]) += newton_update(dof_indices[i]);
-                     unsigned int base_i = fe.system_to_component_index(i).second;
-                     if(index_to_degree[base_i] > cell_degree[c])
-                        current_solution(dof_indices[i]) = 0.0;
-                     work1(dof_indices[i]) = current_solution(dof_indices[i]);
-                  }
-               }
-            }
-         }
-
-         compute_cell_average ();
-         unsigned int n_reduce=0, n_re_update=0, n_reset=0;
-         terminate = apply_mood (n_reduce, n_re_update, n_reset);
-         
-         ++mood_iter;
-         std::printf("%12d %12d %12d %12d\n", mood_iter, n_reduce, n_re_update, n_reset);
-      }
-      
-      // Forward euler has been accepted.
-      // Now update rk stage.
-      current_solution = work1;
-      
-      // current_solution = ark*old_solution + (1-ark)*current_solution
-      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
-      
-      // Reset degree and update flags
-      for(unsigned int i=0; i<triangulation.n_active_cells(); ++i)
-      {
-         cell_degree[i] = fe.degree;
-         re_update[i] = true;
-      }
-      compute_cell_average ();
-      apply_limiter();
-      if(parameters.pos_lim) apply_positivity_limiter ();
-   }
-}
-
-//------------------------------------------------------------------------------
 // Perform one step of implicit scheme
 //------------------------------------------------------------------------------
 template <int dim>
@@ -1041,9 +910,6 @@ void ConservationLaw<dim>::run ()
       }
       else if(parameters.solver == Parameters::Solver::mood)
       {
-         IntegratorExplicit<dim> integrator_explicit (dof_handler);
-         setup_mesh_worker (integrator_explicit);
-         iterate_mood(integrator_explicit, newton_update, res_norm0, res_norm);
       }
       else
       {
