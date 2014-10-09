@@ -120,29 +120,11 @@ private:
    void compute_angular_momentum ();
    void compute_cell_average ();
    void apply_limiter ();
-   void apply_limiter_TVB_Qk_deprecated ();
    void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
-   void compute_shock_indicator_u2 ();
    void compute_shock_indicator_kxrcf ();
-   
-   void compute_reduction_matrices();
-   void compute_min_max_mood_var();
-   bool apply_mood(unsigned int&, unsigned int&, unsigned int&);
-   void reduce_degree(const typename dealii::DoFHandler<dim>::cell_iterator&,
-                      const unsigned int,
-                      dealii::FEValues<dim>&);
-   void reduce_degree_Pk(const typename dealii::DoFHandler<dim>::cell_iterator&,
-                         const unsigned int,
-                         dealii::FEValues<dim>&);
-   void reduce_degree_Qk(const typename dealii::DoFHandler<dim>::cell_iterator&,
-                         const unsigned int,
-                         dealii::FEValues<dim>&);
-   void get_mood_second_derivatives(const typename dealii::DoFHandler<dim>::cell_iterator &cell,
-                                    std::vector<double>& D2);
-   bool test_u2(const typename dealii::DoFHandler<dim>::cell_iterator &cell);
    
    void compute_mu_shock ();
    void shock_cell_term (DoFInfo& dinfo, CellInfo& info);
@@ -221,6 +203,7 @@ private:
    dealii::Vector<double>       mu_shock;
    dealii::Vector<double>       shock_indicator;
    dealii::Vector<double>       jump_indicator;
+   std::map<std::pair<int,int>,unsigned int> cell_number_map;
 
    double                       global_dt;
    double                       elapsed_time;
@@ -252,17 +235,8 @@ private:
    // distributing the degrees of freedom.
    dealii::SparseMatrix<double> system_matrix;
    dealii::SparsityPattern      sparsity_pattern;
-   
-   // MOOD data
-   std::vector<unsigned int> cell_degree;
-   std::vector<bool> re_update;
-   std::vector<dealii::FullMatrix<double> > Rmatrix;
-   dealii::Vector<double> min_mood_var, max_mood_var;
 
    std::vector< dealii::Vector<double> > inv_mass_matrix;
-   
-   // For FE_DGP, maps dof index to its degree
-   std::vector<unsigned int> index_to_degree;
    
    Parameters::AllParameters<dim>  parameters;
    dealii::ConditionalOStream      verbose_cout;
@@ -328,21 +302,16 @@ private:
    // Given a cell iterator, return the cell number
    template <typename ITERATOR>
    inline
-   unsigned int cell_number (const ITERATOR &cell) const
+   unsigned int cell_number (const ITERATOR &cell)
    {
-      dealii::DoFAccessor<dim,dealii::DoFHandler<dim>,false> 
-         dof_accessor (&triangulation, 
-                       cell->level(), 
-                       cell->index(), 
-                       &dh_cell);
-      return dof_accessor.dof_index(0);
+      return cell_number_map[std::make_pair(cell->level(),cell->index())];
    }
    
    // If cell is active, return cell average.
    // If cell is not active, return area average of child cells.
    inline
    void get_cell_average(const typename dealii::DoFHandler<dim>::cell_iterator& cell,
-                         dealii::Vector<double>& avg) const
+                         dealii::Vector<double>& avg)
    {
       if(cell->active())
       {
