@@ -271,6 +271,12 @@ void ConservationLaw<dim>::setup_system ()
    shock_indicator.reinit (dh_cell.n_dofs());
    jump_indicator.reinit (dh_cell.n_dofs());
 
+   // create map from (level,index) to cell number
+   unsigned int index=0;
+   for (typename DoFHandler<dim>::active_cell_iterator cell=dof_handler.begin_active();
+        cell!=dof_handler.end(); ++cell, ++index)
+      cell_number_map.insert (std::make_pair (std::pair<int,int>(cell->level(),cell->index()), index));
+   
    if(parameters.implicit == false)
    {
       std::cout << "Creating mass matrix ...\n";
@@ -285,11 +291,6 @@ void ConservationLaw<dim>::setup_system ()
       system_matrix.reinit (sparsity_pattern);
    }
    
-   unsigned int index=0;
-   for (typename DoFHandler<dim>::active_cell_iterator cell=dof_handler.begin_active();
-        cell!=dof_handler.end(); ++cell, ++index)
-      cell_number_map.insert (std::make_pair (std::pair<int,int>(cell->level(),cell->index()), index));
-   
    if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
       compute_cartesian_mesh_size ();
 
@@ -299,10 +300,10 @@ void ConservationLaw<dim>::setup_system ()
    // For each cell, find neighbourig cell
    // This is needed for limiter
    // CHECK: Should the size be n_active_cells() ?
-   lcell.resize(triangulation.n_cells());
-   rcell.resize(triangulation.n_cells());
-   bcell.resize(triangulation.n_cells());
-   tcell.resize(triangulation.n_cells());
+   lcell.resize(triangulation.n_active_cells());
+   rcell.resize(triangulation.n_active_cells());
+   bcell.resize(triangulation.n_active_cells());
+   tcell.resize(triangulation.n_active_cells());
 
    const double EPS = 1.0e-10;
    typename DoFHandler<dim>::active_cell_iterator
