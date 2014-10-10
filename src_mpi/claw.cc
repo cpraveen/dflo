@@ -273,10 +273,10 @@ void ConservationLaw<dim>::setup_system ()
 
    // create map from (level,index) to cell number
    unsigned int index=0;
-   for (typename DoFHandler<dim>::active_cell_iterator cell=dof_handler.begin_active();
-        cell!=dof_handler.end(); ++cell, ++index)
-      cell_number_map.insert (std::make_pair (std::pair<int,int>(cell->level(),cell->index()), index));
-   
+   for (typename Triangulation<dim>::active_cell_iterator cell=triangulation.begin_active();
+        cell!=triangulation.end(); ++cell, ++index)
+      cell->set_user_index(index);
+
    if(parameters.implicit == false)
    {
       std::cout << "Creating mass matrix ...\n";
