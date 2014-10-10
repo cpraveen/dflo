@@ -302,16 +302,16 @@ private:
    // Given a cell iterator, return the cell number
    template <typename ITERATOR>
    inline
-   unsigned int cell_number (const ITERATOR &cell)
+   unsigned int cell_number (const ITERATOR &cell) const
    {
-      return cell_number_map[std::make_pair(cell->level(),cell->index())];
+      return cell->user_index();
    }
    
    // If cell is active, return cell average.
    // If cell is not active, return area average of child cells.
    inline
    void get_cell_average(const typename dealii::DoFHandler<dim>::cell_iterator& cell,
-                         dealii::Vector<double>& avg)
+                         dealii::Vector<double>& avg) const
    {
       if(cell->active())
       {
