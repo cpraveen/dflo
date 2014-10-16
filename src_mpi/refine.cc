@@ -45,9 +45,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    cell = dof_handler.begin_active(),
    endc = dof_handler.end();
    
-   for (; cell!=endc; ++cell) //unsigned int cell_no=0 , ++cell_no
-   {
-	    unsigned int cell_no=cell_number(cell);
+   for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
 		if(cell->is_locally_owned())
 			{
 				cell->clear_coarsen_flag();
@@ -61,7 +59,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
 						(std::fabs(refinement_indicators(cell_no)) < 0.75*parameters.shock_val))
 							cell->set_coarsen_flag();
 			}
-   }
+
    // Then we need to transfer the
    // various solution vectors from
    // the old to the new grid while we
@@ -134,7 +132,7 @@ ConservationLaw<dim>::refine_forward_step ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
    
-   for (; cell!=endc; ++cell) //unsigned int cell_no=0 , ++cell_no
+   for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
    if(cell->is_locally_owned())
    {
       cell->clear_coarsen_flag();

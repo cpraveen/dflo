@@ -23,15 +23,6 @@
 #include <vector>
 #include <memory>
 
-//#include "claw.h"
-
-/*using namespace dealii;
-
-namespace LA
-{
-	using namespace ::TrilinosWrappers;
-}//*/
-
 template <int dim>
 struct EulerEquations
 {
@@ -1117,13 +1108,12 @@ struct EulerEquations
       typename dealii::DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
-      for (; cell!=endc; ++cell) //unsigned int cell_no=0, ++cell_no
+      for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
       if(cell->is_locally_owned())
       {
          fe_v.reinit(cell);
          fe_v.get_function_gradients (solution, dU);
-         
-         unsigned int cell_no = cell_number(cell);
+
          refinement_indicators(cell_no)
 				  = std::log(1+
                     std::sqrt(dU[0][density_component] *
