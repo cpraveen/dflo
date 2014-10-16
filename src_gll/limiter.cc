@@ -85,9 +85,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end(),
       endc0 = dh_cell.end();
-   
-   const double beta = parameters.beta;
-   
+      
    for(; cell != endc; ++cell)
    {
       const unsigned int c = cell_number(cell);
@@ -95,6 +93,8 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
       {
          const double dx = cell->diameter() / std::sqrt(1.0*dim);
          const double Mdx2 = parameters.M * dx * dx;
+         double betax = parameters.beta;
+         double betay = parameters.beta;
          
          // Compute average gradient in cell
          fe_values_grad.reinit(cell);
@@ -123,6 +123,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          {
             dbx    = 0.0;
             dbx(0) = 2.0*cell_average[c][0];
+            betax = 1.0;
          }
          
          // Forward difference of cell averages
@@ -137,6 +138,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          {
             dfx    = 0.0;
             dfx(0) = -2.0*cell_average[c][0];
+            betax = 1.0;
          }
          
          // Backward difference of cell averages
@@ -151,6 +153,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          {
             dby    = 0.0;
             dby(1) = 2.0*cell_average[c][1];
+            betay = 1.0;
          }
          
          // Forward difference of cell averages
@@ -165,6 +168,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          {
             dfy    = 0.0;
             dfy(1) = -2.0*cell_average[c][1];
+            betay = 1.0;
          }
          
          // Transform to characteristic variables
@@ -186,8 +190,8 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          double change_y = 0;
          for(unsigned int i=0; i<n_components; ++i)
          {
-            Dx_new(i) = minmod(Dx(i), beta*dbx(i), beta*dfx(i), Mdx2);
-            Dy_new(i) = minmod(Dy(i), beta*dby(i), beta*dfy(i), Mdx2);
+            Dx_new(i) = minmod(Dx(i), betax*dbx(i), betax*dfx(i), Mdx2);
+            Dy_new(i) = minmod(Dy(i), betay*dby(i), betay*dfy(i), Mdx2);
             change_x += std::fabs(Dx_new(i) - Dx(i));
             change_y += std::fabs(Dy_new(i) - Dy(i));
          }

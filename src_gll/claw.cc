@@ -363,9 +363,8 @@ void ConservationLaw<dim>::setup_system ()
                cell_data[c].tcell = neighbor;
             else
             {
-               std::cout << "Did not find all neighbours\n";
                std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
-               exit(0);
+               AssertThrow(false, ExcMessage("Did not find all neighbours"));
             }
          }
          else
@@ -387,8 +386,6 @@ void ConservationLaw<dim>::setup_system ()
             {
                AssertThrow(false, ExcMessage("Error in getting boundary condition"));
             }
-
-
          }
    }
 
