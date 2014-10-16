@@ -24,7 +24,7 @@
 //------------------------------------------------------------------------------
 // Class for integrating rhs using MeshWorker
 //------------------------------------------------------------------------------
-template <int dim>
+/*template <int dim>
 class IntegratorImplicit
 {
 public:
@@ -34,9 +34,9 @@ public:
    
    dealii::MeshWorker::IntegrationInfoBox<dim> info_box;
    dealii::MeshWorker::DoFInfo<dim> dof_info;
-   dealii::MeshWorker::Assembler::SystemSimple<dealii::SparseMatrix<double>, dealii::Vector<double> > assembler;
+   dealii::MeshWorker::Assembler::SystemSimple<dealii::SparseMatrix<double>, dealii::Vector<double> > assembler; 
 
-};
+};//*/
 
 //------------------------------------------------------------------------------
 // Class for integrating rhs using MeshWorker
@@ -52,7 +52,7 @@ public:
    
    dealii::MeshWorker::IntegrationInfoBox<dim> info_box;
    dealii::MeshWorker::DoFInfo<dim> dof_info;
-   dealii::MeshWorker::Assembler::ResidualSimple< dealii::Vector<double> > assembler;
+   dealii::MeshWorker::Assembler::ResidualSimple< dealii::TrilinosWrappers::MPI::Vector > assembler; //dealii::Vector<double>
 
 };
 

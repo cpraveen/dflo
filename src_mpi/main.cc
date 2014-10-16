@@ -24,7 +24,7 @@ int main (int argc, char *argv[])
    
    try
    {
-      Utilities::System::MPI_InitFinalize mpi_initialization (argc, argv, n_threads);
+      Utilities::MPI::MPI_InitFinalize mpi_initialization (argc, argv, n_threads);
       ParameterHandler prm;
       Parameters::AllParameters<2>::declare_parameters (prm);
       bool status = prm.read_input (argv[1], true);
@@ -33,8 +33,8 @@ int main (int argc, char *argv[])
       unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
       std::string basis = prm.get("basis");
       
-      Timer timer;
-      timer.start ();
+      //Timer timer;
+      //timer.start ();
       if(basis=="Qk")
       {
          const FE_DGQArbitraryNodes<2> fe_scalar(QGauss<1>(degree+1));
@@ -47,11 +47,11 @@ int main (int argc, char *argv[])
          ConservationLaw<2> cons (argv[1], degree, fe_scalar);
          cons.run ();
       }
-      timer.stop ();
+      //timer.stop ();
 
-      std::cout << std::endl;
-      std::cout << "Elapsed CPU time : " << timer()/60 << " min.\n";
-      std::cout << "Elapsed wall time: " << timer.wall_time()/60 << " min.\n";
+      //std::cout << std::endl;
+      //std::cout << "Elapsed CPU time : " << timer()/60 << " min.\n";
+      //std::cout << "Elapsed wall time: " << timer.wall_time()/60 << " min.\n";
    }
    catch (std::exception &exc)
    {

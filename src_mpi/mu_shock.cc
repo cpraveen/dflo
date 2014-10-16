@@ -284,7 +284,7 @@ void ConservationLaw<dim>::shock_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
 //------------------------------------------------------------------------------
 // Assemble matrices
 //------------------------------------------------------------------------------
-template <int dim>
+/*template <int dim>
 void ConservationLaw<dim>::compute_mu_shock ()
 {
    if(parameters.diffusion_coef == 0.0)
@@ -369,6 +369,6 @@ void ConservationLaw<dim>::compute_mu_shock ()
          for(unsigned int i=0; i<fe1.dofs_per_cell; ++i)
             mu_shock(cell_no) += 0.25 * mu_tmp(dof_indices[i]);
      }
-}
+}//*/
 
 template class ConservationLaw<2>;

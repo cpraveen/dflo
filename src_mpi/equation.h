@@ -12,12 +12,25 @@
 #include <numerics/vector_tools.h>
 #include <numerics/solution_transfer.h>
 
+#include <distributed/tria.h>
+#include <distributed/grid_refinement.h>
+#include <distributed/solution_transfer.h>
+
 #include <Sacado.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <memory>
+
+//#include "claw.h"
+
+/*using namespace dealii;
+
+namespace LA
+{
+	using namespace ::TrilinosWrappers;
+}//*/
 
 template <int dim>
 struct EulerEquations
@@ -1056,6 +1069,7 @@ struct EulerEquations
                            - 0.5 * u2 / T;
       V[energy_component] = -1.0 / T;
    }
+   
 
    // @sect4{EulerEquations::compute_refinement_indicators}
    
@@ -1084,10 +1098,10 @@ struct EulerEquations
    // is easy to compute:
    static
    void
-   compute_refinement_indicators (const dealii::DoFHandler<dim> &dof_handler,
-                                  const dealii::Mapping<dim>    &mapping,
-                                  const dealii::Vector<double>  &solution,
-                                  dealii::Vector<double>        &refinement_indicators)
+   compute_refinement_indicators (const dealii::DoFHandler<dim> 		&dof_handler,
+                                  const dealii::Mapping<dim>    		&mapping,
+                                  const dealii::TrilinosWrappers::MPI::Vector  	&solution,
+                                  dealii::Vector<double>		&refinement_indicators) //dealii::TrilinosWrappers::MPI::Vector
    {
       const unsigned int dofs_per_cell = dof_handler.get_fe().dofs_per_cell;
       std::vector<unsigned int> dofs (dofs_per_cell);
@@ -1103,16 +1117,20 @@ struct EulerEquations
       typename dealii::DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
-      for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
+      for (; cell!=endc; ++cell) //unsigned int cell_no=0, ++cell_no
+      if(cell->is_locally_owned())
       {
          fe_v.reinit(cell);
          fe_v.get_function_gradients (solution, dU);
          
+         unsigned int cell_no = cell_number(cell);
          refinement_indicators(cell_no)
-	      = std::log(1+
+				  = std::log(1+
                     std::sqrt(dU[0][density_component] *
                               dU[0][density_component]));
       }
+      //refinement_indicators.compress(VectorOperation::insert);
+
    }
    
    
