@@ -120,7 +120,6 @@ private:
    void compute_angular_momentum ();
    void compute_cell_average ();
    void apply_limiter ();
-   void apply_limiter_TVB_Qk_deprecated ();
    void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
    void apply_positivity_limiter ();
