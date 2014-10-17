@@ -33,6 +33,14 @@
 #include "parameters.h"
 #include "integrator.h"
 
+template <int dim>
+struct CellData
+{
+   typename dealii::DoFHandler<dim>::cell_iterator lcell, rcell, bcell, tcell;
+   unsigned int number;
+   typename EulerEquations<dim>::BoundaryKind lbc, rbc, bbc, tbc;
+};
+
 // @sect3{Conservation law class}
 
 // Here finally comes the class that
@@ -120,7 +128,6 @@ private:
    void compute_angular_momentum ();
    void compute_cell_average ();
    void apply_limiter ();
-   void apply_limiter_TVB_Qk_deprecated ();
    void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
    void apply_positivity_limiter ();
@@ -185,8 +192,7 @@ private:
    dealii::DoFHandler<dim>      dh_cell;
 
    // Iterators to neighbouring cells
-   std::vector<typename dealii::DoFHandler<dim>::cell_iterator>
-         lcell, rcell, bcell, tcell;
+   std::vector<CellData<dim> > cell_data;
    
    // Next come a number of data
    // vectors that correspond to the
