@@ -52,7 +52,7 @@ public:
    
    dealii::MeshWorker::IntegrationInfoBox<dim> info_box;
    dealii::MeshWorker::DoFInfo<dim> dof_info;
-   dealii::MeshWorker::Assembler::ResidualSimple< dealii::TrilinosWrappers::MPI::Vector > assembler; //dealii::Vector<double>
+   dealii::MeshWorker::Assembler::ResidualSimple< dealii::TrilinosWrappers::MPI::Vector > assembler;
 
 };
 

@@ -4,6 +4,7 @@
 #include <base/function.h>
 #include <lac/vector.h>
 
+#include "claw.h"
 #include "equation.h"
 
 template <int dim>

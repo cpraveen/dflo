@@ -1,4 +1,5 @@
 #include "claw.h"
+#include "equation.h"
 
 using namespace dealii;
 
@@ -45,21 +46,20 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    cell = dof_handler.begin_active(),
    endc = dof_handler.end();
    
-   for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
-		if(cell->is_locally_owned())
-			{
-				cell->clear_coarsen_flag();
-				cell->clear_refine_flag();
-      
-				if((cell->level() < parameters.shock_levels) &&
-					(std::fabs(refinement_indicators(cell_no)) > parameters.shock_val))
-						cell->set_refine_flag();
-				else 
-					if ((cell->level() > 0) &&
-						(std::fabs(refinement_indicators(cell_no)) < 0.75*parameters.shock_val))
-							cell->set_coarsen_flag();
-			}
-
+   for (; cell!=endc; ++cell)
+   if(cell->is_locally_owned())
+   {
+	   unsigned int cell_no=cell_number(cell);
+	   cell->clear_coarsen_flag();
+	   cell->clear_refine_flag();
+	   if((cell->level() < parameters.shock_levels) &&
+	      (std::fabs(refinement_indicators(cell_no)) > parameters.shock_val))
+				cell->set_refine_flag();
+	   else 
+	      if ((cell->level() > 0) &&
+			(std::fabs(refinement_indicators(cell_no)) < 0.75*parameters.shock_val))
+				cell->set_coarsen_flag();
+	}
    // Then we need to transfer the
    // various solution vectors from
    // the old to the new grid while we
@@ -73,17 +73,14 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    // simply re-set the sizes of some
    // other vectors to the now correct
    // size:
-   //std::vector<Vector<double> > transfer_in;
-   //std::vector<Vector<double> > transfer_out;
+
    std::vector<LA::MPI::Vector> transfer_in;
-   std::vector<LA::MPI::Vector> transfer_out;
    
    transfer_in.push_back(old_solution);
    transfer_in.push_back(predictor);
    
    triangulation.prepare_coarsening_and_refinement();
    
-   //SolutionTransfer<dim> soltrans(dof_handler);
    parallel::distributed::SolutionTransfer<dim,std::vector< LA::MPI::Vector> > soltrans(dof_handler);
    soltrans.prepare_for_coarsening_and_refinement(transfer_in);
    
@@ -97,25 +94,8 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    predictor = transfer_in[1]; 
    current_solution = old_solution;
    
-   /*{
-      LA::MPI::Vector new_old_solution; // (1);
-      LA::MPI::Vector new_predictor; // (1);
-      
-      transfer_out.push_back(new_old_solution);
-      transfer_out.push_back(new_predictor);
-      transfer_out[0].reinit(dof_handler.locally_owned_dofs(), mpi_communicator); //(dof_handler.n_dofs());
-      transfer_out[1].reinit(dof_handler.locally_owned_dofs(), mpi_communicator); //(dof_handler.n_dofs());
-   }//*/
-
-   //LA::MPI::Vector distributed_solution(locally_owned_dofs, mpi_communicator);
-   //soltrans.interpolate(distributed_solution);
-   //solution = distributed_solution;
-      
-   //soltrans.interpolate(transfer_in, transfer_out);
-
-   // old_solution = transfer_out[0];
-   // predictor = transfer_out[1];
-   // current_solution = old_solution;
+   predictor.compress(VectorOperation::insert);
+   current_solution.compress(VectorOperation::insert);
 }
 
 //---------------------------------------------------------------------------
@@ -132,7 +112,7 @@ ConservationLaw<dim>::refine_forward_step ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
    
-   for (unsigned int cell_no=0; cell!=endc; ++cell, ++cell_no)
+   for (; cell!=endc; ++cell)
    if(cell->is_locally_owned())
    {
       cell->clear_coarsen_flag();

@@ -13,7 +13,11 @@
 #include <lac/compressed_sparsity_pattern.h>
 #include <lac/precondition_block.h>
 
-//#include <grid/tria.h>
+#include <lac/trilinos_sparse_matrix.h>
+#include <lac/trilinos_vector.h>
+#include <lac/trilinos_precondition.h>
+#include <lac/trilinos_solver.h>
+
 #include <grid/grid_refinement.h>
 #include <grid/tria_accessor.h>
 #include <grid/tria_iterator.h>
@@ -93,9 +97,9 @@ private:
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    
-   std::pair<unsigned int, double> solve (LA::MPI::Vector &solution, double current_residual); //dealii::Vector<double> &solution
+   std::pair<unsigned int, double> solve (LA::MPI::Vector &solution, double current_residual);
    
-   void compute_refinement_indicators (Vector<double> &indicator) const; //LA::MPI::Vector
+   void compute_refinement_indicators (Vector<double> &indicator) const;
    void refine_grid (const Vector<double> &indicator);
    void refine_forward_step ();
    
@@ -117,15 +121,15 @@ private:
    void integrate_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);
    void iterate_explicit (IntegratorExplicit<dim>& integrator,
-                          LA::MPI::Vector& newton_update, //Vector<double>
+                          LA::MPI::Vector& newton_update,
                           double& res_norm0, double& res_norm);
-   /*void assemble_system (IntegratorImplicit<dim>& integrator);
-   void iterate_mood     (IntegratorExplicit<dim>& integrator,
-                          dealii::Vector<double>& newton_update,
-                          double& res_norm0, double& res_norm);
-   void iterate_implicit (IntegratorImplicit<dim>& integrator,
-                          dealii::Vector<double>& newton_update,
-                          double& res_norm0, double& res_norm);//*/
+   //void assemble_system (IntegratorImplicit<dim>& integrator);
+   //void iterate_mood     (IntegratorExplicit<dim>& integrator,
+                          //dealii::Vector<double>& newton_update,
+                          //double& res_norm0, double& res_norm);
+   //void iterate_implicit (IntegratorImplicit<dim>& integrator,
+                          //dealii::Vector<double>& newton_update,
+                          //double& res_norm0, double& res_norm);
 
    void compute_time_step ();
    void compute_time_step_cartesian ();
@@ -173,7 +177,6 @@ private:
    
    MPI_Comm						mpi_communicator;
    
-   //dealii::Triangulation<dim>   triangulation;
    parallel::distributed::Triangulation<dim> triangulation;
    
    IndexSet 		      locally_owned_dofs;
@@ -253,16 +256,14 @@ private:
    // though), we don't have to think
    // about anything else like
    // distributing the degrees of freedom.
-   dealii::SparseMatrix<double> system_matrix;		// ???
-   dealii::SparsityPattern      sparsity_pattern;	// ???
+   dealii::SparseMatrix<double> system_matrix;
+   dealii::SparsityPattern      sparsity_pattern;
 
    std::vector< dealii::Vector<double> > inv_mass_matrix;
-   //LA::MPI::Vector      inv_mass_matrix; 		//will it work as in the advection case?
    
    Parameters::AllParameters<dim>  parameters;
    dealii::ConditionalOStream      verbose_cout;
-   
-   //ConditionalOStream 	pcout;
+
    TimerOutput 		computing_timer;
 
    // Call the appropriate numerical flux function
