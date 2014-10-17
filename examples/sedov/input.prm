@@ -76,7 +76,7 @@ end
 
 subsection limiter
    set shock indicator = limiter
-   set type = grad
+   set type = TVB
    set characteristic limiter = true
    set positivity limiter = true
    set M = 0

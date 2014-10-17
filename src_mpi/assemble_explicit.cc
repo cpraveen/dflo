@@ -281,10 +281,10 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    const unsigned int cell_no          = cell_number (dinfo1.cell);
    const unsigned int neighbor_cell_no = cell_number (dinfo2.cell);
 
-   double mu_shock_avg = 0.5 * 
-      (mu_shock(cell_no)/dinfo1.cell->diameter()
-       +
-       mu_shock(neighbor_cell_no)/dinfo2.cell->diameter());
+   //double mu_shock_avg = 0.5 * 
+      //(mu_shock(cell_no)/dinfo1.cell->diameter()
+       //+
+       //mu_shock(neighbor_cell_no)/dinfo2.cell->diameter());
 
    // Compute two states on the face
    Table<2,double>
@@ -433,7 +433,7 @@ template <int dim>
 void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
 {
    // Compute artificial viscosity for shock capturing
-   compute_mu_shock ();
+   //compute_mu_shock ();
 
    right_hand_side = 0;
 

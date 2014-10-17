@@ -1,3 +1,7 @@
+#include <distributed/tria.h>
+#include <distributed/grid_refinement.h>
+#include <distributed/solution_transfer.h>
+
 #include "claw.h"
 #include "equation.h"
 
@@ -15,7 +19,7 @@ using namespace dealii;
 template <int dim>
 void
 ConservationLaw<dim>::
-compute_refinement_indicators (dealii::Vector<double> &refinement_indicators) const //dealii::TrilinosWrappers::MPI::Vector
+compute_refinement_indicators (dealii::Vector<double> &refinement_indicators) const 
 {
    if(parameters.time_step_type == "global")
       EulerEquations<dim>::compute_refinement_indicators (dof_handler,
@@ -73,26 +77,26 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    // simply re-set the sizes of some
    // other vectors to the now correct
    // size:
-
-   std::vector<LA::MPI::Vector> transfer_in;
-   
-   transfer_in.push_back(old_solution);
-   transfer_in.push_back(predictor);
    
    triangulation.prepare_coarsening_and_refinement();
+
+   parallel::distributed::SolutionTransfer<dim, LA::MPI::Vector > soltrans1(dof_handler), soltrans2(dof_handler);
+   soltrans1.prepare_for_coarsening_and_refinement(old_solution);
+   soltrans2.prepare_for_coarsening_and_refinement(predictor);
    
-   parallel::distributed::SolutionTransfer<dim,std::vector< LA::MPI::Vector> > soltrans(dof_handler);
-   soltrans.prepare_for_coarsening_and_refinement(transfer_in);
-   
-   triangulation.execute_coarsening_and_refinement ();
+   triangulation.execute_coarsening_and_refinement();
    
    setup_system ();
    
-   soltrans.interpolate(transfer_in);
+   // interpolate solution to new mesh
+   LA::MPI::Vector distributed_solution1(locally_owned_dofs, mpi_communicator);
+   LA::MPI::Vector distributed_solution2(locally_owned_dofs, mpi_communicator);
 
-   old_solution = transfer_in[0];
-   predictor = transfer_in[1]; 
-   current_solution = old_solution;
+   soltrans1.interpolate(distributed_solution1);
+   soltrans2.interpolate(distributed_solution2);
+
+   current_solution = distributed_solution1;
+   predictor=distributed_solution2;
    
    predictor.compress(VectorOperation::insert);
    current_solution.compress(VectorOperation::insert);
