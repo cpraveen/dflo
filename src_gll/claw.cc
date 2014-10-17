@@ -330,11 +330,8 @@ void ConservationLaw<dim>::setup_system ()
    // For each cell, find neighbourig cell
    // This is needed for limiter
    // CHECK: Should the size be n_active_cells() ?
-   lcell.resize(triangulation.n_cells());
-   rcell.resize(triangulation.n_cells());
-   bcell.resize(triangulation.n_cells());
-   tcell.resize(triangulation.n_cells());
-
+   cell_data.resize(triangulation.n_active_cells());
+   
    const double EPS = 1.0e-10;
    typename DoFHandler<dim>::active_cell_iterator
       cell = dh_cell.begin_active(),
@@ -342,10 +339,10 @@ void ConservationLaw<dim>::setup_system ()
    for (; cell!=endc; ++cell)
    {
       unsigned int c = cell_number(cell);
-      lcell[c] = endc;
-      rcell[c] = endc;
-      bcell[c] = endc;
-      tcell[c] = endc;
+      cell_data[c].lcell = endc;
+      cell_data[c].rcell = endc;
+      cell_data[c].bcell = endc;
+      cell_data[c].tcell = endc;
       double dx = cell->diameter() / std::sqrt(1.0*dim);
 
       for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
@@ -357,18 +354,37 @@ void ConservationLaw<dim>::setup_system ()
                    ExcInternalError());
             Point<dim> dr = neighbor->center() - cell->center();
             if(dr(0) < -0.5*dx)
-               lcell[c] = neighbor;
+               cell_data[c].lcell = neighbor;
             else if(dr(0) > 0.5*dx)
-               rcell[c] = neighbor;
+               cell_data[c].rcell = neighbor;
             else if(dr(1) < -0.5*dx)
-               bcell[c] = neighbor;
+               cell_data[c].bcell = neighbor;
             else if(dr(1) > 0.5*dx)
-               tcell[c] = neighbor;
+               cell_data[c].tcell = neighbor;
             else
             {
-               std::cout << "Did not find all neighbours\n";
                std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
-               exit(0);
+               AssertThrow(false, ExcMessage("Did not find all neighbours"));
+            }
+         }
+         else
+         {
+            unsigned int boundary_id = cell->face(face_no)->boundary_indicator();
+            typename EulerEquations<dim>::BoundaryKind boundary_kind =
+               parameters.boundary_conditions[boundary_id].kind;
+            const Point<dim>& face_center = cell->face(face_no)->center();
+            Point<dim> dr = cell->center() - face_center;
+            if(dr(0) > 0.49*dx)
+               cell_data[c].lbc = boundary_kind;
+            else if(dr(0) < 0.49*dx)
+               cell_data[c].rbc = boundary_kind;
+            else if(dr(1) > 0.49*dx)
+               cell_data[c].bbc = boundary_kind;
+            else if(dr(1) < 0.49*dx)
+               cell_data[c].tbc = boundary_kind;
+            else
+            {
+               AssertThrow(false, ExcMessage("Error in getting boundary condition"));
             }
          }
    }
