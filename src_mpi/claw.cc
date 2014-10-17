@@ -740,9 +740,12 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       // Forward euler step in case of explicit scheme
       // In case of implicit scheme, this is the update
       current_solution += newton_update;
+      current_solution.compress (VectorOperation::insert);
       
       // current_solution = ark*old_solution + (1-ark)*current_solution
       current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
+      current_solution.compress (VectorOperation::insert);
+
       
       compute_cell_average ();
       compute_shock_indicator ();
