@@ -4,6 +4,7 @@
 #include <base/function.h>
 #include <lac/vector.h>
 
+#include "claw.h"
 #include "equation.h"
 
 template <int dim>
@@ -45,7 +46,7 @@ public:
       a2 = (gamma-1.0)*std::pow(a1,2)/2.0;
    }
    virtual void vector_value (const dealii::Point<dim>  &p,
-                              dealii::Vector<double>  &values) const;
+                              dealii::Vector<double> &values) const; 
    
 private:
    double beta;
@@ -76,7 +77,7 @@ public:
       x[2] = -x[1]; y[2] = y[1];
    }
    virtual void vector_value (const dealii::Point<dim>  &p,
-                              dealii::Vector<double>  &values) const;
+                              dealii::Vector<double>  &values) const; 
    
 private:
    double beta, Rc;

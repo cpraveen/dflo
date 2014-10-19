@@ -44,7 +44,9 @@ void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
                                                update_values);
    
    unsigned int n_q_points = quadrature.size();
+   //dealii::Vector<double> face_values(n_q_points), face_values_nbr(n_q_points);
    std::vector<double> face_values(n_q_points), face_values_nbr(n_q_points);
+
    
    // select indicator variable
    unsigned int component;
@@ -72,6 +74,7 @@ void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
    jump_ind_avg = 0.0;
    
    for(; cell != endc; ++cell)
+   if(cell->is_locally_owned())
    {
       unsigned int c = cell_number(cell);
       double& cell_shock_ind = shock_indicator (c);

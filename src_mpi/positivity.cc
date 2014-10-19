@@ -59,6 +59,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       endc = dof_handler.end();
    
    for(; cell != endc; ++cell)
+   if(cell->is_locally_owned())
    {
       unsigned int c = cell_number(cell);
       fe_values.reinit(cell);
@@ -73,7 +74,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          rho_min = std::min(rho_min, density_values[q]);
       
       double density_average = cell_average[c][density_component];
-      double rat = std::fabs(density_average - eps) /
+      double rat = std::fabs(density_average - eps) /				//is it eps or eps_tol?
                    (std::fabs(density_average - rho_min) + 1.0e-13);
       double theta1 = std::min(rat, 1.0);
       
@@ -179,6 +180,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       }
       
    }
+   current_solution.compress(VectorOperation::insert);
 }
 
 template class ConservationLaw<2>;

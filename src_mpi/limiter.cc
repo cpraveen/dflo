@@ -105,6 +105,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
    const double beta = parameters.beta;
    
    for(; cell != endc; ++cell)
+   if(cell->is_locally_owned())
    {
       const unsigned int c = cell_number(cell);
       if(shock_indicator[c] > 1.0)
@@ -214,6 +215,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          }
       }
    }
+   current_solution.compress(VectorOperation::insert);
 }
 
 //------------------------------------------------------------------------------
@@ -248,6 +250,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
       endc0 = dh_cell.end();
    
    for(; cell != endc; ++cell)
+   if(cell->is_locally_owned())
    {
       const unsigned int c = cell_number(cell);
       if(shock_indicator[c] > 1.0)
@@ -360,6 +363,8 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
          
       }
    }
+   current_solution.compress(VectorOperation::insert);
+
 }
 
 template class ConservationLaw<2>;

@@ -86,6 +86,6 @@ end
 subsection limiter
    set type = TVB
    set characteristic limiter = true
-   set positivity limiter = false
+   set positivity limiter = true
    set M = 0
 end

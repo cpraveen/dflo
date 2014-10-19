@@ -7,12 +7,17 @@
 #include <base/function_parser.h>
 #include <base/utilities.h>
 #include <base/conditional_ostream.h>
+#include <base/timer.h>
 
 #include <lac/vector.h>
 #include <lac/compressed_sparsity_pattern.h>
 #include <lac/precondition_block.h>
 
-#include <grid/tria.h>
+#include <lac/trilinos_sparse_matrix.h>
+#include <lac/trilinos_vector.h>
+#include <lac/trilinos_precondition.h>
+#include <lac/trilinos_solver.h>
+
 #include <grid/grid_refinement.h>
 #include <grid/tria_accessor.h>
 #include <grid/tria_iterator.h>
@@ -28,10 +33,21 @@
 #include <fe/fe_dgq.h>
 #include <fe/fe_dgp.h>
 
+#include <distributed/tria.h>
+#include <distributed/grid_refinement.h>
+#include <distributed/solution_transfer.h>
+
 #include <vector>
 
 #include "parameters.h"
 #include "integrator.h"
+
+using namespace dealii;
+
+namespace LA
+{
+	using namespace ::TrilinosWrappers;
+}
 
 // @sect3{Conservation law class}
 
@@ -67,23 +83,24 @@ public:
    void run ();
    
 private:
+
    void read_parameters (const char *file_name);
-   const dealii::Mapping<dim,dim>& mapping() const;
+   const Mapping<dim,dim>& mapping() const;
    void compute_cartesian_mesh_size ();
    void compute_inv_mass_matrix();
    void setup_system ();
    
-   void setup_mesh_worker (IntegratorImplicit<dim>&);
+   //void setup_mesh_worker (IntegratorImplicit<dim>&);
    void setup_mesh_worker (IntegratorExplicit<dim>&);
    
    void set_initial_condition ();
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    
-   std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
+   std::pair<unsigned int, double> solve (LA::MPI::Vector &solution, double current_residual);
    
-   void compute_refinement_indicators (dealii::Vector<double> &indicator) const;
-   void refine_grid (const dealii::Vector<double> &indicator);
+   void compute_refinement_indicators (Vector<double> &indicator) const;
+   void refine_grid (const Vector<double> &indicator);
    void refine_forward_step ();
    
    void output_results () const;
@@ -103,16 +120,16 @@ private:
    void integrate_boundary_term (DoFInfo& dinfo, CellInfo& info);
    void integrate_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);
-   void assemble_system (IntegratorImplicit<dim>& integrator);
    void iterate_explicit (IntegratorExplicit<dim>& integrator,
-                          dealii::Vector<double>& newton_update,
+                          LA::MPI::Vector& newton_update,
                           double& res_norm0, double& res_norm);
-   void iterate_mood     (IntegratorExplicit<dim>& integrator,
-                          dealii::Vector<double>& newton_update,
-                          double& res_norm0, double& res_norm);
-   void iterate_implicit (IntegratorImplicit<dim>& integrator,
-                          dealii::Vector<double>& newton_update,
-                          double& res_norm0, double& res_norm);
+   //void assemble_system (IntegratorImplicit<dim>& integrator);
+   //void iterate_mood     (IntegratorExplicit<dim>& integrator,
+                          //dealii::Vector<double>& newton_update,
+                          //double& res_norm0, double& res_norm);
+   //void iterate_implicit (IntegratorImplicit<dim>& integrator,
+                          //dealii::Vector<double>& newton_update,
+                          //double& res_norm0, double& res_norm);
 
    void compute_time_step ();
    void compute_time_step_cartesian ();
@@ -157,7 +174,13 @@ private:
    // the boundary approximation is
    // not of sufficiently high
    // order.
-   dealii::Triangulation<dim>   triangulation;
+   
+   MPI_Comm						mpi_communicator;
+   
+   parallel::distributed::Triangulation<dim> triangulation;
+   
+   IndexSet 		      locally_owned_dofs;
+   IndexSet 		      locally_relevant_dofs;
    
    const dealii::FESystem<dim>  fe;
    dealii::DoFHandler<dim>      dof_handler;
@@ -191,20 +214,20 @@ private:
    // extrapolating the current and
    // previous solution one time
    // step into the future:
-   dealii::Vector<double>       old_solution;
-   dealii::Vector<double>       current_solution;
-   dealii::Vector<double>       predictor;
-   dealii::Vector<double>       work1;
-   std::vector< dealii::Vector<double> >       cell_average;
    
-   dealii::Vector<double>       right_hand_side;
-
+   LA::MPI::Vector			    old_solution;
+   LA::MPI::Vector			    current_solution;
+   LA::MPI::Vector			    predictor;
+   LA::MPI::Vector			    work1;
+   LA::MPI::Vector			    right_hand_side;
+   LA::MPI::Vector			    newton_update;
+   
+   std::vector< dealii::Vector<double> >	    cell_average;  
    dealii::Vector<double>       dt;
    dealii::Vector<double>       mu_shock;
    dealii::Vector<double>       shock_indicator;
    dealii::Vector<double>       jump_indicator;
-   std::map<std::pair<int,int>,unsigned int> cell_number_map;
-
+   
    double                       global_dt;
    double                       elapsed_time;
    int                          time_iter;
@@ -240,6 +263,8 @@ private:
    
    Parameters::AllParameters<dim>  parameters;
    dealii::ConditionalOStream      verbose_cout;
+
+   TimerOutput 		computing_timer;
 
    // Call the appropriate numerical flux function
    template <typename InputVector>
@@ -304,7 +329,7 @@ private:
    inline
    unsigned int cell_number (const ITERATOR &cell) const
    {
-      return cell->user_index();
+	   return cell->user_index();
    }
    
    // If cell is active, return cell average.

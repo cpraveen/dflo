@@ -188,3 +188,4 @@ EulerEquations<dim>::Postprocessor::n_output_variables () const
 
 // To handle linking errors
 template struct EulerEquations<2>;
+
