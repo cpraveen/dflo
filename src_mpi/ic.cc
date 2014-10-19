@@ -286,6 +286,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
       endc = dof_handler.end();
    
    for (; cell!=endc; ++cell)
+   if(cell->is_locally_owned())
    {
       cell->get_dof_indices(dof_indices);
       unsigned int c = cell_number(cell);
