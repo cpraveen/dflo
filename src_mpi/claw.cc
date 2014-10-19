@@ -276,8 +276,8 @@ void ConservationLaw<dim>::setup_system ()
    
    // Size all of the fields.
    old_solution.reinit 		(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   current_solution.reinit 	(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   predictor.reinit 		(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   predictor.reinit 		   (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    right_hand_side.reinit 	(locally_owned_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
@@ -287,6 +287,12 @@ void ConservationLaw<dim>::setup_system ()
    mu_shock.reinit 			(triangulation.n_active_cells());
    shock_indicator.reinit 	(triangulation.n_active_cells());
    jump_indicator.reinit 	(triangulation.n_active_cells());
+   
+   pcout << std::endl
+         << "   Number of active cells:       " << triangulation.n_global_active_cells()
+         << std::endl
+         << "   Number of degrees of freedom: " << dof_handler.n_dofs()
+         << std::endl << std::endl;
 
    // create map from (level,index) to cell number
    unsigned int index=0;
@@ -406,8 +412,8 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
                                                    n_gauss_points,
                                                    n_gauss_points);
    
-   integrator.info_box.initialize_update_flags ();
-   integrator.info_box.add_update_flags_all 	 (update_values | update_JxW_values);
+   integrator.info_box.initialize_update_flags   ();
+   integrator.info_box.add_update_flags_all 	    (update_values | update_JxW_values);
    integrator.info_box.add_update_flags_cell     (update_gradients);
    integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points); // TODO:ADIFF
    integrator.info_box.add_update_flags_face     (update_normal_vectors); // TODO:ADIFF
@@ -538,7 +544,7 @@ ConservationLaw<dim>::compute_time_step_q ()
       
       const unsigned int c = cell_number (cell);
       const double h = cell->diameter() / std::sqrt(1.0*dim);
-      dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0);
+      dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0) / dim;
       
       global_dt = std::min(global_dt, dt(c));
    }
@@ -881,7 +887,6 @@ void ConservationLaw<dim>::run ()
          Vector<double> refinement_indicators (triangulation.n_active_cells());
          compute_refinement_indicators(refinement_indicators);
          refine_grid(refinement_indicators);
-         
          set_initial_condition ();
       }
    
@@ -919,17 +924,11 @@ void ConservationLaw<dim>::run ()
       // compute time step in each cell using cfl condition
       compute_time_step ();
       
-      std::cout << std::endl << "It=" << time_iter+1
-                << ", T=" << elapsed_time + global_dt
-                << ", dt=" << global_dt
-                << ", cfl=" << parameters.cfl << std::endl
-		          << "   Number of active cells:       "
-		          << triangulation.n_active_cells()
-		          << std::endl
-		          << "   Number of degrees of freedom: "
-		          << dof_handler.n_dofs()
-		          << std::endl
-		          << std::endl;
+      pcout << std::endl << "It=" << time_iter+1
+            << ", T=" << elapsed_time + global_dt
+            << ", dt=" << global_dt
+            << ", cfl=" << parameters.cfl
+            << std::endl << std::endl;
       
       unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;
