@@ -45,46 +45,60 @@ void ConservationLaw<dim>::output_results () const
    
    data_out.add_data_vector (current_solution, postprocessor);
    
+   Vector<float> subdomain (triangulation.n_active_cells());
+   for (unsigned int i=0; i<subdomain.size();++i)
+      subdomain(i) = triangulation.locally_owned_subdomain();
+   data_out.add_data_vector(subdomain, "subdomain");
+   
    data_out.build_patches (mapping(), fe.degree);
    
    static unsigned int output_file_number = 0;
-   std::string filename = "solution-" + Utilities::int_to_string (output_file_number, 3);
+   std::string filename = ("solution-" +
+                           Utilities::int_to_string(output_file_number,4) +
+                           "." +
+                           Utilities::int_to_string
+                           (triangulation.locally_owned_subdomain(),3));
+   std::ofstream outfile ((filename + ".vtu").c_str());
    
-   if(parameters.output_format == "vtk")     
-      filename += ".vtu";
-   else if(parameters.output_format == "tecplot") 
-      filename += ".plt";
+   DataOutBase::VtkFlags flags(elapsed_time, output_file_number);
+   data_out.set_flags(flags);
+   data_out.write_vtu (outfile);
    
-   std::cout << "Writing file " << filename << std::endl;
-   std::ofstream output (filename.c_str());
-   
-   if(parameters.output_format == "vtk")     
+   static std::vector< std::vector<std::string> > all_files;
+   if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
    {
-      DataOutBase::VtkFlags flags(elapsed_time, output_file_number);
-      data_out.set_flags(flags);
-      data_out.write_vtu (output);
+      std::vector<std::string> filenames;
+      for (unsigned int i=0;
+           i<Utilities::MPI::n_mpi_processes(mpi_communicator);
+           ++i)
+         filenames.push_back ("solution-" +
+                              Utilities::int_to_string (output_file_number, 4) +
+                              "." +
+                              Utilities::int_to_string (i, 3) +
+                              ".vtu");
+      all_files.push_back (filenames);
+      std::ofstream visit_output ("master_file.visit");
+      data_out.write_visit_record(visit_output, all_files);
    }
-   else if(parameters.output_format == "tecplot") 
-      data_out.write_tecplot (output);
    
    ++output_file_number;
    
    // Write shock indicator
-   DataOut<dim> shock;
-   shock.attach_dof_handler (dh_cell);
-   shock.add_data_vector (mu_shock, "mu_shock");
-   shock.add_data_vector (shock_indicator, "shock_indicator");
-   shock.build_patches (mapping());
-   if(parameters.output_format == "vtk")     
-   {
-      std::ofstream shock_output ("shock.vtu");
-      shock.write_vtu (shock_output);
-   }
-   else if(parameters.output_format == "tecplot") 
-   {
-      std::ofstream shock_output ("shock.plt");
-      shock.write_tecplot (shock_output);
-   }
+//   DataOut<dim> shock;
+//   shock.attach_dof_handler (dh_cell);
+//   shock.add_data_vector (mu_shock, "mu_shock");
+//   shock.add_data_vector (shock_indicator, "shock_indicator");
+//   shock.build_patches (mapping());
+//   if(parameters.output_format == "vtk")     
+//   {
+//      std::ofstream shock_output ("shock.vtu");
+//      shock.write_vtu (shock_output);
+//   }
+//   else if(parameters.output_format == "tecplot") 
+//   {
+//      std::ofstream shock_output ("shock.plt");
+//      shock.write_tecplot (shock_output);
+//   }
    
    // Write cell average solution
 //   DataOut<dim> avg;
