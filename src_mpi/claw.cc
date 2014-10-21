@@ -303,7 +303,7 @@ void ConservationLaw<dim>::setup_system ()
 
    if(parameters.implicit == false)
    {
-      std::cout << "Creating mass matrix ...\n";
+      pcout << "Creating mass matrix ...\n";
       compute_inv_mass_matrix ();
    }
    else
@@ -574,6 +574,7 @@ ConservationLaw<dim>::compute_cell_average ()
    
    // compute cell average for ghost cells also.
    for (; cell!=endc; ++cell)
+   if(!cell->is_artificial())
    {
       unsigned int cell_no = cell_number(cell);
       {

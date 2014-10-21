@@ -28,7 +28,6 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    const double eps_tol = 1.0e-13;
    double eps = eps_tol;
    {
-      std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
       typename DoFHandler<dim>::active_cell_iterator
          cell = dof_handler.begin_active(),
          endc = dof_handler.end();
@@ -36,7 +35,6 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       if(cell->is_locally_owned())
       {
          const unsigned int c = cell_number (cell);
-         cell->get_dof_indices (dof_indices);
 
          eps = std::min(eps, cell_average[c][density_component]);
          double pressure = EulerEquations<dim>::template compute_pressure<double> (cell_average[c]);
@@ -47,7 +45,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
             AssertThrow(false, ExcMessage("Fatal: Negative states"));
          }
       }
-
+      eps = -Utilities::MPI::max(-eps, mpi_communicator);
    }
    
    // Need 2N - 3 >= degree for the quadrature to be exact.
