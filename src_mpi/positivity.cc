@@ -16,6 +16,8 @@ using namespace dealii;
 template <int dim>
 void ConservationLaw<dim>::apply_positivity_limiter ()
 {
+   TimerOutput::Scope t(computing_timer, "Positivity limiter");
+
    if(fe.degree == 0) return;
    
    const double gas_gamma = EulerEquations<dim>::gas_gamma;
@@ -26,14 +28,22 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    const double eps_tol = 1.0e-13;
    double eps = eps_tol;
    {
-      for (unsigned int c=0; c<triangulation.n_active_cells(); ++c)
+      std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+      typename DoFHandler<dim>::active_cell_iterator
+         cell = dof_handler.begin_active(),
+         endc = dof_handler.end();
+      for (; cell!=endc; ++cell)
+      if(cell->is_locally_owned())
       {
+         const unsigned int c = cell_number (cell);
+         cell->get_dof_indices (dof_indices);
+
          eps = std::min(eps, cell_average[c][density_component]);
          double pressure = EulerEquations<dim>::template compute_pressure<double> (cell_average[c]);
          eps = std::min(eps, pressure);
          if(eps < eps_tol)
          {
-            //std::cout << "\n Negative state at position " << cell0->center() << "\n\n";
+            std::cout << "\n Negative state at position " << cell->center() << "\n\n";
             AssertThrow(false, ExcMessage("Fatal: Negative states"));
          }
       }
