@@ -2,6 +2,7 @@
 # ---------------------
 
 # The input grid 
+# set basis = Pk
 set mesh type = gmsh
 set mesh file = grid.msh
 set degree = 1

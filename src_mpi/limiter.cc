@@ -105,6 +105,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
       endc0 = dh_cell.end();
    
    const double beta = parameters.beta;
+   newton_update = current_solution;
    
    for(; cell != endc; ++cell)
    if(cell->is_locally_owned())
@@ -210,15 +211,14 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
                Point<dim> dr = p[i] - cell->center();
-               current_solution(dof_indices[i]) = cell_average[c][comp_i]
+               newton_update(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
             }
          }
       }
    }
-   current_solution.compress(VectorOperation::insert);
-   
+   current_solution = newton_update;
 }
 
 //------------------------------------------------------------------------------

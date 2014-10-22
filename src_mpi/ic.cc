@@ -105,19 +105,20 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 {
    if(parameters.ic_function == "rt")
       VectorTools::interpolate(mapping(), dof_handler,
-                               RayleighTaylor<dim>(parameters.gravity), old_solution);
+                               RayleighTaylor<dim>(parameters.gravity), right_hand_side);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
-                               IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);
+                               IsentropicVortex<dim>(5.0, 0.0, 0.0), right_hand_side);
    else if(parameters.ic_function == "vortsys")
       VectorTools::interpolate(mapping(), dof_handler,
-                               VortexSystem<dim>(), old_solution);
+                               VortexSystem<dim>(), right_hand_side);
    else
       VectorTools::interpolate(mapping(), dof_handler,
-                               parameters.initial_conditions, old_solution);
+                               parameters.initial_conditions, right_hand_side);
    
-   current_solution = old_solution;
-   predictor = old_solution;
+   old_solution = right_hand_side;
+   current_solution = right_hand_side;
+   predictor = right_hand_side;
 }
 
 //------------------------------------------------------------------------------
@@ -312,6 +313,8 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
+   pcout << "Setting initial condition\n";
+   
    if(parameters.basis == Parameters::AllParameters<dim>::Qk)
       set_initial_condition_Qk();
    else
