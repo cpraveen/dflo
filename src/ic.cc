@@ -51,7 +51,7 @@ void IsentropicVortex<dim>::vector_value (const Point<dim> &p,
    double rho = std::pow(1.0 - a2*exp(1.0-r2), 1.0/(gamma-1.0));
    double vex =  - a1 * (p[1]-y0) * std::exp(0.5*(1.0-r2));
    double vey =  + a1 * (p[0]-x0) * std::exp(0.5*(1.0-r2));
-   double pre = std::pow(rho, gamma) / gamma;
+   double pre = std::pow(rho, gamma);
    
    values[0] = rho * vex;
    values[1] = rho * vey;
@@ -83,7 +83,7 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
    rho -= 2.0;
    vex /= 3.0;
    vey /= 3.0;
-   pre = std::pow(rho, gamma) / gamma;
+   pre = std::pow(rho, gamma);
    
    // Put large pressure in the region { |x| < 0.1 and |y| < 0.1 }
    if(std::fabs(p[0]) < 0.1 && std::fabs(p[1]) < 0.1) pre = 50.0;
