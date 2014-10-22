@@ -263,7 +263,7 @@ void ConservationLaw<dim>::setup_system ()
 {
    TimerOutput::Scope t(computing_timer, "setup");
 
-   pcout << "Allocating memory ...\n";
+   //pcout << "Allocating memory ...\n";
    
    //DoFRenumbering::Cuthill_McKee (dof_handler);
    
@@ -288,11 +288,11 @@ void ConservationLaw<dim>::setup_system ()
    shock_indicator.reinit 	(triangulation.n_active_cells());
    jump_indicator.reinit 	(triangulation.n_active_cells());
    
-   pcout << std::endl
-         << "   Number of active cells:       " << triangulation.n_global_active_cells()
-         << std::endl
-         << "   Number of degrees of freedom: " << dof_handler.n_dofs()
-         << std::endl << std::endl;
+   //pcout << std::endl
+         //<< "   Number of active cells:       " << triangulation.n_global_active_cells()
+         //<< std::endl
+         //<< "   Number of degrees of freedom: " << dof_handler.n_dofs()
+         //<< std::endl << std::endl;
 
    // create map from (level,index) to cell number
    unsigned int index=0;
@@ -405,7 +405,7 @@ void ConservationLaw<dim>::setup_system ()
 template <int dim>
 void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrator)
 {
-   pcout << "Setting up mesh worker ...\n";
+   //pcout << "Setting up mesh worker ...\n";
 
    const unsigned int n_gauss_points = fe.degree + 1;
    integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
@@ -629,8 +629,8 @@ ConservationLaw<dim>::compute_angular_momentum ()
    }
    
    angular_momentum = Utilities::MPI::sum (angular_momentum, mpi_communicator);
-   pcout << "Total angular momentum: "
-         << elapsed_time << "  " <<  angular_momentum << std::endl;
+   //pcout << "Total angular momentum: "
+         //<< elapsed_time << "  " <<  angular_momentum << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -727,10 +727,10 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
                                              LA::MPI::Vector& newton_update,
                                              double& res_norm0, double& res_norm)
 {
-   
    // Loop for newton iterations or RK stages
    for(unsigned int rk=0; rk<n_rk; ++rk)
    {
+	  TimerOutput::Scope t(computing_timer, "RK Update");
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
@@ -749,6 +749,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       // Forward euler step in case of explicit scheme
       // In case of implicit scheme, this is the update
+
       // newton_update = current_solution + newton_update
       newton_update.sadd(1.0, current_solution);
       
@@ -756,15 +757,16 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
 
       current_solution = newton_update;
-      
+
       compute_cell_average ();
       compute_shock_indicator ();
-      apply_limiter ();
       
+      apply_limiter ();
+
       if(parameters.pos_lim) apply_positivity_limiter ();
       
-      std::printf("   %-16.3e %04d        %-5.2e\n",
-                  res_norm, convergence.first, convergence.second);
+      //std::printf("   %-16.3e %04d        %-5.2e\n",
+      //            res_norm, convergence.first, convergence.second);
       
    }
 }
@@ -879,7 +881,7 @@ void ConservationLaw<dim>::run ()
    
    setup_system();
    set_initial_condition ();
-   
+
    // Refine the initial mesh
    if (parameters.do_refine == true)
       for (unsigned int i=0; i<parameters.shock_levels; ++i)
@@ -895,17 +897,19 @@ void ConservationLaw<dim>::run ()
 
    // Limit the initial condition
    compute_shock_indicator ();
+
    apply_limiter();
+   
    old_solution = current_solution;
    predictor = current_solution;
-   
+
    // Reset time/iteration counters
    elapsed_time = 0;
    time_iter = 0;
    
    // Save initial condition to file
    output_results ();
-   
+
    // We then enter into the main time
    // stepping loop.
 
@@ -940,11 +944,11 @@ void ConservationLaw<dim>::run ()
          setup_mesh_worker (integrator_explicit);
          iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
       }
-      else if(parameters.solver == Parameters::Solver::mood)
-      {
-      }
-      else
-      {
+      //else if(parameters.solver == Parameters::Solver::mood)
+      //{
+      //}
+      //else
+      //{
 //         std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
                    //<< "   _____________________________________" << std::endl;
          //// With global time stepping, we can use predictor as initial
@@ -953,7 +957,7 @@ void ConservationLaw<dim>::run ()
          //IntegratorImplicit<dim> integrator_implicit (dof_handler);
          //setup_mesh_worker (integrator_implicit);
          //iterate_implicit(integrator_implicit, newton_update, res_norm0, res_norm);//
-      }
+      //}
       
       // Update counters
       elapsed_time += global_dt;
@@ -993,7 +997,7 @@ void ConservationLaw<dim>::run ()
       {
          newton_update = current_solution;
          newton_update.sadd (2.0, -1.0, old_solution);
-         predictor = newton_update;
+         //predictor = newton_update;
       }
       
       old_solution = current_solution;
@@ -1006,7 +1010,7 @@ void ConservationLaw<dim>::run ()
          
          refine_grid(refinement_indicators);
          
-         newton_update.reinit (locally_owned_dofs, mpi_communicator);
+         //newton_update.reinit (locally_owned_dofs, mpi_communicator);
 
          next_refine_time = elapsed_time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;

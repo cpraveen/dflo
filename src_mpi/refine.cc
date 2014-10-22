@@ -46,6 +46,8 @@ template <int dim>
 void
 ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
 {
+   TimerOutput::Scope t(computing_timer, "Refine grid");
+
    typename DoFHandler<dim>::active_cell_iterator
    cell = dof_handler.begin_active(),
    endc = dof_handler.end();

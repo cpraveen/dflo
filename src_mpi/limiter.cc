@@ -71,6 +71,8 @@ void ConservationLaw<dim>::apply_limiter ()
 template <int dim>
 void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
 {
+   TimerOutput::Scope t(computing_timer, "Limiter Qk");
+
    if(fe.degree == 0) return;
    const unsigned int n_components = EulerEquations<dim>::n_components;
 
@@ -226,6 +228,8 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
 template <int dim>
 void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
 {
+   TimerOutput::Scope t(computing_timer, "Limiter Pk");
+
    if(fe.degree == 0) return;
    
    Vector<double> dfx (EulerEquations<dim>::n_components);

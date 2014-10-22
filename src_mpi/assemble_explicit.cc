@@ -432,6 +432,8 @@ void ConservationLaw<dim>::integrate_face_term_explicit
 template <int dim>
 void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
 {
+   TimerOutput::Scope t(computing_timer, "Assemble system");
+
    // Compute artificial viscosity for shock capturing
    //compute_mu_shock ();
 
