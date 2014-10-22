@@ -30,6 +30,8 @@ void ConservationLaw<dim>::compute_shock_indicator ()
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
 {
+   TimerOutput::Scope t(computing_timer, "Shock indicator");
+
    const unsigned int density_component = EulerEquations<dim>::density_component;
    const unsigned int energy_component = EulerEquations<dim>::energy_component;
    

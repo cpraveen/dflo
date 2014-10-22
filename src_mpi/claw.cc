@@ -727,10 +727,10 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
                                              LA::MPI::Vector& newton_update,
                                              double& res_norm0, double& res_norm)
 {
-   
    // Loop for newton iterations or RK stages
    for(unsigned int rk=0; rk<n_rk; ++rk)
    {
+	  TimerOutput::Scope t(computing_timer, "RK Update");
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
@@ -749,17 +749,22 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       // Forward euler step in case of explicit scheme
       // In case of implicit scheme, this is the update
-      current_solution += newton_update;
-      current_solution.compress (VectorOperation::insert);
-      
-      // current_solution = ark*old_solution + (1-ark)*current_solution
-      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
-      current_solution.compress (VectorOperation::insert);
 
-      
+      current_solution.sadd (1.0, newton_update);
+      current_solution.compress (VectorOperation::add);
+      output_results (); // Good Before limiting?
+
+
+      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
+      current_solution.compress (VectorOperation::add);
+      //output_results (); // Good Before limiting?
+
       compute_cell_average ();
       compute_shock_indicator ();
+      
       apply_limiter ();
+      output_results (); // Solution Negative?
+      std::cout<<std::endl<<"stage number :"<<rk<< "		of: " << n_rk << std::endl;
       
       if(parameters.pos_lim) apply_positivity_limiter ();
       
@@ -879,7 +884,8 @@ void ConservationLaw<dim>::run ()
    
    setup_system();
    set_initial_condition ();
-   
+   output_results ();
+
    // Refine the initial mesh
    if (parameters.do_refine == true)
       for (unsigned int i=0; i<parameters.shock_levels; ++i)
@@ -895,17 +901,22 @@ void ConservationLaw<dim>::run ()
 
    // Limit the initial condition
    compute_shock_indicator ();
+
    apply_limiter();
+   
    old_solution = current_solution;
    predictor = current_solution;
-   
+
    // Reset time/iteration counters
    elapsed_time = 0;
    time_iter = 0;
    
    // Save initial condition to file
    output_results ();
-   
+
+   if(parameters.pos_lim) apply_positivity_limiter ();
+   std::cout<< "Initial condition limited Positive.."<<std::endl;
+
    // We then enter into the main time
    // stepping loop.
 
@@ -924,7 +935,7 @@ void ConservationLaw<dim>::run ()
       // compute time step in each cell using cfl condition
       compute_time_step ();
       
-      pcout << std::endl << "It=" << time_iter+1
+      std::cout << std::endl << "It=" << time_iter+1
             << ", T=" << elapsed_time + global_dt
             << ", dt=" << global_dt
             << ", cfl=" << parameters.cfl
@@ -940,11 +951,11 @@ void ConservationLaw<dim>::run ()
          setup_mesh_worker (integrator_explicit);
          iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
       }
-      else if(parameters.solver == Parameters::Solver::mood)
-      {
-      }
-      else
-      {
+      //else if(parameters.solver == Parameters::Solver::mood)
+      //{
+      //}
+      //else
+      //{
 //         std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
                    //<< "   _____________________________________" << std::endl;
          //// With global time stepping, we can use predictor as initial
@@ -953,7 +964,7 @@ void ConservationLaw<dim>::run ()
          //IntegratorImplicit<dim> integrator_implicit (dof_handler);
          //setup_mesh_worker (integrator_implicit);
          //iterate_implicit(integrator_implicit, newton_update, res_norm0, res_norm);//
-      }
+      //}
       
       // Update counters
       elapsed_time += global_dt;
@@ -1004,7 +1015,7 @@ void ConservationLaw<dim>::run ()
          
          refine_grid(refinement_indicators);
          
-         newton_update.reinit (locally_owned_dofs, mpi_communicator);
+         //newton_update.reinit (locally_owned_dofs, mpi_communicator);
 
          next_refine_time = elapsed_time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;

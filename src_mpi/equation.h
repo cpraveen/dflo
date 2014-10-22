@@ -1092,7 +1092,7 @@ struct EulerEquations
    compute_refinement_indicators (const dealii::DoFHandler<dim> 		&dof_handler,
                                   const dealii::Mapping<dim>    		&mapping,
                                   const dealii::TrilinosWrappers::MPI::Vector  	&solution,
-                                  dealii::Vector<double>		&refinement_indicators) //dealii::TrilinosWrappers::MPI::Vector
+                                  dealii::Vector<double>		&refinement_indicators)
    {
       const unsigned int dofs_per_cell = dof_handler.get_fe().dofs_per_cell;
       std::vector<unsigned int> dofs (dofs_per_cell);
