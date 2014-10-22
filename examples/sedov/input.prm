@@ -48,7 +48,7 @@ subsection time stepping
 end
 
 subsection linear solver
-  set output         = quiet
+  set output         = verbose 
   set method         = rk3
 end
 

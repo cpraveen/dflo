@@ -2,10 +2,10 @@
 # ---------------------
 
 # The input grid
-set basis = Pk 
+# set basis = Pk 
 set mesh type = gmsh
 set mesh file = step.msh
-set degree = 1
+set degree = 2
 set mapping = cartesian
 
 # Stabilization parameter
@@ -57,7 +57,7 @@ subsection time stepping
 end
 
 subsection linear solver
-  set output         = quiet
+  set output         = quiet #verbose
   set method         = rk3
 end
 
@@ -66,16 +66,16 @@ end
 subsection output
   set iter step      = 100
   set schlieren plot = true
-  set format         = tecplot
+  set format         = vtk
 end
 
 # --------------------------------------------------
 # Refinement control
 subsection refinement
   set refinement = false # none only other option
-  set iter step  = 5
+  set iter step  = 2
   set shock value = 1.0
-  set shock levels = 3
+  set shock levels = 4
 end
 
 # --------------------------------------------------
