@@ -590,7 +590,6 @@ ConservationLaw<dim>::compute_cell_average ()
          cell_average[cell_no] /= cell->measure();
       }
    }
-   
 }
 
 //------------------------------------------------------------------------------
@@ -750,13 +749,13 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       // Forward euler step in case of explicit scheme
       // In case of implicit scheme, this is the update
-      current_solution += newton_update;
-      current_solution.compress (VectorOperation::insert);
+      // newton_update = current_solution + newton_update
+      newton_update.sadd(1.0, current_solution);
       
-      // current_solution = ark*old_solution + (1-ark)*current_solution
-      current_solution.sadd (1.0-ark[rk], ark[rk], old_solution);
-      current_solution.compress (VectorOperation::insert);
+      // newton_update = ark*old_solution + (1-ark)*newton_update
+      newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
 
+      current_solution = newton_update;
       
       compute_cell_average ();
       compute_shock_indicator ();
@@ -989,10 +988,12 @@ void ConservationLaw<dim>::run ()
       // Compute predictor only for global time stepping
       // For local time stepping, this is meaningless.
       // If time step is changing, then also this is not correct.
+      // TODO: Do we really need predictor for explicit RK ?
       if( parameters.time_step_type == "global") //parameters.implicit ||
       {
-         predictor = current_solution;
-         predictor.sadd (2.0, -1.0, old_solution);
+         newton_update = current_solution;
+         newton_update.sadd (2.0, -1.0, old_solution);
+         predictor = newton_update;
       }
       
       old_solution = current_solution;
