@@ -261,7 +261,7 @@ void ConservationLaw<dim>::compute_inv_mass_matrix ()
 template <int dim>
 void ConservationLaw<dim>::setup_system ()
 {
-   TimerOutput::Scope t(computing_timer, "setup");
+   TimerOutput::Scope t(computing_timer, "Setup system");
 
    //pcout << "Allocating memory ...\n";
    
@@ -276,8 +276,8 @@ void ConservationLaw<dim>::setup_system ()
    
    // Size all of the fields.
    old_solution.reinit 		(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   predictor.reinit 		   (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   current_solution.reinit  (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   predictor.reinit 		(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    right_hand_side.reinit 	(locally_owned_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
@@ -559,6 +559,8 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_cell_average ()
 {
+   TimerOutput::Scope t(computing_timer, "Compute cell average");
+
    QGauss<dim>   quadrature_formula(fe.degree+1);
    const unsigned int n_q_points = quadrature_formula.size();
    
@@ -629,8 +631,8 @@ ConservationLaw<dim>::compute_angular_momentum ()
    }
    
    angular_momentum = Utilities::MPI::sum (angular_momentum, mpi_communicator);
-   //pcout << "Total angular momentum: "
-         //<< elapsed_time << "  " <<  angular_momentum << std::endl;
+   pcout << "Total angular momentum: "
+         << elapsed_time << "  " <<  angular_momentum << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -650,6 +652,8 @@ std::pair<unsigned int, double>
 ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update, 
                              double          current_residual)
 {
+   TimerOutput::Scope t(computing_timer, "Solver stage");
+
    newton_update = 0;
 
    switch (parameters.solver)
@@ -730,7 +734,6 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
    // Loop for newton iterations or RK stages
    for(unsigned int rk=0; rk<n_rk; ++rk)
    {
-	  TimerOutput::Scope t(computing_timer, "RK Update");
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
@@ -908,7 +911,7 @@ void ConservationLaw<dim>::run ()
    time_iter = 0;
    
    // Save initial condition to file
-   output_results ();
+   //output_results ();
 
    // We then enter into the main time
    // stepping loop.
@@ -938,12 +941,12 @@ void ConservationLaw<dim>::run ()
       double res_norm0 = 1.0;
       double res_norm  = 1.0;
       
-      if(parameters.solver == Parameters::Solver::rk3)
-      {
+      //if(parameters.solver == Parameters::Solver::rk3)
+      //{
          IntegratorExplicit<dim> integrator_explicit (dof_handler);
          setup_mesh_worker (integrator_explicit);
          iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
-      }
+      //}
       //else if(parameters.solver == Parameters::Solver::mood)
       //{
       //}
