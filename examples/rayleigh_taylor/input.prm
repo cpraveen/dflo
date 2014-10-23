@@ -1,8 +1,7 @@
 # Listing of Parameters
 # ---------------------
 
-# The input grid
-set basis = Pk 
+# The input grid 
 set mesh type = gmsh
 set mesh file = grid.msh
 set degree = 2

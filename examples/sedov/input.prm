@@ -2,7 +2,6 @@
 # ---------------------
 
 # The input grid 
-# set basis = Pk
 set mesh type = gmsh
 set mesh file = grid.msh
 set degree = 1
@@ -48,7 +47,7 @@ subsection time stepping
 end
 
 subsection linear solver
-  set output         = verbose 
+  set output         = quiet
   set method         = rk3
 end
 
