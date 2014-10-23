@@ -72,8 +72,8 @@ void ConservationLaw<dim>::output_results () const
    // Write shock indicator
    DataOut<dim> shock;
    shock.attach_dof_handler (dh_cell);
-   shock.add_data_vector (mu_shock, "mu_shock");
-   shock.add_data_vector (shock_indicator, "shock_indicator");
+   shock.add_data_vector (mu_shock, "mu_shock", DataOut<dim>::type_cell_data);
+   shock.add_data_vector (shock_indicator, "shock_indicator", DataOut<dim>::type_cell_data);
    shock.build_patches (mapping());
    if(parameters.output_format == "vtk")     
    {
