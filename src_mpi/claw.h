@@ -103,7 +103,7 @@ private:
    void refine_grid (const Vector<double> &indicator);
    void refine_forward_step ();
    
-   void output_results () const;
+   void output_results ();
    
    typedef dealii::MeshWorker::DoFInfo<dim> DoFInfo;
    typedef dealii::MeshWorker::IntegrationInfo<dim> CellInfo;

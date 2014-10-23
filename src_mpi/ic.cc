@@ -300,7 +300,6 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    //current_solution = old_solution;
    //predictor = old_solution;
    
-   old_solution.compress(VectorOperation::insert);
    current_solution = old_solution;
    predictor = old_solution;
 

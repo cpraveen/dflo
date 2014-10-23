@@ -35,6 +35,8 @@ double minmod (const double& a,
 template <int dim>
 void ConservationLaw<dim>::apply_limiter ()
 {
+   TimerOutput::Scope t(computing_timer, "Limiter");
+
    if(parameters.basis == Parameters::AllParameters<dim>::Qk)
    {
       switch(parameters.limiter_type)
@@ -364,8 +366,6 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
          
       }
    }
-   current_solution.compress(VectorOperation::insert);
-
 }
 
 template class ConservationLaw<2>;

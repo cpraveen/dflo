@@ -123,9 +123,19 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    
    //pcout.set_condition (parameters.output == Parameters::Solver::verbose);
    
-   // Save all parameters in xml format
-   //std::ofstream xml_file ("input.xml");
-   //prm.print_parameters (xml_file,  ParameterHandler::XML);
+   // Create directory to save solution files
+   if(Utilities::MPI::this_mpi_process(mpi_communicator)==0)
+   {
+      system("mkdir -p output");
+      
+      // Save all parameters in xml format
+      //std::ofstream xml_file ("input.xml");
+      //prm.print_parameters (xml_file,  ParameterHandler::XML);
+      
+      // Save all parameters in txt format
+      std::ofstream txt_file ("output/input.txt");
+      prm.print_parameters (txt_file,  ParameterHandler::Text);
+   }
    
    // Set coefficients for SSPRK
    if(fe.degree == 0)
@@ -261,7 +271,7 @@ void ConservationLaw<dim>::compute_inv_mass_matrix ()
 template <int dim>
 void ConservationLaw<dim>::setup_system ()
 {
-   TimerOutput::Scope t(computing_timer, "setup");
+   TimerOutput::Scope t(computing_timer, "Setup");
 
    pcout << "Allocating memory ...\n";
    
@@ -275,9 +285,9 @@ void ConservationLaw<dim>::setup_system ()
                                             locally_relevant_dofs);
    
    // Size all of the fields.
-   old_solution.reinit 		(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   old_solution.reinit 		(locally_owned_dofs, mpi_communicator);
    current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   predictor.reinit 		   (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   predictor.reinit 		   (locally_owned_dofs, mpi_communicator);
    right_hand_side.reinit 	(locally_owned_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
@@ -435,6 +445,8 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_time_step ()
 {
+   TimerOutput::Scope t(computing_timer, "Time step");
+
    // No need to compute time step for stationary flows
    if(parameters.is_stationary == true)
       return;
@@ -559,6 +571,8 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_cell_average ()
 {
+   TimerOutput::Scope t(computing_timer, "Cell average");
+
    QGauss<dim>   quadrature_formula(fe.degree+1);
    const unsigned int n_q_points = quadrature_formula.size();
    
@@ -650,6 +664,8 @@ std::pair<unsigned int, double>
 ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update, 
                              double          current_residual)
 {
+   TimerOutput::Scope t(computing_timer, "Solve");
+
    newton_update = 0;
 
    switch (parameters.solver)
@@ -708,7 +724,6 @@ ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update,
                                                right_hand_side(dof_indices[i]) *
                                                inv_mass_matrix[cell_no][i];
          }
-         newton_update.compress(VectorOperation::insert);
          return std::pair<unsigned int, double> (0,0);
       }
 
@@ -745,17 +760,20 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       if(rk == 0) res_norm0 = res_norm;
       
       std::pair<unsigned int, double> convergence
-      = solve (newton_update, res_norm);
+         = solve (newton_update, res_norm);
       
-      // Forward euler step in case of explicit scheme
-      // In case of implicit scheme, this is the update
-      // newton_update = current_solution + newton_update
-      newton_update.sadd(1.0, current_solution);
-      
-      // newton_update = ark*old_solution + (1-ark)*newton_update
-      newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
-
-      current_solution = newton_update;
+      {
+         TimerOutput::Scope t(computing_timer, "RK update");
+         // Forward euler step in case of explicit scheme
+         // In case of implicit scheme, this is the update
+         // newton_update = current_solution + newton_update
+         newton_update.sadd(1.0, current_solution);
+         
+         // newton_update = ark*old_solution + (1-ark)*newton_update
+         newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
+         
+         current_solution = newton_update;
+      }
       
       compute_cell_average ();
       compute_shock_indicator ();
@@ -898,7 +916,8 @@ void ConservationLaw<dim>::run ()
    compute_shock_indicator ();
    apply_limiter();
    old_solution = current_solution;
-   predictor = current_solution;
+   // we dont need predictor for explicit RK
+   //predictor = current_solution;
    
    // Reset time/iteration counters
    elapsed_time = 0;

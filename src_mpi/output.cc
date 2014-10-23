@@ -1,4 +1,5 @@
 #include <base/utilities.h>
+#include <base/timer.h>
 
 #include <dofs/dof_handler.h>
 
@@ -30,8 +31,10 @@ using namespace dealii;
 // function and is incremented by one at the
 // end of each invokation.
 template <int dim>
-void ConservationLaw<dim>::output_results () const
+void ConservationLaw<dim>::output_results ()
 {
+   TimerOutput::Scope t(computing_timer, "Output");
+
    typename EulerEquations<dim>::Postprocessor
    postprocessor (parameters.schlieren_plot);
    
@@ -53,7 +56,7 @@ void ConservationLaw<dim>::output_results () const
    data_out.build_patches (mapping(), fe.degree);
    
    static unsigned int output_file_number = 0;
-   std::string filename = ("solution-" +
+   std::string filename = ("output/solution-" +
                            Utilities::int_to_string(output_file_number,4) +
                            "." +
                            Utilities::int_to_string
@@ -71,7 +74,7 @@ void ConservationLaw<dim>::output_results () const
       for (unsigned int i=0;
            i<Utilities::MPI::n_mpi_processes(mpi_communicator);
            ++i)
-         filenames.push_back ("solution-" +
+         filenames.push_back ("output/solution-" +
                               Utilities::int_to_string (output_file_number, 4) +
                               "." +
                               Utilities::int_to_string (i, 3) +
