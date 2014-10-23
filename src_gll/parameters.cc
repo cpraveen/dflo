@@ -16,9 +16,9 @@ namespace Parameters
                            "State whether output from solver runs should be printed. "
                            "Choices are <quiet|verbose>.");
          prm.declare_entry("method", "rk3",
-                           Patterns::Selection("gmres|direct|umfpack|rk3|mood"),
+                           Patterns::Selection("gmres|direct|umfpack|rk3"),
                            "The kind of solver for the linear system. "
-                           "Choices are <gmres|direct|umfpack|rk3|mood>.");
+                           "Choices are <gmres|direct|umfpack|rk3>.");
          prm.declare_entry("residual", "1e-10",
                            Patterns::Double(),
                            "Linear solver residual");
@@ -328,7 +328,7 @@ namespace Parameters
                         "degree of DG space");
       
       prm.declare_entry("basis", "Qk",
-                        Patterns::Selection("Qk|Pk"),
+                        Patterns::Selection("Qk"),
                         "Qk or Pk basis");
       
       prm.declare_entry("mapping", "q1",

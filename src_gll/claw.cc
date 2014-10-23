@@ -575,13 +575,10 @@ void
 ConservationLaw<dim>::compute_cell_average ()
 {
    QGaussLobatto<dim>   quadrature_formula(fe.degree+1);
-   const unsigned int n_q_points = quadrature_formula.size();
-   
    FEValues<dim> fe_values (mapping(), fe,
                             quadrature_formula,
-                            update_values | update_JxW_values);
-   std::vector<Vector<double> > solution_values(n_q_points,
-                                                Vector<double>(EulerEquations<dim>::n_components));
+                            update_JxW_values);
+   std::vector<unsigned int> local_dofs(fe.dofs_per_cell);
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -590,19 +587,19 @@ ConservationLaw<dim>::compute_cell_average ()
    for (; cell!=endc; ++cell)
    {
       unsigned int cell_no = cell_number(cell);
-      if(re_update[cell_no])
+      fe_values.reinit (cell);
+         
+      cell_average[cell_no] = 0.0;
+         
+      cell->get_dof_indices(local_dofs);
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
       {
-         fe_values.reinit (cell);
-         fe_values.get_function_values (current_solution, solution_values);
-         
-         cell_average[cell_no] = 0.0;
-         
-         for (unsigned int q=0; q<n_q_points; ++q)
-            for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-               cell_average[cell_no][c] += solution_values[q][c] * fe_values.JxW(q);
-         
-         cell_average[cell_no] /= cell->measure();
+         unsigned int c = fe.system_to_component_index(i).first;
+         unsigned int q = fe.system_to_component_index(i).second;
+         cell_average[cell_no][c] += current_solution(local_dofs[i]) * fe_values.JxW(q);
       }
+
+      cell_average[cell_no] /= cell->measure();
    }
    
 }
