@@ -121,7 +121,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    prm.read_input (input_filename);
    parameters.parse_parameters (prm);
    
-   pcout.set_condition (parameters.output == Parameters::Solver::verbose);
+   //pcout.set_condition (parameters.output == Parameters::Solver::verbose);
    
    // Save all parameters in xml format
    //std::ofstream xml_file ("input.xml");
@@ -405,7 +405,7 @@ void ConservationLaw<dim>::setup_system ()
 template <int dim>
 void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrator)
 {
-   pcout << "Setting up mesh worker ...\n";
+   //pcout << "Setting up mesh worker ...\n";
 
    const unsigned int n_gauss_points = fe.degree + 1;
    integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
@@ -763,8 +763,9 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       if(parameters.pos_lim) apply_positivity_limiter ();
       
-      std::printf("   %-16.3e %04d        %-5.2e\n",
-                  res_norm, convergence.first, convergence.second);
+//      pcout << res_norm << "  "
+//            <<  convergence.first << "  "
+//            << convergence.second << std::endl;
       
    }
 }
@@ -989,12 +990,12 @@ void ConservationLaw<dim>::run ()
       // For local time stepping, this is meaningless.
       // If time step is changing, then also this is not correct.
       // TODO: Do we really need predictor for explicit RK ?
-      if( parameters.time_step_type == "global") //parameters.implicit ||
-      {
-         newton_update = current_solution;
-         newton_update.sadd (2.0, -1.0, old_solution);
-         predictor = newton_update;
-      }
+//      if( parameters.time_step_type == "global") //parameters.implicit ||
+//      {
+//         newton_update = current_solution;
+//         newton_update.sadd (2.0, -1.0, old_solution);
+//         predictor = newton_update;
+//      }
       
       old_solution = current_solution;
       
