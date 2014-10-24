@@ -262,7 +262,7 @@ private:
    std::vector< dealii::Vector<double> > inv_mass_matrix;
    
    Parameters::AllParameters<dim>  parameters;
-   ConditionalOStream		       pcout;
+   dealii::ConditionalOStream		       pcout;
    TimerOutput                     computing_timer;
 
    // Call the appropriate numerical flux function

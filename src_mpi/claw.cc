@@ -737,6 +737,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
                                              LA::MPI::Vector& newton_update,
                                              double& res_norm0, double& res_norm)
 {
+
    // Loop for newton iterations or RK stages
    for(unsigned int rk=0; rk<n_rk; ++rk)
    {
@@ -765,6 +766,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       // newton_update = ark*old_solution + (1-ark)*newton_update
       newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
 
+      
       current_solution = newton_update;
 
       compute_cell_average ();
@@ -887,7 +889,7 @@ void ConservationLaw<dim>::run ()
    static const HyperBallBoundary<dim> boundary_description;
    triangulation.set_boundary (1, boundary_description);
    */
-   
+
    setup_system();
    set_initial_condition ();
 
@@ -906,19 +908,17 @@ void ConservationLaw<dim>::run ()
 
    // Limit the initial condition
    compute_shock_indicator ();
-
    apply_limiter();
-   
    old_solution = current_solution;
    predictor = current_solution;
-
+   
    // Reset time/iteration counters
    elapsed_time = 0;
    time_iter = 0;
    
    // Save initial condition to file
-   //output_results ();
-
+   output_results ();
+   
    // We then enter into the main time
    // stepping loop.
 
@@ -932,7 +932,7 @@ void ConservationLaw<dim>::run ()
 
    std::vector<double> residual_history;
    
-   while ((elapsed_time < parameters.final_time) && (time_iter < 1000))
+   while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
       compute_time_step ();
@@ -990,19 +990,18 @@ void ConservationLaw<dim>::run ()
       residual_history.push_back (res_norm);
       
       // Save solution for visualization
-      //if (elapsed_time >= next_output_time || time_iter == next_output_iter 
-            //|| std::fabs(elapsed_time-parameters.final_time) < 1.0e-13)
-      //{
-         //output_results ();
-         //next_output_time = elapsed_time + parameters.output_time_step;
-         //next_output_iter = time_iter + parameters.output_iter_step;
-      //}
+      if (elapsed_time >= next_output_time || time_iter == next_output_iter 
+            || std::fabs(elapsed_time-parameters.final_time) < 1.0e-13)
+      {
+         output_results ();
+         next_output_time = elapsed_time + parameters.output_time_step;
+         next_output_iter = time_iter + parameters.output_iter_step;
+      }
       
       // Compute predictor only for global time stepping
       // For local time stepping, this is meaningless.
       // If time step is changing, then also this is not correct.
       // TODO: Do we really need predictor for explicit RK ?
-
 //      if( parameters.time_step_type == "global") //parameters.implicit ||
 //      {
 //         newton_update = current_solution;
