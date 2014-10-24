@@ -944,11 +944,11 @@ void ConservationLaw<dim>::run ()
       // compute time step in each cell using cfl condition
       compute_time_step ();
       
-      pcout << std::endl << "It=" << time_iter+1
-            << ", T=" << elapsed_time + global_dt
-            << ", dt=" << global_dt
-            << ", cfl=" << parameters.cfl
-            << std::endl << std::endl;
+      pcout << std::scientific << "It = " << std::setw(6) << time_iter+1
+            << ", T = " << std::setprecision(4) << elapsed_time + global_dt
+            << ", dt = " << std::setprecision(4) << global_dt
+            << ", cfl = " << std::setprecision(2) << parameters.cfl
+            << std::endl;
       
       unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;

@@ -105,20 +105,19 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 {
    if(parameters.ic_function == "rt")
       VectorTools::interpolate(mapping(), dof_handler,
-                               RayleighTaylor<dim>(parameters.gravity), right_hand_side);
+                               RayleighTaylor<dim>(parameters.gravity), old_solution);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
-                               IsentropicVortex<dim>(5.0, 0.0, 0.0), right_hand_side);
+                               IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);
    else if(parameters.ic_function == "vortsys")
       VectorTools::interpolate(mapping(), dof_handler,
-                               VortexSystem<dim>(), right_hand_side);
+                               VortexSystem<dim>(), old_solution);
    else
       VectorTools::interpolate(mapping(), dof_handler,
-                               parameters.initial_conditions, right_hand_side);
+                               parameters.initial_conditions, old_solution);
    
-   old_solution = right_hand_side;
-   current_solution = right_hand_side;
-   predictor = right_hand_side;
+   current_solution = old_solution;
+   predictor = old_solution;
 }
 
 //------------------------------------------------------------------------------
@@ -128,158 +127,28 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition_Pk ()
 {
-   //QGauss<dim> quadrature_formula (fe.degree+1);
-   //const unsigned int n_q_points = quadrature_formula.size();
-   
-   //FEValues<dim> fe_values (fe, quadrature_formula,
-                            //update_values | update_q_points | update_JxW_values);
-   
-   //// Multiply by inverse mass matrix
-   //const unsigned int   dofs_per_cell = fe.dofs_per_cell;
-   //std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-   //std::vector<unsigned int> local_dof_indices (dofs_per_cell);
-   //Vector<double> initial_values (n_q_points);
-   //Vector<double> cell_vector(dofs_per_cell);
-   
-   //typename DoFHandler<dim>::active_cell_iterator
-      //cell = dof_handler.begin_active(),
-      //endc = dof_handler.end();
-      
-   //if(parameters.ic_function == "rt")
-   //{
-	   //RayleighTaylor<dim> initial_condition(parameters.gravity);
-	   //for (; cell!=endc; ++cell)
-	   //if(cell->is_locally_owned())
-	   //{
-			//cell->get_dof_indices(local_dof_indices);
-			//fe_values.reinit (cell);
-			//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
-
-			//old_solution = 0;
-			//unsigned int c = cell_number(cell);
-      
-			//for(unsigned int i=0; i<dofs_per_cell; ++i)
-			//{
-				//for(unsigned int q=0; q<n_q_points; ++q)
-				//{
-					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += old_solution(dof_indices[i]) * initial_values *
-													//fe_values.shape_value(i,q) *
-													//fe_values.JxW(q);									
-				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
-			//}
-      
-		//}
-   //}
-
-   //else if(parameters.ic_function == "isenvort")
-   //{
-	   //IsentropicVortex<dim> initial_condition(5.0, 0.0, 0.0);
-	   //for (; cell!=endc; ++cell)
-	   //if(cell->is_locally_owned())
-	   //{
-			//cell->get_dof_indices(local_dof_indices);
-			//fe_values.reinit (cell);
-      		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
-
-			//old_solution = 0;
-			//unsigned int c = cell_number(cell);
-      
-			//for(unsigned int i=0; i<dofs_per_cell; ++i)
-			//{
-				//for(unsigned int q=0; q<n_q_points; ++q)
-				//{
-					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
-													//fe_values.shape_value(i,q) *
-													//fe_values.JxW(q);									
-				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
-			//}
-      
-		//}
-   //}
-
-   //else if(parameters.ic_function == "vortsys")
-   //{
-	   //VortexSystem<dim> initial_condition;
-	   //for (; cell!=endc; ++cell)
-	   //if(cell->is_locally_owned())
-	   //{
-			//cell->get_dof_indices(local_dof_indices);
-			//fe_values.reinit (cell);
-      		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
-
-			//old_solution = 0;
-			//unsigned int c = cell_number(cell);
-      
-			//for(unsigned int i=0; i<dofs_per_cell; ++i)
-			//{
-				//for(unsigned int q=0; q<n_q_points; ++q)
-				//{
-					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
-													//fe_values.shape_value(i,q) *
-													//fe_values.JxW(q);									
-				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
-			//}
-      
-		//}
-   //}
-
-   //else
-   //{
-	   //dealii::FunctionParser<dim> initial_condition(parameters.initial_conditions);
-	   //for (; cell!=endc; ++cell)
-	   //if(cell->is_locally_owned())
-	   //{
-			//cell->get_dof_indices(local_dof_indices);
-			//fe_values.reinit (cell);
-      		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
-            
-			//old_solution = 0;
-			//unsigned int c = cell_number(cell);
-      
-			//for(unsigned int i=0; i<dofs_per_cell; ++i)
-			//{
-				//for(unsigned int q=0; q<n_q_points; ++q)
-				//{
-					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
-													//fe_values.shape_value(i,q) *
-													//fe_values.JxW(q);									
-				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
-			//}
-      
-		//}
-   //}
-   Vector<double> p_current_solution;
-   p_current_solution.reinit 	(dof_handler.n_locally_owned_dofs());
-   p_current_solution=current_solution;
+   Vector<double> rhs(dof_handler.n_locally_owned_dofs());
    
    if(parameters.ic_function == "rt")
       VectorTools::create_right_hand_side (mapping(), dof_handler,
                                            QGauss<dim>(fe.degree+1),
                                            RayleighTaylor<dim>(parameters.gravity),
-                                           p_current_solution);
+                                           rhs);
    else if(parameters.ic_function == "isenvort")
       VectorTools::create_right_hand_side (mapping(), dof_handler,
                                            QGauss<dim>(fe.degree+1),
                                            IsentropicVortex<dim>(5.0, 0.0, 0.0),
-                                           p_current_solution);
+                                           rhs);
    else if(parameters.ic_function == "vortsys")
       VectorTools::create_right_hand_side (mapping(), dof_handler,
                                            QGauss<dim>(fe.degree+1),
                                            VortexSystem<dim>(),
-                                           p_current_solution);
+                                           rhs);
    else
       VectorTools::create_right_hand_side (mapping(), dof_handler,
                                            QGauss<dim>(fe.degree+1),
                                            parameters.initial_conditions,
-                                           p_current_solution);
+                                           rhs);
    
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
    typename DoFHandler<dim>::active_cell_iterator
@@ -293,12 +162,9 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
       unsigned int c = cell_number(cell);
       
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         old_solution(dof_indices[i]) = p_current_solution(dof_indices[i]) *
+         old_solution(dof_indices[i]) = rhs(dof_indices[i]) *
                                         inv_mass_matrix[c][i];
    }
-   
-   //current_solution = old_solution;
-   //predictor = old_solution;
    
    current_solution = old_solution;
    predictor = old_solution;
