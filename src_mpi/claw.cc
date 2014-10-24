@@ -121,7 +121,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    prm.read_input (input_filename);
    parameters.parse_parameters (prm);
    
-   pcout.set_condition (parameters.output == Parameters::Solver::verbose);
+   //pcout.set_condition (parameters.output == Parameters::Solver::verbose);
    
    // Save all parameters in xml format
    //std::ofstream xml_file ("input.xml");
@@ -405,6 +405,8 @@ void ConservationLaw<dim>::setup_system ()
 template <int dim>
 void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrator)
 {
+   TimerOutput::Scope t(computing_timer, "Setup MeshWorker");
+
    //pcout << "Setting up mesh worker ...\n";
 
    const unsigned int n_gauss_points = fe.degree + 1;
@@ -435,6 +437,8 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_time_step ()
 {
+   TimerOutput::Scope t(computing_timer, "Compute time step");
+
    // No need to compute time step for stationary flows
    if(parameters.is_stationary == true)
       return;
@@ -601,6 +605,8 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_angular_momentum ()
 {
+   TimerOutput::Scope t(computing_timer, "Compute angular momentum");
+
    AssertThrow(dim==2, ExcNotImplemented());
    
    QGauss<dim>   quadrature_formula(fe.degree+1);
@@ -926,7 +932,7 @@ void ConservationLaw<dim>::run ()
 
    std::vector<double> residual_history;
    
-   while (elapsed_time < parameters.final_time)
+   while ((elapsed_time < parameters.final_time) && (time_iter < 1000))
    {
       // compute time step in each cell using cfl condition
       compute_time_step ();
@@ -984,13 +990,13 @@ void ConservationLaw<dim>::run ()
       residual_history.push_back (res_norm);
       
       // Save solution for visualization
-      if (elapsed_time >= next_output_time || time_iter == next_output_iter 
-            || std::fabs(elapsed_time-parameters.final_time) < 1.0e-13)
-      {
-         output_results ();
-         next_output_time = elapsed_time + parameters.output_time_step;
-         next_output_iter = time_iter + parameters.output_iter_step;
-      }
+      //if (elapsed_time >= next_output_time || time_iter == next_output_iter 
+            //|| std::fabs(elapsed_time-parameters.final_time) < 1.0e-13)
+      //{
+         //output_results ();
+         //next_output_time = elapsed_time + parameters.output_time_step;
+         //next_output_iter = time_iter + parameters.output_iter_step;
+      //}
       
       // Compute predictor only for global time stepping
       // For local time stepping, this is meaningless.
