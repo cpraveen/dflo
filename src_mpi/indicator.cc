@@ -15,6 +15,8 @@ using namespace dealii;
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator ()
 {
+   TimerOutput::Scope t(computing_timer, "Shock indicator");
+   
    // If indicator type is "limiter" then mark all cells.
    if(parameters.shock_indicator_type == Parameters::Limiter::limiter)
    {
@@ -30,8 +32,6 @@ void ConservationLaw<dim>::compute_shock_indicator ()
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
 {
-   TimerOutput::Scope t(computing_timer, "Shock indicator");
-
    const unsigned int density_component = EulerEquations<dim>::density_component;
    const unsigned int energy_component = EulerEquations<dim>::energy_component;
    

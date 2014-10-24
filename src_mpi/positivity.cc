@@ -62,6 +62,8 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    const FEValuesExtractors::Scalar energy   (energy_component);
    const FEValuesExtractors::Vector momentum (0);
    
+   right_hand_side = current_solution;
+   
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
@@ -190,7 +192,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       }
       
    }
-   current_solution=right_hand_side;
+   current_solution = right_hand_side;
 }
 
 template class ConservationLaw<2>;

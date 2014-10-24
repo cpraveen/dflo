@@ -32,6 +32,8 @@ using namespace dealii;
 template <int dim>
 void ConservationLaw<dim>::output_results () const
 {
+   //TimerOutput::Scope t(computing_timer, "Output results");
+
    typename EulerEquations<dim>::Postprocessor
    postprocessor (parameters.schlieren_plot);
    

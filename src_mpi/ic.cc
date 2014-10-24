@@ -155,19 +155,20 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 			//fe_values.reinit (cell);
 			//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
 
-			//old_solution = 0;
+			//right_hand_side = 0;
 			//unsigned int c = cell_number(cell);
-      
-			//for(unsigned int i=0; i<dofs_per_cell; ++i)
+			
+			//for(unsigned int q=0; q<n_q_points; ++q)
 			//{
-				//for(unsigned int q=0; q<n_q_points; ++q)
+				//initial_condition.vector_value (q_points[q], initial_values);
+				//for(unsigned int i=0; i<dofs_per_cell; ++i)
+
 				//{
-					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += old_solution(dof_indices[i]) * initial_values *
+					//right_hand_side(dof_indices[i]) += initial_values*
 													//fe_values.shape_value(i,q) *
 													//fe_values.JxW(q);									
 				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
+				//right_hand_side(dof_indices[i]) *= inv_mass_matrix[c][i];
 			//}
       
 		//}
@@ -183,7 +184,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 			//fe_values.reinit (cell);
       		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
 
-			//old_solution = 0;
+			//right_hand_side = 0;
 			//unsigned int c = cell_number(cell);
       
 			//for(unsigned int i=0; i<dofs_per_cell; ++i)
@@ -191,11 +192,11 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 				//for(unsigned int q=0; q<n_q_points; ++q)
 				//{
 					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
+					//right_hand_side(dof_indices[i]) += initial_values[q] *
 													//fe_values.shape_value(i,q) *
 													//fe_values.JxW(q);									
 				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
+				//right_hand_side(dof_indices[i]) *= inv_mass_matrix[c][i];
 			//}
       
 		//}
@@ -211,7 +212,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 			//fe_values.reinit (cell);
       		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
 
-			//old_solution = 0;
+			//right_hand_side = 0;
 			//unsigned int c = cell_number(cell);
       
 			//for(unsigned int i=0; i<dofs_per_cell; ++i)
@@ -219,11 +220,11 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 				//for(unsigned int q=0; q<n_q_points; ++q)
 				//{
 					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
+					//right_hand_side(dof_indices[i]) += initial_values[q] *
 													//fe_values.shape_value(i,q) *
 													//fe_values.JxW(q);									
 				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
+				//right_hand_side(dof_indices[i]) *= inv_mass_matrix[c][i];
 			//}
       
 		//}
@@ -239,7 +240,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 			//fe_values.reinit (cell);
       		//const std::vector<Point<dim> > q_points(quadrature_formula.get_points());
             
-			//old_solution = 0;
+			//right_hand_side = 0;
 			//unsigned int c = cell_number(cell);
       
 			//for(unsigned int i=0; i<dofs_per_cell; ++i)
@@ -247,18 +248,22 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 				//for(unsigned int q=0; q<n_q_points; ++q)
 				//{
 					//initial_condition.vector_value (q_points[q], initial_values);
-					//old_solution(dof_indices[i]) += initial_values[q] *
+					//right_hand_side(dof_indices[i]) += initial_values[q] *
 													//fe_values.shape_value(i,q) *
 													//fe_values.JxW(q);									
 				//}
-				//old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
+				//right_hand_side(dof_indices[i]) *= inv_mass_matrix[c][i];
 			//}
       
 		//}
    //}
+   
+   
    Vector<double> p_current_solution;
    p_current_solution.reinit 	(dof_handler.n_locally_owned_dofs());
-   p_current_solution=current_solution;
+   
+   right_hand_side = current_solution;
+   p_current_solution = right_hand_side;
    
    if(parameters.ic_function == "rt")
       VectorTools::create_right_hand_side (mapping(), dof_handler,
@@ -293,16 +298,13 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
       unsigned int c = cell_number(cell);
       
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         old_solution(dof_indices[i]) = p_current_solution(dof_indices[i]) *
+         right_hand_side(dof_indices[i]) = p_current_solution(dof_indices[i]) *
                                         inv_mass_matrix[c][i];
    }
    
-   //current_solution = old_solution;
-   //predictor = old_solution;
-   
-   old_solution.compress(VectorOperation::insert);
-   current_solution = old_solution;
-   predictor = old_solution;
+   old_solution=right_hand_side;
+   current_solution = right_hand_side;
+   predictor = right_hand_side;
 
 }
 
@@ -313,6 +315,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
+   TimerOutput::Scope t(computing_timer, "Set initial condition");
    pcout << "Setting initial condition\n";
    
    if(parameters.basis == Parameters::AllParameters<dim>::Qk)
