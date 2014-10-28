@@ -77,25 +77,28 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
                    (std::fabs(density_average - rho_min) + 1.0e-13);
       double theta1 = std::min(rat, 1.0);
       
-      if(parameters.basis == Parameters::AllParameters<dim>::Qk)
+      if(theta1 < 1.0)
       {
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         if(parameters.basis == Parameters::AllParameters<dim>::Qk)
          {
-            unsigned int comp_i = fe.system_to_component_index(i).first;
-            if(comp_i == density_component)
-               current_solution(local_dof_indices[i]) =
-                 theta1         * current_solution(local_dof_indices[i])
-               + (1.0 - theta1) * density_average;
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               if(comp_i == density_component)
+                  current_solution(local_dof_indices[i]) =
+                     theta1         * current_solution(local_dof_indices[i])
+                     + (1.0 - theta1) * density_average;
+            }
          }
-      }
-      else
-      {
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         else
          {
-            unsigned int comp_i = fe.system_to_component_index(i).first;
-            unsigned int base_i = fe.system_to_component_index(i).second;
-            if(comp_i == density_component && base_i > 0)
-               current_solution(local_dof_indices[i]) *= theta1;
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               unsigned int base_i = fe.system_to_component_index(i).second;
+               if(comp_i == density_component && base_i > 0)
+                  current_solution(local_dof_indices[i]) *= theta1;
+            }
          }
       }
       
@@ -157,27 +160,29 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
          }
       }
       
-      if(parameters.basis == Parameters::AllParameters<dim>::Qk)
+      if(theta2 < 1.0)
       {
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         if(parameters.basis == Parameters::AllParameters<dim>::Qk)
          {
-            unsigned int comp_i = fe.system_to_component_index(i).first;
-            current_solution(local_dof_indices[i]) =
-               theta2         * current_solution(local_dof_indices[i])
-            + (1.0 - theta2)  * cell_average[c][comp_i];
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               current_solution(local_dof_indices[i]) =
+                  theta2         * current_solution(local_dof_indices[i])
+                  + (1.0 - theta2)  * cell_average[c][comp_i];
+            }
+         }
+         else
+         {
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int base_i = fe.system_to_component_index(i).second;
+               if(base_i > 0)
+                  current_solution(local_dof_indices[i]) *= theta2;
+            }
+            
          }
       }
-      else
-      {
-         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         {
-            unsigned int base_i = fe.system_to_component_index(i).second;
-            if(base_i > 0)
-               current_solution(local_dof_indices[i]) *= theta2;
-         }
-         
-      }
-      
    }
 }
 
