@@ -99,6 +99,9 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
    std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
                                                      std::vector< Tensor<1,dim> >(n_components));
    
+   // Data for positivity limiter
+   PosLimData<dim> pos_lim_data (fe, mapping());
+   
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end(),
@@ -217,6 +220,8 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             }
          }
       }
+      if(parameters.pos_lim)
+         apply_positivity_limiter_cell (cell, pos_lim_data);
    }
    current_solution = newton_update;
 }

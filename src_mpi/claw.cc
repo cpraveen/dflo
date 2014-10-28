@@ -779,7 +779,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       compute_shock_indicator ();
       apply_limiter ();
       
-      if(parameters.pos_lim) apply_positivity_limiter ();
+      //if(parameters.pos_lim) apply_positivity_limiter ();
       
 //      pcout << res_norm << "  "
 //            <<  convergence.first << "  "
