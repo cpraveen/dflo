@@ -121,7 +121,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          
          // Compute average gradient in cell
          fe_values_grad.reinit(cell);
-         fe_values_grad.get_function_gradients(current_solution, grad);
+         fe_values_grad.get_function_gradients(newton_update, grad);
          Tensor<1,dim> avg_grad;
          
          for(unsigned int i=0; i<n_components; ++i)
@@ -251,6 +251,11 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
    
    static const double sqrt_3 = sqrt(3.0);
    const double beta = 0.5 * parameters.beta;
+
+   // Data for positivity limiter
+   PosLimData<dim> pos_lim_data (fe, mapping());
+
+   newton_update = current_solution;
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -272,9 +277,9 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
             unsigned int comp_i = fe.system_to_component_index(i).first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(base_i == 1)
-               Dx(comp_i) = current_solution(dof_indices[i]) * sqrt_3;
+               Dx(comp_i) = newton_update(dof_indices[i]) * sqrt_3;
             else if(base_i == fe.degree+1)
-               Dy(comp_i) = current_solution(dof_indices[i]) * sqrt_3;
+               Dy(comp_i) = newton_update(dof_indices[i]) * sqrt_3;
          }
          
          // angular momentum for square cells = v_x - u_y
@@ -361,16 +366,20 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
                unsigned int comp_i = fe.system_to_component_index(i).first;
                unsigned int base_i = fe.system_to_component_index(i).second;
                if(base_i == 1)
-                  current_solution(dof_indices[i]) = Dx_new(comp_i) / sqrt_3;
+                  newton_update(dof_indices[i]) = Dx_new(comp_i) / sqrt_3;
                else if(base_i == fe.degree + 1)
-                  current_solution(dof_indices[i]) = Dy_new(comp_i) / sqrt_3;
+                  newton_update(dof_indices[i]) = Dy_new(comp_i) / sqrt_3;
                else if(base_i != 0)
-                  current_solution(dof_indices[i]) = 0.0;
+                  newton_update(dof_indices[i]) = 0.0;
             }
          }
          
       }
+      if(parameters.pos_lim)
+         apply_positivity_limiter_cell (cell, pos_lim_data);
    }
+
+   current_solution = newton_update;
 }
 
 template class ConservationLaw<2>;

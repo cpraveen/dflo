@@ -63,25 +63,19 @@ struct PosLimData
    std::vector<double> density_values, energy_values;
    std::vector< Tensor<1,dim> > momentum_values;
    std::vector<unsigned int> local_dof_indices;
-   const dealii::FEValuesExtractors::Scalar density;
-   const dealii::FEValuesExtractors::Scalar energy;
-   const dealii::FEValuesExtractors::Vector momentum;
 };
 
 template <int dim>
 PosLimData<dim>::PosLimData(const dealii::FESystem<dim>    &fe,
                             const dealii::Mapping<dim,dim> &mapping)
 :
-quadrature_formula (fe.degree+2),
-n_q_points (quadrature_formula.size()),
-fe_values (mapping, fe, quadrature_formula, update_values),
-density_values (n_q_points),
-energy_values (n_q_points),
-momentum_values (n_q_points),
-local_dof_indices (fe.dofs_per_cell),
-density (EulerEquations<dim>::density_component),
-energy (EulerEquations<dim>::energy_component),
-momentum (0)
+   quadrature_formula (fe.degree+2),
+   n_q_points (quadrature_formula.size()),
+   fe_values (mapping, fe, quadrature_formula, update_values),
+   density_values (n_q_points),
+   energy_values (n_q_points),
+   momentum_values (n_q_points),
+   local_dof_indices (fe.dofs_per_cell)
 {
    
 }
