@@ -291,6 +291,13 @@ void ConservationLaw<dim>::setup_system ()
    shock_indicator.reinit (dh_cell.n_dofs());
    jump_indicator.reinit (dh_cell.n_dofs());
 
+   // set cell index
+   unsigned int index=0;
+   
+   for (typename Triangulation<dim>::active_cell_iterator cell=triangulation.begin_active();
+        cell!=triangulation.end(); ++cell, ++index)
+      cell->set_user_index(index);
+   
    if(parameters.implicit == false)
    {
       std::cout << "Creating mass matrix ...\n";

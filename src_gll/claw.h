@@ -336,12 +336,7 @@ private:
    inline
    unsigned int cell_number (const ITERATOR &cell) const
    {
-      dealii::DoFAccessor<dim,dealii::DoFHandler<dim>,false> 
-         dof_accessor (&triangulation, 
-                       cell->level(), 
-                       cell->index(), 
-                       &dh_cell);
-      return dof_accessor.dof_index(0);
+      return cell->user_index();
    }
    
    // If cell is active, return cell average.
