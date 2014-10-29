@@ -127,30 +127,29 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition_Pk ()
 {
-   Vector<double> rhs(dof_handler.n_locally_owned_dofs());
-   
+   RayleighTaylor<dim> rayleigh_taylor(parameters.gravity);
+   IsentropicVortex<dim> isentropic_vortex(5.0, 0.0, 0.0);
+   VortexSystem<dim> vortex_system;
+   Function<dim>* ic_function;
    if(parameters.ic_function == "rt")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           RayleighTaylor<dim>(parameters.gravity),
-                                           rhs);
+      ic_function = &rayleigh_taylor;
    else if(parameters.ic_function == "isenvort")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           IsentropicVortex<dim>(5.0, 0.0, 0.0),
-                                           rhs);
+      ic_function = &isentropic_vortex;
    else if(parameters.ic_function == "vortsys")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           VortexSystem<dim>(),
-                                           rhs);
+      ic_function = &vortex_system;
    else
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           parameters.initial_conditions,
-                                           rhs);
-   
+      ic_function = &parameters.initial_conditions;
+
+   QGauss<dim> quadrature (fe.degree+1);
+   unsigned int n_q_points = quadrature.size();
+   FEValues<dim> fe_values (mapping(), fe, quadrature, 
+                            update_values|update_q_points|update_JxW_values);
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   std::vector< Vector<double> > ic_values(n_q_points, 
+                                           Vector<double>(EulerEquations<dim>::n_components));
+
+   old_solution = 0.0;
+
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
@@ -158,12 +157,21 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    for (; cell!=endc; ++cell)
    if(cell->is_locally_owned())
    {
+      fe_values.reinit (cell);
+      ic_function->vector_value_list(fe_values.get_quadrature_points(), ic_values);
       cell->get_dof_indices(dof_indices);
-      unsigned int c = cell_number(cell);
-      
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         old_solution(dof_indices[i]) = rhs(dof_indices[i]) *
-                                        inv_mass_matrix[c][i];
+      {
+         unsigned int comp_i = fe.system_to_component_index(i).first;
+         for(unsigned int q=0; q<n_q_points; ++q)
+            old_solution(dof_indices[i]) += ic_values[q][comp_i] *
+                                            fe_values.shape_value_component(i, q, comp_i) *
+                                            fe_values.JxW(q);
+         }
+
+      unsigned int c = cell_number(cell);
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         old_solution(dof_indices[i]) *= inv_mass_matrix[c][i];
    }
    
    current_solution = old_solution;
