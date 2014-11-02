@@ -43,6 +43,9 @@ void ConservationLaw<dim>::apply_limiter ()
          case Parameters::Limiter::TVB:
             apply_limiter_TVB_Qk ();
             break;
+         case Parameters::Limiter::minmax:
+            apply_limiter_minmax_Qk ();
+            break;
          default:
             AssertThrow(false, ExcMessage("Unknown limiter_type"));
       }
@@ -218,6 +221,123 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
+            }
+         }
+      }
+   }
+}
+
+//------------------------------------------------------------------------------
+// Apply gradient limiter
+// Note: This is implemented only for 2-D.
+//-----------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
+{
+   if(fe.degree == 0) return;
+   const unsigned int n_components = EulerEquations<dim>::n_components;
+   
+   // Quadrature rule for average gradient
+   // No. of quadrature points = fe.degree/2 + 1
+   unsigned int nq;
+   if(fe.degree%2 == 0)
+      nq = fe.degree/2 + 1;
+   else
+      nq = (fe.degree+1)/2 + 1;
+   QGauss<dim> qrule (nq);
+   FEValues<dim> fe_values_grad (mapping(), fe, qrule, update_gradients | update_JxW_values);
+   
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
+   Quadrature<dim> qsupport (fe.get_unit_support_points());
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   
+   Vector<double> avg_nbr (n_components);
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
+                                                     std::vector< Tensor<1,dim> >(n_components));
+   
+   typename DoFHandler<dim>::active_cell_iterator
+   cell = dof_handler.begin_active(),
+   endc = dof_handler.end(),
+   endc0 = dh_cell.end();
+   
+   for(; cell != endc; ++cell)
+   {
+      const unsigned int c = cell_number(cell);
+      if(shock_indicator[c] > 1.0)
+      {
+         const double dx = cell->diameter() / std::sqrt(1.0*dim);
+         const double Mdx2 = parameters.M * dx * dx;
+         double betax = parameters.beta;
+         double betay = parameters.beta;
+         
+         std::vector<double> avg_min(n_components,+1.0e20), avg_max(n_components,-1.0e20);
+         for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
+            if (! cell->at_boundary(face_no))
+            {
+               const typename DoFHandler<dim>::cell_iterator
+               neighbor = cell->neighbor(face_no);
+               Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
+                      ExcInternalError());
+               get_cell_average (neighbor, avg_nbr);
+               for(unsigned int i=0; i<n_components; ++i)
+               {
+                  avg_min[i] = std::min( avg_min[i], avg_nbr(i));
+                  avg_max[i] = std::max( avg_max[i], avg_nbr(i));
+               }
+            }
+         
+         std::vector<double> dumin(n_components), dumax(n_components);
+         
+         // Compute average gradient in cell
+         fe_values_grad.reinit(cell);
+         fe_values_grad.get_function_gradients(current_solution, grad);
+         std::vector< Tensor<1,dim> > avg_grad(n_components);
+         
+         for(unsigned int i=0; i<n_components; ++i)
+         {
+            dumin[i] = avg_min[i] - cell_average[c][i];
+            dumax[i] = avg_max[i] - cell_average[c][i];
+
+            avg_grad[i] = 0;
+            for(unsigned int q=0; q<qrule.size(); ++q)
+               avg_grad[i] += grad[q][i] * fe_values_grad.JxW(q);
+            avg_grad[i] /= cell->measure();
+         }
+         
+         std::vector<double> theta(n_components, 1.0);
+         for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
+         {
+            Point<dim> dr = cell->face(face_no)->center() - cell->center();
+            for(unsigned int i=0; i<n_components; ++i)
+            if(dumax[i] - dumin[i] > Mdx2)
+            {
+               double du = dr * avg_grad[i];
+               if(du > 0.0)
+                  theta[i] = std::min(theta[i], dumax[i]/du);
+               else
+                  theta[i] = std::min(theta[i], dumin[i]/du);
+            }
+         }
+         
+         // Apply minmod limiter
+         double change = 0;
+         for(unsigned int i=0; i<n_components; ++i)
+            change += theta[i];
+         change /= n_components;
+         
+         // If limiter is active, reduce polynomial to linear
+         if(change < 0.99)
+         {
+            cell->get_dof_indices(dof_indices);
+            fe_values.reinit (cell);
+            const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               Point<dim> dr = p[i] - cell->center();
+               current_solution(dof_indices[i]) = cell_average[c][comp_i]
+                  + theta[comp_i] * dr * avg_grad[comp_i];
             }
          }
       }

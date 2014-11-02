@@ -200,8 +200,8 @@ namespace Parameters
                            Patterns::Selection("limiter|density|energy|u2"),
                            "Shock indicator type: limiter | density | energy | u2");
          prm.declare_entry("type", "none",
-                           Patterns::Selection("none|TVB"),
-                           "Limiter type: none | TVB");
+                           Patterns::Selection("none|TVB|minmax"),
+                           "Limiter type: none | TVB | minmax");
          prm.declare_entry("characteristic limiter", "false",
                            Patterns::Bool(),
                            "whether to use characteristic limiter");
@@ -243,6 +243,8 @@ namespace Parameters
             limiter_type = none;
          else if(type == "TVB")
             limiter_type = TVB;
+         else if(type == "minmax")
+            limiter_type = minmax;
          else
             AssertThrow (false, ExcNotImplemented());
          

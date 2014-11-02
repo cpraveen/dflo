@@ -129,6 +129,7 @@ private:
    void compute_cell_average ();
    void apply_limiter ();
    void apply_limiter_TVB_Qk ();
+   void apply_limiter_minmax_Qk ();
    void apply_limiter_TVB_Pk ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
