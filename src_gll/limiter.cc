@@ -271,7 +271,13 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
          double betax = parameters.beta;
          double betay = parameters.beta;
          
-         std::vector<double> avg_min(n_components,+1.0e20), avg_max(n_components,-1.0e20);
+         std::vector<double> avg_min(n_components), avg_max(n_components);
+         for(unsigned int i=0; i<n_components; ++i)
+         {
+            avg_min[i] = cell_average[c][i];
+            avg_max[i] = cell_average[c][i];
+         }
+
          for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
             if (! cell->at_boundary(face_no))
             {
@@ -315,7 +321,7 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
                double du = dr * avg_grad[i];
                if(du > 0.0)
                   theta[i] = std::min(theta[i], dumax[i]/du);
-               else
+               else if(du < 0.0)
                   theta[i] = std::min(theta[i], dumin[i]/du);
             }
          }
