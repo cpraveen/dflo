@@ -265,6 +265,47 @@ struct EulerEquations
    }
    
    //---------------------------------------------------------------------------
+   // Left and right eigenvector matrices
+   // Lx, Rx = along x direction
+   // Ly, Ry = along y direction
+   // Expressions taken from
+   // http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf
+   // Note: This is implemented only for 2-D
+   //---------------------------------------------------------------------------
+   static
+   void compute_eigen_matrix (const dealii::Vector<double> &W,
+                              double            (&R)[n_components][n_components],
+                              double            (&L)[n_components][n_components])
+   {
+      double g1   = gas_gamma - 1.0;
+      double rho  = W[density_component];
+      double E    = W[energy_component];
+      double u    = W[0] / rho;
+      double v    = W[1] / rho;
+      double q2   = u*u + v*v;
+      double p    = g1 * (E - 0.5 * rho * q2);
+      double c2   = gas_gamma * p / rho;
+      double c    = std::sqrt(c2);
+      double beta = 0.5/c2;
+      double phi2 = 0.5*g1*q2;
+      double h    = c2/g1 + 0.5*q2;
+      double theta= atan2(v,u);
+      double kx   = cos(theta);
+      double ky   = sin(theta);
+      double uk   = u*kx + v*ky;
+      
+      R[0][0] = 1;      R[0][1] = 0;         R[0][2] = 1;      R[0][3] = 1;
+      R[1][0] = u;      R[1][1] = ky;        R[1][2] = u+kx*c; R[1][3] = u-kx*c;
+      R[2][0] = v;      R[2][1] = -kx;       R[2][2] = v+ky*c; R[2][3] = v-ky*c;
+      R[3][0] = 0.5*q2; R[3][1] = ky*u-kx*v; R[3][2] = h+c*uk; R[3][3] = h-c*uk;
+      
+      L[0][0] = 1-phi2/c2;        L[0][1] = g1*u/c2;          L[0][2] = g1*v/c2;           L[0][3] = -g1/c2;
+      L[1][0] =-(ky*u-kx*v);      L[1][1] = ky;               L[1][2] = -kx;               L[1][3] = 0;
+      L[2][0] = beta*(phi2-c*uk); L[2][1] = beta*(kx*c-g1*u); L[2][2] =  beta*(ky*c-g1*v); L[2][3] = beta*g1;
+      L[3][0] = beta*(phi2+c*uk); L[3][1] =-beta*(kx*c+g1*u); L[3][2] = -beta*(ky*c+g1*v); L[3][3] = beta*g1;
+   }
+   
+   //---------------------------------------------------------------------------
    // convert from conserved to characteristic variables: W = L*W
    //---------------------------------------------------------------------------
    static

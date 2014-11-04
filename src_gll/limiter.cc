@@ -228,8 +228,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
 }
 
 //------------------------------------------------------------------------------
-// Apply gradient limiter
-// Note: This is implemented only for 2-D.
+// Apply gradient limiter using minmax idea of Barth-Jespersen
 //-----------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
@@ -257,9 +256,8 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
                                                      std::vector< Tensor<1,dim> >(n_components));
    
    typename DoFHandler<dim>::active_cell_iterator
-   cell = dof_handler.begin_active(),
-   endc = dof_handler.end(),
-   endc0 = dh_cell.end();
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
    
    for(; cell != endc; ++cell)
    {
@@ -271,11 +269,18 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
          double betax = parameters.beta;
          double betay = parameters.beta;
          
-         std::vector<double> avg_min(n_components), avg_max(n_components);
-         for(unsigned int i=0; i<n_components; ++i)
+         Vector<double> avg_min(n_components), avg_max(n_components), avg_cell(n_components);
+         avg_cell = cell_average[c];
+         
+         // Transform to characteristic variables
+         typedef double EigMatrix[n_components][n_components];
+         EigMatrix R, L;
+         if(parameters.char_lim)
          {
-            avg_min[i] = cell_average[c][i];
-            avg_max[i] = cell_average[c][i];
+            EulerEquations<dim>::compute_eigen_matrix (cell_average[c], R, L);
+            EulerEquations<dim>::transform_to_char (L, avg_cell);
+            avg_min = avg_cell;
+            avg_max = avg_cell;
          }
 
          for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
@@ -286,6 +291,8 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
                Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                       ExcInternalError());
                get_cell_average (neighbor, avg_nbr);
+               if(parameters.char_lim)
+                  EulerEquations<dim>::transform_to_char (L, avg_nbr);
                for(unsigned int i=0; i<n_components; ++i)
                {
                   avg_min[i] = std::min( avg_min[i], avg_nbr(i));
@@ -298,17 +305,25 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
          // Compute average gradient in cell
          fe_values_grad.reinit(cell);
          fe_values_grad.get_function_gradients(current_solution, grad);
-         std::vector< Tensor<1,dim> > avg_grad(n_components);
+         Tensor<1,dim> avg_grad;
+         Vector<double> Dx(n_components), Dy(n_components);
          
          for(unsigned int i=0; i<n_components; ++i)
          {
-            dumin[i] = avg_min[i] - cell_average[c][i];
-            dumax[i] = avg_max[i] - cell_average[c][i];
+            dumin[i] = avg_min[i] - avg_cell[i];
+            dumax[i] = avg_max[i] - avg_cell[i];
 
-            avg_grad[i] = 0;
+            avg_grad = 0;
             for(unsigned int q=0; q<qrule.size(); ++q)
-               avg_grad[i] += grad[q][i] * fe_values_grad.JxW(q);
-            avg_grad[i] /= cell->measure();
+               avg_grad += grad[q][i] * fe_values_grad.JxW(q);
+            avg_grad /= cell->measure();
+            Dx(i) = avg_grad[0];
+            Dy(i) = avg_grad[1];
+         }
+         if(parameters.char_lim)
+         {
+            EulerEquations<dim>::transform_to_char (L, Dx);
+            EulerEquations<dim>::transform_to_char (L, Dy);
          }
          
          std::vector<double> theta(n_components, 1.0);
@@ -318,7 +333,7 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
             for(unsigned int i=0; i<n_components; ++i)
             if(dumax[i] - dumin[i] > Mdx2)
             {
-               double du = dr * avg_grad[i];
+               double du = dr[0]*Dx(i) + dr[1]*Dy(i);
                if(du > 0.0)
                   theta[i] = std::min(theta[i], dumax[i]/du);
                else if(du < 0.0)
@@ -335,6 +350,16 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
          // If limiter is active, reduce polynomial to linear
          if(change < 0.99)
          {
+            for(unsigned int i=0; i<n_components; ++i)
+            {
+               Dx(i) *= theta[i];
+               Dy(i) *= theta[i];
+            }
+            if(parameters.char_lim)
+            {
+               EulerEquations<dim>::transform_to_con (R, Dx);
+               EulerEquations<dim>::transform_to_con (R, Dy);
+            }
             cell->get_dof_indices(dof_indices);
             fe_values.reinit (cell);
             const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
@@ -343,7 +368,7 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
                unsigned int comp_i = fe.system_to_component_index(i).first;
                Point<dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
-                  + theta[comp_i] * dr * avg_grad[comp_i];
+                  + dr[0] * Dx(comp_i) + dr[1] * Dy(comp_i);
             }
          }
       }
