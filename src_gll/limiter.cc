@@ -266,8 +266,6 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
       {
          const double dx = cell->diameter() / std::sqrt(1.0*dim);
          const double Mdx2 = parameters.M * dx * dx;
-         double betax = parameters.beta;
-         double betay = parameters.beta;
          
          Vector<double> avg_min(n_components), avg_max(n_components), avg_cell(n_components);
          avg_cell = cell_average[c];

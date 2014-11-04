@@ -265,9 +265,8 @@ struct EulerEquations
    }
    
    //---------------------------------------------------------------------------
-   // Left and right eigenvector matrices
-   // Lx, Rx = along x direction
-   // Ly, Ry = along y direction
+   // Left and right eigenvector matrices in the direction of (kx,ky)
+   // Following function uses the streamline direction.
    // Expressions taken from
    // http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf
    // Note: This is implemented only for 2-D

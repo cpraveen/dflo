@@ -438,12 +438,14 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    integrator.info_box.boundary_quadrature = QGaussLobatto<dim-1>(fe.degree+1);
    
    integrator.info_box.initialize_update_flags ();
-   integrator.info_box.add_update_flags_all (update_values | 
-                                             update_JxW_values);
+   integrator.info_box.add_update_flags_all (update_JxW_values);
    integrator.info_box.add_update_flags_cell     (update_gradients |
                                                   update_quadrature_points);
-   integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points); // TODO:ADIFF
-   integrator.info_box.add_update_flags_face     (update_normal_vectors); // TODO:ADIFF
+   integrator.info_box.add_update_flags_boundary (update_values |
+                                                  update_normal_vectors |
+                                                  update_quadrature_points); // TODO:ADIFF
+   integrator.info_box.add_update_flags_face     (update_values |
+                                                  update_normal_vectors); // TODO:ADIFF
    
    integrator.info_box.initialize (fe, mapping());
    
