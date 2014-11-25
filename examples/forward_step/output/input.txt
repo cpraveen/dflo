@@ -1,0 +1,360 @@
+# Listing of Parameters
+# ---------------------
+# Qk or Pk basis
+set basis                 = Qk
+
+# degree of DG space
+set degree                = 1
+
+# coefficient of shock capturing term
+set diffusion coefficient = 0.0
+
+# power of mesh size in shock capturing term
+set diffusion power       = 2.0
+
+# gravitational force
+set gravity               = 0.0
+
+# mapping type to reference element
+set mapping               = cartesian # default: q1
+
+# Mesh file name
+set mesh file             = step.msh  # default: grid.msh
+
+# Mesh file type
+set mesh type             = gmsh
+
+
+subsection boundary_0
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_1
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = inflow  # default: outflow
+
+  # expression in x,y,z
+  set w_0 value = 4.20000 # default: 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.00000 # default: 0.0
+
+  # expression in x,y,z
+  set w_2 value = 1.40000 # default: 0.0
+
+  # expression in x,y,z
+  set w_3 value = 8.80000 # default: 0.0
+end
+
+
+subsection boundary_2
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = slip # default: outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_3
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_4
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_5
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_6
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_7
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_8
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection boundary_9
+  # <slip|inflow|outflow|pressure|farfield>
+  set type      = outflow
+
+  # expression in x,y,z
+  set w_0 value = 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.0
+
+  # expression in x,y,z
+  set w_2 value = 0.0
+
+  # expression in x,y,z
+  set w_3 value = 0.0
+end
+
+
+subsection flux
+  # Numerical flux: lxf | sw | kfvs | roe | hllc
+  set flux       = lxf
+
+  # Whether to use a constant stabilization parameter or a mesh-dependent one
+  set stab       = mesh
+
+  # alpha stabilization
+  set stab value = 1
+end
+
+
+subsection initial condition
+  # function for initial condition
+  set function  = none
+
+  # expression in x,y,z
+  set w_0 value = 4.20000 # default: 0.0
+
+  # expression in x,y,z
+  set w_1 value = 0.00000 # default: 0.0
+
+  # expression in x,y,z
+  set w_2 value = 1.40000 # default: 0.0
+
+  # expression in x,y,z
+  set w_3 value = 8.80000 # default: 0.0
+end
+
+
+subsection limiter
+  # TVB parameter
+  set M                         = 0
+
+  # limiter parameter
+  set beta                      = 1.0
+
+  # whether to use characteristic limiter
+  set characteristic limiter    = true    # default: false
+
+  # conserve angular momentum during limiting
+  set conserve angular momentum = false
+
+  # whether to use positivity limiter
+  set positivity limiter        = true    # default: false
+
+  # Shock indicator type: limiter | density | energy | u2
+  set shock indicator           = limiter
+
+  # Limiter type: none | TVB
+  set type                      = TVB     # default: none
+end
+
+
+subsection linear solver
+  # Ilut preconditioner tolerance
+  set ilut absolute tolerance = 1e-9
+
+  # Ilut drop tolerance
+  set ilut drop tolerance     = 1e-10
+
+  # Ilut preconditioner fill
+  set ilut fill               = 2
+
+  # Ilut relative tolerance
+  set ilut relative tolerance = 1.1
+
+  # Maximum solver iterations
+  set max iters               = 300
+
+  # The kind of solver for the linear system. Choices are
+  # <gmres|direct|umfpack|rk3|mood>.
+  set method                  = rk3
+
+  # State whether output from solver runs should be printed. Choices are
+  # <quiet|verbose>.
+  set output                  = quiet
+
+  # Linear solver residual
+  set residual                = 1e-10
+end
+
+
+subsection output
+  # Compute angular momentum once per this iteration period
+  set compute angular momentum = 10000000
+
+  # Output format for visualization: vtk, tecplot
+  set format                   = tecplot  # default: vtk
+
+  # Output once per this iteration period
+  set iter step                = 100      # default: 1000000
+
+  # Whether or not to produce schlieren plots
+  set schlieren plot           = true     # default: false
+
+  # Output once per this time period
+  set time step                = 1e20
+end
+
+
+subsection refinement
+  # Iteration interval b/w refinement
+  set iter step             = 5       # default: 100000000
+
+  # maximum number of elements
+  set max elements          = 1000000
+
+  # Whether to perform mesh refinement or not
+  set refinement            = false   # default: true
+
+  # Fraction of high refinement
+  set refinement fraction   = 0.1
+
+  # number of shock refinement levels
+  set shock levels          = 3       # default: 3.0
+
+  # value for shock indicator
+  set shock value           = 1.0     # default: 4.0
+
+  # Time interval b/w refinement, for unsteady flow only
+  set time step             = 1.0e20
+
+  # Fraction of low unrefinement
+  set unrefinement fraction = 0.1
+end
+
+
+subsection time stepping
+  # cfl number
+  set cfl                  = 0.5    # default: 0.0
+
+  # simulation end time
+  set final time           = 4.0    # default: 1.0e20
+
+  # maximum non-linear iterations
+  set nonlinear iterations = 1
+
+  # stationary computation
+  set stationary           = false
+
+  # value for theta that interpolated between explicit Euler (theta=0),
+  # Crank-Nicolson (theta=0.5), and implicit Euler (theta=1).
+  set theta scheme value   = 1.0
+
+  # simulation time step
+  set time step            = -1.0
+
+  # global or local time step
+  set time step type       = global
+end
+
+

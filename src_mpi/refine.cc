@@ -84,7 +84,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    //right_hand_side = old_solution;
    //newton_update = predictor;
 
-   parallel::distributed::SolutionTransfer<dim, LA::MPI::Vector > soltrans1(dof_handler); //, soltrans2(dof_handler);
+   parallel::distributed::SolutionTransfer<dim, parallel::distributed::Vector<double> > soltrans1(dof_handler); //, soltrans2(dof_handler);
    parallel::distributed::GridRefinement::refine_and_coarsen_fixed_fraction (triangulation,
                                                                              refinement_indicators,
                                                                              0.5, 0.1);
@@ -97,7 +97,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    setup_system ();
    
    // interpolate solution to new mesh
-   LA::MPI::Vector distributed_solution1(locally_owned_dofs, mpi_communicator);
+   parallel::distributed::Vector<double> distributed_solution1(locally_owned_dofs, mpi_communicator);
    //LA::MPI::Vector distributed_solution2(locally_owned_dofs, mpi_communicator);
 
    soltrans1.interpolate(distributed_solution1);

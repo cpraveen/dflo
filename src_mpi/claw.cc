@@ -432,8 +432,8 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< LA::MPI::Vector* > rhs;
-   LA::MPI::Vector* data = &right_hand_side;
+   NamedData< parallel::distributed::Vector<double>* > rhs;
+   parallel::distributed::Vector<double>* data = &right_hand_side;
    rhs.add (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
@@ -665,7 +665,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
 //------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
-ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update, 
+ConservationLaw<dim>::solve (parallel::distributed::Vector<double> &newton_update, 
                              double          current_residual)
 {
    TimerOutput::Scope t(computing_timer, "Solve");
@@ -743,7 +743,7 @@ ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update,
 //------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator,
-                                             LA::MPI::Vector& newton_update,
+                                             parallel::distributed::Vector<double>& newton_update,
                                              double& res_norm0, double& res_norm)
 {
 
