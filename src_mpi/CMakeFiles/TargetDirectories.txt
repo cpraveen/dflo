@@ -1,8 +1,0 @@
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/debug.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/dflo.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/distclean.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/info.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/release.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/run.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/runclean.dir
-/home/gallego/Codes/dealws/dflo/src_mpi/CMakeFiles/strip_comments.dir
