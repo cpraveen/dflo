@@ -15,8 +15,6 @@ using namespace dealii;
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator ()
 {
-   TimerOutput::Scope t(computing_timer, "Shock indicator");
-   
    // If indicator type is "limiter" then mark all cells.
    if(parameters.shock_indicator_type == Parameters::Limiter::limiter)
    {

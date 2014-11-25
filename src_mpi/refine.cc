@@ -46,8 +46,6 @@ template <int dim>
 void
 ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
 {
-   TimerOutput::Scope t(computing_timer, "Refine grid");
-
    typename DoFHandler<dim>::active_cell_iterator
    cell = dof_handler.begin_active(),
    endc = dof_handler.end();
@@ -80,34 +78,28 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    // other vectors to the now correct
    // size:
    
-
-   //right_hand_side = old_solution;
-   //newton_update = predictor;
-
-   parallel::distributed::SolutionTransfer<dim, parallel::distributed::Vector<double> > soltrans1(dof_handler); //, soltrans2(dof_handler);
-   parallel::distributed::GridRefinement::refine_and_coarsen_fixed_fraction (triangulation,
-                                                                             refinement_indicators,
-                                                                             0.5, 0.1);
    triangulation.prepare_coarsening_and_refinement();
-   soltrans1.prepare_for_coarsening_and_refinement(current_solution); //old_solution right_hand_side
-   //soltrans2.prepare_for_coarsening_and_refinement(predictor); //newton_update
+
+   parallel::distributed::SolutionTransfer<dim, parallel::distributed::Vector<double> > soltrans1(dof_handler), soltrans2(dof_handler);
+   soltrans1.prepare_for_coarsening_and_refinement(old_solution);
+   soltrans2.prepare_for_coarsening_and_refinement(predictor);
    
    triangulation.execute_coarsening_and_refinement();
-
+   
    setup_system ();
    
    // interpolate solution to new mesh
    parallel::distributed::Vector<double> distributed_solution1(locally_owned_dofs, mpi_communicator);
-   //LA::MPI::Vector distributed_solution2(locally_owned_dofs, mpi_communicator);
+   parallel::distributed::Vector<double> distributed_solution2(locally_owned_dofs, mpi_communicator);
 
    soltrans1.interpolate(distributed_solution1);
-   //soltrans2.interpolate(distributed_solution2);
+   soltrans2.interpolate(distributed_solution2);
 
    current_solution = distributed_solution1;
-   //predictor=distributed_solution2;
+   predictor=distributed_solution2;
    
-   //predictor.compress(VectorOperation::insert);
-   //current_solution.compress(VectorOperation::insert);
+   predictor.compress(VectorOperation::insert);
+   current_solution.compress(VectorOperation::insert);
 }
 
 //---------------------------------------------------------------------------
