@@ -68,6 +68,8 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
    
+   right_hand_side=current_solution;
+   
    for(; cell != endc; ++cell)
    if(cell->is_locally_owned())
    {

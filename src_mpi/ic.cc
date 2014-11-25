@@ -131,6 +131,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    IsentropicVortex<dim> isentropic_vortex(5.0, 0.0, 0.0);
    VortexSystem<dim> vortex_system;
    Function<dim>* ic_function;
+
    if(parameters.ic_function == "rt")
       ic_function = &rayleigh_taylor;
    else if(parameters.ic_function == "isenvort")
@@ -186,6 +187,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
+   TimerOutput::Scope t(computing_timer, "Set initial condition");
    pcout << "Setting initial condition\n";
    
    if(parameters.basis == Parameters::AllParameters<dim>::Qk)
