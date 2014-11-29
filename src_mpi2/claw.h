@@ -12,6 +12,7 @@
 #include <lac/vector.h>
 #include <lac/compressed_sparsity_pattern.h>
 #include <lac/precondition_block.h>
+#include <lac/parallel_vector.h>
 
 #include <lac/trilinos_sparse_matrix.h>
 #include <lac/trilinos_vector.h>
@@ -46,7 +47,7 @@ using namespace dealii;
 
 namespace LA
 {
-	using namespace ::TrilinosWrappers;
+   using namespace ::parallel::distributed;
 }
 
 //-----------------------------------------------------------------------------
@@ -128,7 +129,7 @@ private:
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    
-   std::pair<unsigned int, double> solve (LA::MPI::Vector &solution, double current_residual);
+   std::pair<unsigned int, double> solve (LA::Vector<double> &solution, double current_residual);
    
    void compute_refinement_indicators (Vector<double> &indicator) const;
    void refine_grid (const Vector<double> &indicator);
@@ -152,7 +153,7 @@ private:
    void integrate_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);
    void iterate_explicit (IntegratorExplicit<dim>& integrator,
-                          LA::MPI::Vector& newton_update,
+                          LA::Vector<double>& newton_update,
                           double& res_norm0, double& res_norm);
    //void assemble_system (IntegratorImplicit<dim>& integrator);
    //void iterate_mood     (IntegratorExplicit<dim>& integrator,
@@ -249,12 +250,12 @@ private:
    // previous solution one time
    // step into the future:
    
-   LA::MPI::Vector			    old_solution;
-   LA::MPI::Vector			    current_solution;
-   LA::MPI::Vector			    predictor;
-   LA::MPI::Vector			    work1;
-   LA::MPI::Vector			    right_hand_side;
-   LA::MPI::Vector			    newton_update;
+   LA::Vector<double>			    old_solution;
+   LA::Vector<double>			    current_solution;
+   LA::Vector<double>			    predictor;
+   LA::Vector<double>			    work1;
+   LA::Vector<double>			    right_hand_side;
+   LA::Vector<double>			    newton_update;
    
    std::vector< dealii::Vector<double> >	    cell_average;  
    dealii::Vector<double>       dt;

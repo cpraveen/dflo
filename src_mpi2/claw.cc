@@ -288,7 +288,7 @@ void ConservationLaw<dim>::setup_system ()
    old_solution.reinit 		(locally_owned_dofs, mpi_communicator);
    current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    predictor.reinit 		   (locally_owned_dofs, mpi_communicator);
-   right_hand_side.reinit 	(locally_owned_dofs, mpi_communicator);
+   right_hand_side.reinit 	(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
    cell_average.resize 		(triangulation.n_active_cells(),
@@ -430,8 +430,8 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< LA::MPI::Vector* > rhs;
-   LA::MPI::Vector* data = &right_hand_side;
+   NamedData< LA::Vector<double>* > rhs;
+   LA::Vector<double>* data = &right_hand_side;
    rhs.add (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
@@ -661,7 +661,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
 //------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
-ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update, 
+ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
                              double          current_residual)
 {
    TimerOutput::Scope t(computing_timer, "Solve");
@@ -739,7 +739,7 @@ ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update,
 //------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator,
-                                             LA::MPI::Vector& newton_update,
+                                             LA::Vector<double>& newton_update,
                                              double& res_norm0, double& res_norm)
 {
    
@@ -793,7 +793,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
 //------------------------------------------------------------------------------
 //template <int dim>
 //void ConservationLaw<dim>::iterate_implicit (IntegratorImplicit<dim>& integrator,
-                                             //LA::MPI::Vector& newton_update, //Vector<double>& newton_update,
+                                             //LA::Vector& newton_update, //Vector<double>& newton_update,
                                              //double& res_norm0, double& res_norm)
 //{
    //// set time in boundary condition

@@ -12,6 +12,8 @@
 #include <numerics/vector_tools.h>
 #include <numerics/solution_transfer.h>
 
+#include <lac/parallel_vector.h>
+
 #include <distributed/tria.h>
 #include <distributed/grid_refinement.h>
 #include <distributed/solution_transfer.h>
@@ -1091,7 +1093,7 @@ struct EulerEquations
    void
    compute_refinement_indicators (const dealii::DoFHandler<dim> 		&dof_handler,
                                   const dealii::Mapping<dim>    		&mapping,
-                                  const dealii::TrilinosWrappers::MPI::Vector  	&solution,
+                                  const dealii::parallel::distributed::Vector<double>  	&solution,
                                   dealii::Vector<double>		&refinement_indicators) //dealii::TrilinosWrappers::MPI::Vector
    {
       const unsigned int dofs_per_cell = dof_handler.get_fe().dofs_per_cell;
