@@ -273,7 +273,7 @@ void ConservationLaw<dim>::setup_system ()
 {
    TimerOutput::Scope t(computing_timer, "Setup");
 
-   pcout << "Allocating memory ...\n";
+   //pcout << "Allocating memory ...\n";
    
    //DoFRenumbering::Cuthill_McKee (dof_handler);
    
@@ -285,10 +285,10 @@ void ConservationLaw<dim>::setup_system ()
                                             locally_relevant_dofs);
    
    // Size all of the fields.
+   current_solution.reinit  (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   right_hand_side.reinit   (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    old_solution.reinit 		(locally_owned_dofs, mpi_communicator);
-   current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   predictor.reinit 		   (locally_owned_dofs, mpi_communicator);
-   right_hand_side.reinit 	(locally_owned_dofs, mpi_communicator);
+   predictor.reinit 		(locally_owned_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
    cell_average.resize 		(triangulation.n_active_cells(),
@@ -430,8 +430,8 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< LA::MPI::Vector* > rhs;
-   LA::MPI::Vector* data = &right_hand_side;
+   NamedData< parallel::distributed::Vector<double>* > rhs;
+   parallel::distributed::Vector<double>* data = &right_hand_side;
    rhs.add (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
@@ -661,7 +661,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
 //------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
-ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update, 
+ConservationLaw<dim>::solve (parallel::distributed::Vector<double> &newton_update, 
                              double          current_residual)
 {
    TimerOutput::Scope t(computing_timer, "Solve");
@@ -739,7 +739,7 @@ ConservationLaw<dim>::solve (LA::MPI::Vector &newton_update,
 //------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator,
-                                             LA::MPI::Vector& newton_update,
+                                             parallel::distributed::Vector<double>& newton_update,
                                              double& res_norm0, double& res_norm)
 {
    
@@ -784,7 +784,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
 //      pcout << res_norm << "  "
 //            <<  convergence.first << "  "
 //            << convergence.second << std::endl;
-      
+
    }
 }
 
@@ -1026,7 +1026,7 @@ void ConservationLaw<dim>::run ()
          
          refine_grid(refinement_indicators);
          
-         newton_update.reinit (locally_owned_dofs, mpi_communicator);
+         //newton_update.reinit (locally_owned_dofs, mpi_communicator);
 
          next_refine_time = elapsed_time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;
