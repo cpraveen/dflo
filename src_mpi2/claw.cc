@@ -764,15 +764,9 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       {
          TimerOutput::Scope t(computing_timer, "RK update");
-         // Forward euler step in case of explicit scheme
-         // In case of implicit scheme, this is the update
-         // newton_update = current_solution + newton_update
-         newton_update.sadd(1.0, current_solution);
          
-         // newton_update = ark*old_solution + (1-ark)*newton_update
-         newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
-         
-         current_solution = newton_update;
+         // current_solution = (1-ark)*current_solution + ark*old_solution + (1-ark)*newton_update
+         current_solution.sadd(1.0-ark[rk], ark[rk], old_solution, 1-ark[rk], newton_update);
       }
       
       compute_cell_average ();
