@@ -202,7 +202,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
 //-----------------------------------------------------------------------------
 // Positivity limiter of Zhang-Shu for one cell
 // This function is called from within TVD limiter.
-// Limit the solution in newton_update.
+// Limit the solution in current_solution.
 //-----------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::apply_positivity_limiter_cell
@@ -234,7 +234,7 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
    fe_values.reinit(cell);
    
    // First limit density
-   fe_values[density].get_function_values(newton_update, density_values);
+   fe_values[density].get_function_values(current_solution, density_values);
    
    // find minimum density at GLL points
    double rho_min = 1.0e20;
@@ -255,8 +255,8 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
          {
             unsigned int comp_i = fe.system_to_component_index(i).first;
             if(comp_i == density_component)
-               newton_update(local_dof_indices[i]) =
-                  theta1           * newton_update(local_dof_indices[i])
+               current_solution(local_dof_indices[i]) =
+                  theta1           * current_solution(local_dof_indices[i])
                   + (1.0 - theta1) * density_average;
          }
       }
@@ -267,15 +267,15 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
             unsigned int comp_i = fe.system_to_component_index(i).first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(comp_i == density_component && base_i > 0)
-               newton_update(local_dof_indices[i]) *= theta1;
+               current_solution(local_dof_indices[i]) *= theta1;
          }
       }
    }
    
    // now limit pressure
-   fe_values[density].get_function_values(newton_update, density_values);
-   fe_values[momentum].get_function_values(newton_update, momentum_values);
-   fe_values[energy].get_function_values(newton_update, energy_values);
+   fe_values[density].get_function_values(current_solution, density_values);
+   fe_values[momentum].get_function_values(current_solution, momentum_values);
+   fe_values[energy].get_function_values(current_solution, energy_values);
    
    double energy_average = cell_average[c][energy_component];
    Tensor<1,dim> momentum_average;
@@ -339,8 +339,8 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
             unsigned int comp_i = fe.system_to_component_index(i).first;
-            newton_update(local_dof_indices[i]) =
-               theta2            * newton_update(local_dof_indices[i])
+            current_solution(local_dof_indices[i]) =
+               theta2            * current_solution(local_dof_indices[i])
                + (1.0 - theta2)  * cell_average[c][comp_i];
          }
       }
@@ -350,7 +350,7 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
          {
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(base_i > 0)
-               newton_update(local_dof_indices[i]) *= theta2;
+               current_solution(local_dof_indices[i]) *= theta2;
          }
          
       }
