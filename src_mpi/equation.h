@@ -18,8 +18,6 @@
 #include <distributed/grid_refinement.h>
 #include <distributed/solution_transfer.h>
 
-#include <Sacado.hpp>
-
 #include <iostream>
 #include <fstream>
 #include <vector>

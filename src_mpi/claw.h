@@ -10,14 +10,7 @@
 #include <base/timer.h>
 
 #include <lac/vector.h>
-#include <lac/compressed_sparsity_pattern.h>
-#include <lac/precondition_block.h>
 #include <lac/parallel_vector.h>
-
-#include <lac/trilinos_sparse_matrix.h>
-#include <lac/trilinos_vector.h>
-#include <lac/trilinos_precondition.h>
-#include <lac/trilinos_solver.h>
 
 #include <grid/grid_refinement.h>
 #include <grid/tria_accessor.h>
@@ -122,7 +115,6 @@ private:
    void compute_inv_mass_matrix();
    void setup_system ();
    
-   //void setup_mesh_worker (IntegratorImplicit<dim>&);
    void setup_mesh_worker (IntegratorExplicit<dim>&);
    
    void set_initial_condition ();
@@ -155,13 +147,6 @@ private:
    void iterate_explicit (IntegratorExplicit<dim>& integrator,
                           LA::Vector<double>& newton_update,
                           double& res_norm0, double& res_norm);
-   //void assemble_system (IntegratorImplicit<dim>& integrator);
-   //void iterate_mood     (IntegratorExplicit<dim>& integrator,
-                          //dealii::Vector<double>& newton_update,
-                          //double& res_norm0, double& res_norm);
-   //void iterate_implicit (IntegratorImplicit<dim>& integrator,
-                          //dealii::Vector<double>& newton_update,
-                          //double& res_norm0, double& res_norm);
 
    void compute_time_step ();
    void compute_time_step_cartesian ();
