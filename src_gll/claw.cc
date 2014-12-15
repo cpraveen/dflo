@@ -522,7 +522,7 @@ ConservationLaw<dim>::compute_time_step_cartesian ()
       for (unsigned int d=0; d<dim; ++d)
          max_eigenvalue += (sonic + std::fabs(cell_average[c][d]/density))/h;
       
-      dt(c) = parameters.cfl / max_eigenvalue / (2.0*fe.degree + 1.0);
+      dt(c) = parameters.cfl / (max_eigenvalue * (2.0*fe.degree + 1.0));
       
       global_dt = std::min(global_dt, dt(c));
    }
@@ -531,23 +531,11 @@ ConservationLaw<dim>::compute_time_step_cartesian ()
 
 //------------------------------------------------------------------------------
 // Compute local time step for each cell
-// We compute speed at quadrature points and take maximum over these values.
-// This speed is used to compute time step in each cell.
 //------------------------------------------------------------------------------
 template <int dim>
 void
 ConservationLaw<dim>::compute_time_step_q ()
 {
-   //QGaussLobatto<dim>   quadrature_formula(fe.degree+1);
-   QIterated<dim>   quadrature_formula(QTrapez<1>(), 3);
-   const unsigned int   n_q_points = quadrature_formula.size();
-   
-   FEValues<dim> fe_values (mapping(), fe,
-                            quadrature_formula,
-                            update_values);
-   std::vector<Vector<double> > solution_values(n_q_points,
-                                                Vector<double>(EulerEquations<dim>::n_components));
-   
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
@@ -556,20 +544,17 @@ ConservationLaw<dim>::compute_time_step_q ()
    
    for (; cell!=endc; ++cell)
    {
-      fe_values.reinit (cell);
-      fe_values.get_function_values (current_solution, solution_values);
-      
-      double max_eigenvalue = 0.0;
-      for (unsigned int q=0; q<n_q_points; ++q)
-      {
-         max_eigenvalue = std::max(max_eigenvalue,
-                                   EulerEquations<dim>::max_eigenvalue (solution_values[q]));
-      }
-      
       const unsigned int c = cell_number (cell);
       const double h = cell->diameter() / std::sqrt(1.0*dim);
-      dt(c) = parameters.cfl * h / max_eigenvalue / (2.0*fe.degree + 1.0);
-      dt(c) /= dim;
+      const double sonic = EulerEquations<dim>::sound_speed(cell_average[c]);
+      const double density = cell_average[c][EulerEquations<dim>::density_component];
+      
+      double q2 = 0.0;
+      for (unsigned int d=0; d<dim; ++d)
+         q2 += std::pow(cell_average[c][d]/density, 2.0);
+      
+      double max_eigenvalue = std::sqrt(q2) + sonic;
+      dt(c) = parameters.cfl / (max_eigenvalue * (2.0*fe.degree + 1.0) * dim);
       
       global_dt = std::min(global_dt, dt(c));
    }
