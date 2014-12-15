@@ -6,7 +6,6 @@
 #include <base/conditional_ostream.h>
 
 #include <lac/vector.h>
-#include <lac/compressed_sparsity_pattern.h>
 
 #include <grid/grid_generator.h>
 #include <grid/grid_out.h>
@@ -18,7 +17,6 @@
 #include <dofs/dof_handler.h>
 #include <dofs/dof_accessor.h>
 #include <dofs/dof_tools.h>
-#include <dofs/dof_renumbering.h>
 
 #include <fe/fe_values.h>
 #include <fe/fe_system.h>
@@ -30,18 +28,6 @@
 #include <numerics/vector_tools.h>
 #include <numerics/solution_transfer.h>
 #include <numerics/matrix_tools.h>
-
-#include <lac/trilinos_sparse_matrix.h>
-#include <lac/trilinos_vector.h>
-#include <lac/trilinos_precondition.h>
-#include <lac/trilinos_solver.h>
-
-#include <lac/solver_gmres.h>
-#include <lac/sparse_direct.h>
-#include <lac/precondition_block.h>
-
-#include <Sacado.hpp>
-
 
 #include <iostream>
 #include <fstream>
@@ -141,20 +127,20 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    if(fe.degree == 0)
    {
       ark[0] = 0.0;
-      n_rk = 1;
+      n_rk   = 1;
    }
-   else if(fe.degree==1)
+   else if(fe.degree == 1)
    {
       ark[0] = 0.0;
       ark[1] = 1.0/2.0;
-      n_rk = 2;
+      n_rk   = 2;
    }
    else
    {
       ark[0] = 0.0;
       ark[1] = 3.0/4.0;
       ark[2] = 1.0/3.0;
-      n_rk = 3;
+      n_rk   = 3;
    }
 }
 
@@ -228,6 +214,8 @@ void ConservationLaw<dim>::compute_cartesian_mesh_size ()
 template <int dim>
 void ConservationLaw<dim>::compute_inv_mass_matrix ()
 {
+   pcout << "Creating mass matrix ...\n";
+
    QGauss<dim> quadrature(fe.degree+1);
    unsigned int n_q_points = quadrature.size();
    FEValues<dim> fe_values(mapping(), fe, quadrature, update_values | update_JxW_values);
@@ -275,8 +263,6 @@ void ConservationLaw<dim>::setup_system ()
 
    //pcout << "Allocating memory ...\n";
    
-   //DoFRenumbering::Cuthill_McKee (dof_handler);
-   
    dof_handler.clear();
    dof_handler.distribute_dofs (fe);
    
@@ -311,20 +297,9 @@ void ConservationLaw<dim>::setup_system ()
 		cell!=triangulation.end(); ++cell, ++index)
 			cell->set_user_index(index);
 
-   if(parameters.implicit == false)
-   {
-      pcout << "Creating mass matrix ...\n";
-      compute_inv_mass_matrix ();
-   }
-   else
-   {
-      //CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
-      //DoFTools::make_flux_sparsity_pattern (dof_handler, c_sparsity);
-      //sparsity_pattern.copy_from(c_sparsity);
+   // compute mass matrix
+   compute_inv_mass_matrix ();
 
-      //system_matrix.reinit (sparsity_pattern);
-   }
-   
    if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
       compute_cartesian_mesh_size ();
 
@@ -377,36 +352,7 @@ void ConservationLaw<dim>::setup_system ()
             }
          }
    }
-
-   // Visualize sparsity pattern
-   //std::ofstream out ("sparsity_pattern.1");
-   //sparsity_pattern.print_gnuplot (out);
-   //abort ();
 }
-
-//------------------------------------------------------------------------------
-// Create mesh worker for implicit integration
-//------------------------------------------------------------------------------
-//template <int dim>
-//void ConservationLaw<dim>::setup_mesh_worker (IntegratorImplicit<dim>& integrator)
-//{   
-   //const unsigned int n_gauss_points = fe.degree + 1;
-   //integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
-                                                   //n_gauss_points,
-                                                   //n_gauss_points);
-   
-   //integrator.info_box.initialize_update_flags ();
-   //integrator.info_box.add_update_flags_all (update_values | 
-                                             //update_quadrature_points |
-                                             //update_JxW_values);
-   //integrator.info_box.add_update_flags_cell     (update_gradients);
-   //integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_gradients);
-   //integrator.info_box.add_update_flags_face     (update_normal_vectors | update_gradients);
-   
-   //integrator.info_box.initialize (fe, mapping());
-   
-   //integrator.assembler.initialize (system_matrix, right_hand_side);
-//}
 
 //------------------------------------------------------------------------------
 // Create mesh worker for explicit integration
@@ -415,7 +361,7 @@ void ConservationLaw<dim>::setup_system ()
 template <int dim>
 void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrator)
 {
-   //pcout << "Setting up mesh worker ...\n";
+   pcout << "Setting up mesh worker ...\n";
 
    const unsigned int n_gauss_points = fe.degree + 1;
    integrator.info_box.initialize_gauss_quadrature(n_gauss_points,
@@ -425,13 +371,13 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    integrator.info_box.initialize_update_flags   ();
    integrator.info_box.add_update_flags_all 	    (update_values | update_JxW_values);
    integrator.info_box.add_update_flags_cell     (update_gradients);
-   integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points); // TODO:ADIFF
-   integrator.info_box.add_update_flags_face     (update_normal_vectors); // TODO:ADIFF
+   integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points);
+   integrator.info_box.add_update_flags_face     (update_normal_vectors);
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< parallel::distributed::Vector<double>* > rhs;
-   parallel::distributed::Vector<double>* data = &right_hand_side;
+   NamedData< LA::Vector<double>* > rhs;
+   LA::Vector<double>* data = &right_hand_side;
    rhs.add (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
@@ -524,7 +470,6 @@ template <int dim>
 void
 ConservationLaw<dim>::compute_time_step_q ()
 {
-   //QGaussLobatto<dim>   quadrature_formula(fe.degree+1);
    QIterated<dim>   quadrature_formula(QTrapez<1>(), 3);
    const unsigned int   n_q_points = quadrature_formula.size();
    
@@ -661,76 +606,26 @@ ConservationLaw<dim>::compute_angular_momentum ()
 //------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
-ConservationLaw<dim>::solve (parallel::distributed::Vector<double> &newton_update, 
-                             double          current_residual)
+ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
+                             double              current_residual)
 {
    TimerOutput::Scope t(computing_timer, "Solve");
-
-   newton_update = 0;
-
-   switch (parameters.solver)
-   {
-      //case Parameters::Solver::umfpack:
-      //{
-         //SparseDirectUMFPACK  solver;
-         //solver.initialize(system_matrix);
-         //solver.vmult (newton_update, right_hand_side);
-         //return std::pair<unsigned int, double> (1, 0);
-      //}
-
-      //case Parameters::Solver::gmres:
-      //{
-         //SolverControl   solver_control (parameters.max_iterations, 
-                                         //parameters.linear_residual * current_residual);
-         //SolverGMRES<>::AdditionalData  gmres_data (30, true, true);
-         //SolverGMRES<>   solver (solver_control, gmres_data);
-
-         //PreconditionBlockSSOR<SparseMatrix<double>, float> preconditioner;
-         //preconditioner.initialize(system_matrix, fe.dofs_per_cell);
-
-         //// If gmres does not converge, print message and continue
-         //try
-         //{
-            //solver.solve (system_matrix,
-                          //newton_update,
-                          //right_hand_side,
-                          //preconditioner);
-         //}
-         //catch(...)
-         //{
-            //std::cout << "   *** No convergence in gmres ... continuing ***\n";
-         //}
-
-         //return std::pair<unsigned int, double> (solver_control.last_step(),
-                                                 //solver_control.last_value());
-      //}
-
-      // We have equation M*du/dt = rhs, where M = mass matrix
-      case Parameters::Solver::rk3:
-      {
-         // Multiply newton_update by time step dt
-         std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-         typename DoFHandler<dim>::active_cell_iterator
-            cell = dof_handler.begin_active(),
-            endc = dof_handler.end();
-         for (; cell!=endc; ++cell)
-         if(cell->is_locally_owned())
-         {
-            const unsigned int cell_no = cell_number (cell);
-
-            cell->get_dof_indices (dof_indices);
-            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-               newton_update(dof_indices[i]) = dt(cell_no) *
-                                               right_hand_side(dof_indices[i]) *
-                                               inv_mass_matrix[cell_no][i];
-         }
-         return std::pair<unsigned int, double> (0,0);
-      }
-
-      default:
-         Assert (false, ExcNotImplemented());
-   }
    
+   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   for (; cell!=endc; ++cell)
+      if(cell->is_locally_owned())
+      {
+         const unsigned int cell_no = cell_number (cell);
+         
+         cell->get_dof_indices (dof_indices);
+         for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            newton_update(dof_indices[i]) = dt(cell_no) *
+                                            right_hand_side(dof_indices[i]) *
+                                            inv_mass_matrix[cell_no][i];
+      }
    return std::pair<unsigned int, double> (0,0);
 }
 
@@ -739,7 +634,7 @@ ConservationLaw<dim>::solve (parallel::distributed::Vector<double> &newton_updat
 //------------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator,
-                                             parallel::distributed::Vector<double>& newton_update,
+                                             LA::Vector<double>& newton_update,
                                              double& res_norm0, double& res_norm)
 {
    
@@ -764,91 +659,17 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       
       {
          TimerOutput::Scope t(computing_timer, "RK update");
-         // Forward euler step in case of explicit scheme
-         // In case of implicit scheme, this is the update
-         // newton_update = current_solution + newton_update
-         newton_update.sadd(1.0, current_solution);
          
-         // newton_update = ark*old_solution + (1-ark)*newton_update
-         newton_update.sadd (1.0-ark[rk], ark[rk], old_solution);
-         
-         current_solution = newton_update;
+         // current_solution = (1-ark)*current_solution + ark*old_solution + (1-ark)*newton_update
+         current_solution.sadd(1.0-ark[rk], ark[rk], old_solution, 1-ark[rk], newton_update);
       }
       
       compute_cell_average ();
       compute_shock_indicator ();
       apply_limiter ();
-      
-      //if(parameters.pos_lim) apply_positivity_limiter ();
-      
-//      pcout << res_norm << "  "
-//            <<  convergence.first << "  "
-//            << convergence.second << std::endl;
-
    }
 }
 
-//------------------------------------------------------------------------------
-// Perform one step of implicit scheme
-//------------------------------------------------------------------------------
-//template <int dim>
-//void ConservationLaw<dim>::iterate_implicit (IntegratorImplicit<dim>& integrator,
-                                             //LA::MPI::Vector& newton_update, //Vector<double>& newton_update,
-                                             //double& res_norm0, double& res_norm)
-//{
-   //// set time in boundary condition
-   //// NOTE: We need to check if this is time accurate.
-   //for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
-        //++boundary_id)
-   //{
-      //parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
-   //}
-   
-   //unsigned int nonlin_iter = 0;
-
-   //// Loop for newton iterations or RK stages
-   //while(true)
-   //{
-      
-      //assemble_system (integrator);
-      
-      //res_norm = right_hand_side.l2_norm();
-      //if(nonlin_iter == 0) res_norm0 = res_norm;
-      
-      //std::pair<unsigned int, double> convergence
-      //= solve (newton_update, res_norm);
-      
-      //// Forward euler step in case of explicit scheme
-      //// In case of implicit scheme, this is the update
-      //current_solution += newton_update;
-      
-      //compute_cell_average ();
-      //compute_shock_indicator ();
-      //apply_limiter ();
-      
-      //if(parameters.pos_lim) apply_positivity_limiter ();
-      
-      //std::printf("   %-16.3e %04d        %-5.2e\n",
-                  //res_norm, convergence.first, convergence.second);
-      
-      //++nonlin_iter;
-      
-      //// Check that newton iterations converged
-      //if(parameters.solver == Parameters::Solver::gmres &&
-         //nonlin_iter == parameters.max_nonlin_iter &&
-         //std::fabs(res_norm) > 1.0e-10)
-         //AssertThrow (nonlin_iter <= parameters.max_nonlin_iter,
-                      //ExcMessage ("No convergence in nonlinear solver"));
-      
-      //// check stopping criterion
-      //if(parameters.solver == Parameters::Solver::gmres &&
-         //(nonlin_iter == parameters.max_nonlin_iter ||
-          //std::fabs(res_norm) <= 1.0e-10))
-         //break;
-      //else if(parameters.solver == Parameters::Solver::umfpack)
-         //break;
-   //}
-//}
 
 //------------------------------------------------------------------------------
 // @sect4{ConservationLaw::run}
@@ -916,8 +737,6 @@ void ConservationLaw<dim>::run ()
    compute_shock_indicator ();
    apply_limiter();
    old_solution = current_solution;
-   // we dont need predictor for explicit RK
-   //predictor = current_solution;
    
    // Reset time/iteration counters
    elapsed_time = 0;
@@ -926,8 +745,7 @@ void ConservationLaw<dim>::run ()
    // Save initial condition to file
    output_results ();
    
-   // We then enter into the main time
-   // stepping loop.
+   // We then enter into the main time stepping loop.
 
    // Setup variables to decide if we need to save solution 
    double next_output_time = elapsed_time + parameters.output_time_step;
@@ -938,6 +756,8 @@ void ConservationLaw<dim>::run ()
    int    next_refine_iter = time_iter + parameters.refine_iter_step;
 
    std::vector<double> residual_history;
+   IntegratorExplicit<dim> integrator_explicit (dof_handler);
+   setup_mesh_worker (integrator_explicit);
    
    while (elapsed_time < parameters.final_time)
    {
@@ -953,27 +773,8 @@ void ConservationLaw<dim>::run ()
       unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;
       double res_norm  = 1.0;
-      
-      if(parameters.solver == Parameters::Solver::rk3)
-      {
-         IntegratorExplicit<dim> integrator_explicit (dof_handler);
-         setup_mesh_worker (integrator_explicit);
-         iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
-      }
-      else if(parameters.solver == Parameters::Solver::mood)
-      {
-      }
-      else
-      {
-//         std::cout << "   NonLin Res     Lin Iter       Lin Res" << std::endl
-                   //<< "   _____________________________________" << std::endl;
-         //// With global time stepping, we can use predictor as initial
-         //// guess for the implicit scheme.
-         //current_solution = predictor;
-         //IntegratorImplicit<dim> integrator_implicit (dof_handler);
-         //setup_mesh_worker (integrator_implicit);
-         //iterate_implicit(integrator_implicit, newton_update, res_norm0, res_norm);//
-      }
+
+      iterate_explicit(integrator_explicit, newton_update, res_norm0, res_norm);
       
       // Update counters
       elapsed_time += global_dt;
@@ -981,18 +782,6 @@ void ConservationLaw<dim>::run ()
       
       if(time_iter % parameters.ang_mom_step == 0)
          compute_angular_momentum();
-
-      // Increase cfl
-      if(parameters.solver == Parameters::Solver::gmres && 
-         parameters.time_step_type == "local" &&
-         time_iter >= 2)
-      {
-         //parameters.cfl *= 1.2;
-         double factor = residual_history.back() / res_norm;
-         factor = std::min( factor, 2.0 );
-         factor = std::max( factor, 0.5 );
-         parameters.cfl *= factor;
-      }
 
       residual_history.push_back (res_norm);
       
@@ -1004,17 +793,6 @@ void ConservationLaw<dim>::run ()
          next_output_time = elapsed_time + parameters.output_time_step;
          next_output_iter = time_iter + parameters.output_iter_step;
       }
-      
-      // Compute predictor only for global time stepping
-      // For local time stepping, this is meaningless.
-      // If time step is changing, then also this is not correct.
-      // TODO: Do we really need predictor for explicit RK ?
-//      if( parameters.time_step_type == "global") //parameters.implicit ||
-//      {
-//         newton_update = current_solution;
-//         newton_update.sadd (2.0, -1.0, old_solution);
-//         predictor = newton_update;
-//      }
       
       old_solution = current_solution;
       

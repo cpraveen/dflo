@@ -27,15 +27,6 @@
 #include <numerics/vector_tools.h>
 #include <numerics/solution_transfer.h>
 
-#include <lac/trilinos_sparse_matrix.h>
-#include <lac/trilinos_vector.h>
-#include <lac/trilinos_precondition.h>
-#include <lac/trilinos_solver.h>
-
-
-#include <Sacado.hpp>
-
-
 #include <iostream>
 #include <fstream>
 #include <vector>

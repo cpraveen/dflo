@@ -11,13 +11,7 @@
 
 #include <lac/parallel_vector.h>
 #include <lac/vector.h>
-#include <lac/compressed_sparsity_pattern.h>
-#include <lac/precondition_block.h>
-
-#include <lac/trilinos_sparse_matrix.h>
-#include <lac/trilinos_vector.h>
-#include <lac/trilinos_precondition.h>
-#include <lac/trilinos_solver.h>
+#include <lac/parallel_vector.h>
 
 #include <grid/grid_refinement.h>
 #include <grid/tria_accessor.h>
@@ -47,7 +41,7 @@ using namespace dealii;
 
 namespace LA
 {
-	using namespace ::TrilinosWrappers;
+   using namespace ::parallel::distributed;
 }
 
 //-----------------------------------------------------------------------------
@@ -122,14 +116,13 @@ private:
    void compute_inv_mass_matrix();
    void setup_system ();
    
-   //void setup_mesh_worker (IntegratorImplicit<dim>&);
    void setup_mesh_worker (IntegratorExplicit<dim>&);
    
    void set_initial_condition ();
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    
-   std::pair<unsigned int, double> solve (parallel::distributed::Vector<double> &solution, double current_residual);
+   std::pair<unsigned int, double> solve (LA::Vector<double> &solution, double current_residual);
    
    void compute_refinement_indicators (Vector<double> &indicator) const;
    void refine_grid (const Vector<double> &indicator);
@@ -153,15 +146,8 @@ private:
    void integrate_face_term (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);
    void iterate_explicit (IntegratorExplicit<dim>& integrator,
-                          parallel::distributed::Vector<double>& newton_update,
+                          LA::Vector<double>& newton_update,
                           double& res_norm0, double& res_norm);
-   //void assemble_system (IntegratorImplicit<dim>& integrator);
-   //void iterate_mood     (IntegratorExplicit<dim>& integrator,
-                          //dealii::Vector<double>& newton_update,
-                          //double& res_norm0, double& res_norm);
-   //void iterate_implicit (IntegratorImplicit<dim>& integrator,
-                          //dealii::Vector<double>& newton_update,
-                          //double& res_norm0, double& res_norm);
 
    void compute_time_step ();
    void compute_time_step_cartesian ();
@@ -250,12 +236,12 @@ private:
    // previous solution one time
    // step into the future:
    
-   parallel::distributed::Vector<double>    old_solution;
-   parallel::distributed::Vector<double>    current_solution;
-   parallel::distributed::Vector<double>    predictor;
-   parallel::distributed::Vector<double>    work1;
-   parallel::distributed::Vector<double>    right_hand_side;
-   parallel::distributed::Vector<double>    newton_update;
+   LA::Vector<double>			    old_solution;
+   LA::Vector<double>			    current_solution;
+   LA::Vector<double>			    predictor;
+   LA::Vector<double>			    work1;
+   LA::Vector<double>			    right_hand_side;
+   LA::Vector<double>			    newton_update;
    
    std::vector< dealii::Vector<double> >	    cell_average;  
    dealii::Vector<double>       dt;

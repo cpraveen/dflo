@@ -80,7 +80,7 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    
    triangulation.prepare_coarsening_and_refinement();
 
-   parallel::distributed::SolutionTransfer<dim, parallel::distributed::Vector<double> > soltrans1(dof_handler), soltrans2(dof_handler);
+   parallel::distributed::SolutionTransfer<dim, LA::Vector<double> > soltrans1(dof_handler), soltrans2(dof_handler);
    soltrans1.prepare_for_coarsening_and_refinement(old_solution);
    soltrans2.prepare_for_coarsening_and_refinement(predictor);
    
@@ -89,8 +89,8 @@ ConservationLaw<dim>::refine_grid (const Vector<double> &refinement_indicators)
    setup_system ();
    
    // interpolate solution to new mesh
-   parallel::distributed::Vector<double> distributed_solution1(locally_owned_dofs, mpi_communicator);
-   parallel::distributed::Vector<double> distributed_solution2(locally_owned_dofs, mpi_communicator);
+   LA::Vector<double> distributed_solution1(locally_owned_dofs, mpi_communicator);
+   LA::Vector<double> distributed_solution2(locally_owned_dofs, mpi_communicator);
 
    soltrans1.interpolate(distributed_solution1);
    soltrans2.interpolate(distributed_solution2);
