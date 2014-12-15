@@ -38,9 +38,12 @@ Obtain latest version of deal.II from github
 ```git clone https://github.com/dealii/dealii```
 
 Change into dealii directory
-```cd dealii```
-```mkdir build```
-```cd build```
+
+```
+cd dealii
+mkdir build
+cd build
+```
 
 Configure deal.II. A basic setup is given in the file ```dealii_mpi.sh```. Just run this inside ```build``` directory
 
