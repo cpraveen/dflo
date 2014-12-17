@@ -1,0 +1,15 @@
+#!/bin/bash
+
+DEAL_II_DIR=$HOME/Applications/deal.II/git/install
+P4EST_DIR=/opt/p4est
+
+cmake -DCMAKE_INSTALL_PREFIX=$DEAL_II_DIR \
+      -DCMAKE_C_COMPILER="mpicc" \
+      -DCMAKE_CXX_COMPILER="mpicxx" \
+      -DDEAL_II_COMPONENT_DOCUMENTATION=OFF \
+      -DDEAL_II_COMPONENT_MESH_CONVERTER=ON \
+      -DDEAL_II_WITH_THREADS=ON \
+      -DDEAL_II_WITH_MPI=ON \
+      -DDEAL_II_WITH_P4EST=ON \
+      -DP4EST_DIR=$P4EST_DIR \
+      ..
