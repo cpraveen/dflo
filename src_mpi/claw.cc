@@ -612,7 +612,6 @@ ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
    TimerOutput::Scope t(computing_timer, "Solve");
    
    std::pair<unsigned int,unsigned int> local_range = newton_update.local_range();
-   unsigned int i_loc;
    
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
    typename DoFHandler<dim>::active_cell_iterator
@@ -626,7 +625,7 @@ ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
          cell->get_dof_indices (dof_indices);
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
-            i_loc = dof_indices[i] - local_range.first;
+            unsigned int i_loc = dof_indices[i] - local_range.first;
             newton_update.local_element(i_loc) = dt(cell_no) *
                                                  right_hand_side.local_element(i_loc) *
                                                  inv_mass_matrix[cell_no][i];
