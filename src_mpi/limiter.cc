@@ -99,8 +99,10 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
    std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
                                                      std::vector< Tensor<1,dim> >(n_components));
    
+   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
+
    // Data for positivity limiter
-   PosLimData<dim> pos_lim_data (fe, mapping());
+   PosLimData<dim> pos_lim_data (fe, mapping(), local_range);
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -211,11 +213,12 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
+               unsigned int i_loc = dof_indices[i] - local_range.first;
                unsigned int comp_i = fe.system_to_component_index(i).first;
                Point<dim> dr = p[i] - cell->center();
-               current_solution(dof_indices[i]) = cell_average[c][comp_i]
-                                                  + dr[0] * Dx_new(comp_i)
-                                                  + dr[1] * Dy_new(comp_i);
+               current_solution.local_element(i_loc) = cell_average[c][comp_i]
+                                                       + dr[0] * Dx_new(comp_i)
+                                                       + dr[1] * Dy_new(comp_i);
             }
          }
       }
@@ -251,10 +254,13 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
    
    static const double sqrt_3 = sqrt(3.0);
    const double beta = 0.5 * parameters.beta;
+   
+   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
 
    // Data for positivity limiter
-   PosLimData<dim> pos_lim_data (fe, mapping());
+   PosLimData<dim> pos_lim_data (fe, mapping(), local_range);
    
+
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
       endc = dof_handler.end(),
@@ -272,12 +278,13 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
          cell->get_dof_indices(dof_indices);
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
+            unsigned int i_loc = dof_indices[i] - local_range.first;
             unsigned int comp_i = fe.system_to_component_index(i).first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(base_i == 1)
-               Dx(comp_i) = current_solution(dof_indices[i]) * sqrt_3;
+               Dx(comp_i) = current_solution.local_element(i_loc) * sqrt_3;
             else if(base_i == fe.degree+1)
-               Dy(comp_i) = current_solution(dof_indices[i]) * sqrt_3;
+               Dy(comp_i) = current_solution.local_element(i_loc) * sqrt_3;
          }
          
          // angular momentum for square cells = v_x - u_y
@@ -361,14 +368,15 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
             }
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
+               unsigned int i_loc = dof_indices[i] - local_range.first;
                unsigned int comp_i = fe.system_to_component_index(i).first;
                unsigned int base_i = fe.system_to_component_index(i).second;
                if(base_i == 1)
-                  current_solution(dof_indices[i]) = Dx_new(comp_i) / sqrt_3;
+                  current_solution.local_element(i_loc) = Dx_new(comp_i) / sqrt_3;
                else if(base_i == fe.degree + 1)
-                  current_solution(dof_indices[i]) = Dy_new(comp_i) / sqrt_3;
+                  current_solution.local_element(i_loc) = Dy_new(comp_i) / sqrt_3;
                else if(base_i != 0)
-                  current_solution(dof_indices[i]) = 0.0;
+                  current_solution.local_element(i_loc) = 0.0;
             }
          }
          

@@ -36,6 +36,7 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
    std::vector<double>& energy_values = data.energy_values;
    std::vector< Tensor<1,dim> >& momentum_values = data.momentum_values;
    std::vector<unsigned int>& local_dof_indices = data.local_dof_indices;
+   std::pair<unsigned int,unsigned int>& local_range = data.local_range;
    
    static const FEValuesExtractors::Scalar density (density_component);
    static const FEValuesExtractors::Scalar energy  (energy_component);
@@ -64,10 +65,11 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
       {
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
+            unsigned int i_loc = local_dof_indices[i] - local_range.first;
             unsigned int comp_i = fe.system_to_component_index(i).first;
             if(comp_i == density_component)
-               current_solution(local_dof_indices[i]) =
-                  theta1           * current_solution(local_dof_indices[i])
+               current_solution.local_element(i_loc) =
+                  theta1           * current_solution.local_element(i_loc)
                   + (1.0 - theta1) * density_average;
          }
       }
@@ -75,10 +77,11 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
       {
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
+            unsigned int i_loc = local_dof_indices[i] - local_range.first;
             unsigned int comp_i = fe.system_to_component_index(i).first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(comp_i == density_component && base_i > 0)
-               current_solution(local_dof_indices[i]) *= theta1;
+               current_solution.local_element(i_loc) *= theta1;
          }
       }
    }
@@ -149,9 +152,10 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
       {
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
+            unsigned int i_loc = local_dof_indices[i] - local_range.first;
             unsigned int comp_i = fe.system_to_component_index(i).first;
-            current_solution(local_dof_indices[i]) =
-               theta2            * current_solution(local_dof_indices[i])
+            current_solution.local_element(i_loc) =
+               theta2            * current_solution.local_element(i_loc)
                + (1.0 - theta2)  * cell_average[c][comp_i];
          }
       }
@@ -159,9 +163,10 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
       {
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
          {
+            unsigned int i_loc = local_dof_indices[i] - local_range.first;
             unsigned int base_i = fe.system_to_component_index(i).second;
             if(base_i > 0)
-               current_solution(local_dof_indices[i]) *= theta2;
+               current_solution.local_element(i_loc) *= theta2;
          }
          
       }

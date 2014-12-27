@@ -50,18 +50,21 @@ template <int dim>
 struct PosLimData
 {
    PosLimData(const dealii::FESystem<dim>    &fe,
-              const dealii::Mapping<dim,dim> &mapping);
+              const dealii::Mapping<dim,dim> &mapping,
+              const std::pair<unsigned int,unsigned int> &local_range);
    dealii::QGaussLobatto<dim>  quadrature_formula;
    unsigned int n_q_points;
    dealii::FEValues<dim> fe_values;
    std::vector<double> density_values, energy_values;
    std::vector< Tensor<1,dim> > momentum_values;
    std::vector<unsigned int> local_dof_indices;
+   std::pair<unsigned int, unsigned int> local_range;
 };
 
 template <int dim>
 PosLimData<dim>::PosLimData(const dealii::FESystem<dim>    &fe,
-                            const dealii::Mapping<dim,dim> &mapping)
+                            const dealii::Mapping<dim,dim> &mapping,
+                            const std::pair<unsigned int,unsigned int> &local_range)
 :
    quadrature_formula (fe.degree+2),
    n_q_points (quadrature_formula.size()),
@@ -69,7 +72,8 @@ PosLimData<dim>::PosLimData(const dealii::FESystem<dim>    &fe,
    density_values (n_q_points),
    energy_values (n_q_points),
    momentum_values (n_q_points),
-   local_dof_indices (fe.dofs_per_cell)
+   local_dof_indices (fe.dofs_per_cell),
+   local_range (local_range)
 {
    
 }
