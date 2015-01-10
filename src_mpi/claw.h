@@ -52,11 +52,19 @@ struct PosLimData
    PosLimData(const dealii::FESystem<dim>    &fe,
               const dealii::Mapping<dim,dim> &mapping,
               const std::pair<unsigned int,unsigned int> &local_range);
-   dealii::QGaussLobatto<dim>  quadrature_formula;
+   unsigned int ngll;
+   
+   dealii::Quadrature<dim> quadrature_x;
+   dealii::Quadrature<dim> quadrature_y;
+
    unsigned int n_q_points;
-   dealii::FEValues<dim> fe_values;
+   
+   dealii::FEValues<dim> fe_values_x;
+   dealii::FEValues<dim> fe_values_y;
+
    std::vector<double> density_values, energy_values;
    std::vector< Tensor<1,dim> > momentum_values;
+
    std::vector<unsigned int> local_dof_indices;
    std::pair<unsigned int, unsigned int> local_range;
 };
@@ -66,9 +74,12 @@ PosLimData<dim>::PosLimData(const dealii::FESystem<dim>    &fe,
                             const dealii::Mapping<dim,dim> &mapping,
                             const std::pair<unsigned int,unsigned int> &local_range)
 :
-   quadrature_formula (fe.degree+2),
-   n_q_points (quadrature_formula.size()),
-   fe_values (mapping, fe, quadrature_formula, update_values),
+   ngll ((fe.degree+3)%2==0 ? (fe.degree+3)/2 : (fe.degree+4)/2),
+   quadrature_x (QGaussLobatto<1>(ngll), QGauss<1>(fe.degree+1)),
+   quadrature_y (QGauss<1>(fe.degree+1), QGaussLobatto<1>(ngll)),
+   n_q_points (quadrature_x.size()),
+   fe_values_x (mapping, fe, quadrature_x, update_values),
+   fe_values_y (mapping, fe, quadrature_y, update_values),
    density_values (n_q_points),
    energy_values (n_q_points),
    momentum_values (n_q_points),

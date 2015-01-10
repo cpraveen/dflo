@@ -29,9 +29,10 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
    
    // Need 2N - 3 >= degree for the quadrature to be exact.
    // Choose same order as used for assembly process.
-   QGaussLobatto<dim>&  quadrature_formula = data.quadrature_formula;
    const unsigned int& n_q_points = data.n_q_points;
-   FEValues<dim>& fe_values = data.fe_values;
+   FEValues<dim>& fe_values_x = data.fe_values_x;
+   FEValues<dim>& fe_values_y = data.fe_values_y;
+
    std::vector<double>& density_values = data.density_values;
    std::vector<double>& energy_values = data.energy_values;
    std::vector< Tensor<1,dim> >& momentum_values = data.momentum_values;
@@ -43,16 +44,21 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
    static const FEValuesExtractors::Vector momentum(0);
    
    unsigned int c = cell_number(cell);
-   fe_values.reinit(cell);
-   
+   fe_values_x.reinit(cell);
+   fe_values_y.reinit(cell);
+
    // First limit density
-   fe_values[density].get_function_values(current_solution, density_values);
-   
    // find minimum density at GLL points
    double rho_min = 1.0e20;
+   
+   fe_values_x[density].get_function_values(current_solution, density_values);
    for(unsigned int q=0; q<n_q_points; ++q)
       rho_min = std::min(rho_min, density_values[q]);
-   
+
+   fe_values_y[density].get_function_values(current_solution, density_values);
+   for(unsigned int q=0; q<n_q_points; ++q)
+      rho_min = std::min(rho_min, density_values[q]);
+
    double density_average = cell_average[c][density_component];
    double rat = std::fabs(density_average - eps) /
                (std::fabs(density_average - rho_min) + 1.0e-13);
@@ -87,60 +93,72 @@ void ConservationLaw<dim>::apply_positivity_limiter_cell
    }
    
    // now limit pressure
-   fe_values[density].get_function_values(current_solution, density_values);
-   fe_values[momentum].get_function_values(current_solution, momentum_values);
-   fe_values[energy].get_function_values(current_solution, energy_values);
-   
    double energy_average = cell_average[c][energy_component];
    Tensor<1,dim> momentum_average;
    for(unsigned int i=0; i<dim; ++i)
       momentum_average[i] = cell_average[c][i];
    
    double theta2 = 1.0;
-   for(unsigned int q=0; q<n_q_points; ++q)
+   for(unsigned int d=0; d<dim; ++d)
    {
-      double pressure = (gas_gamma-1.0)*(energy_values[q] -
-                                         0.5*momentum_values[q].norm_square()/density_values[q]);
-      if(pressure < eps)
+      if(d==0)
       {
-         double drho = density_values[q] - density_average;
-         Tensor<1,dim> dm = momentum_values[q] - momentum_average;
-         double dE = energy_values[q] - energy_average;
-         double a1 = 2.0*drho*dE - dm*dm;
-         double b1 = 2.0*drho*(energy_average - eps/(gas_gamma-1.0))
-                     + 2.0*density_average*dE
-                     - 2.0*momentum_average*dm;
-         double c1 = 2.0*density_average*energy_average
-                     - momentum_average*momentum_average
-                     - 2.0*eps*density_average/(gas_gamma-1.0);
-         // Divide by a1 to avoid round-off error
-         b1 /= a1; c1 /= a1;
-         double D = std::sqrt( std::fabs(b1*b1 - 4.0*c1) );
-         double t1 = 0.5*(-b1 - D);
-         double t2 = 0.5*(-b1 + D);
-         double t;
-         if(t1 > -1.0e-12 && t1 < 1.0 + 1.0e-12)
-            t = t1;
-         else if(t2 > -1.0e-12 && t2 < 1.0 + 1.0e-12)
-            t = t2;
-         else
+         fe_values_x[density].get_function_values(current_solution, density_values);
+         fe_values_x[momentum].get_function_values(current_solution, momentum_values);
+         fe_values_x[energy].get_function_values(current_solution, energy_values);
+      }
+      else
+      {
+         fe_values_y[density].get_function_values(current_solution, density_values);
+         fe_values_y[momentum].get_function_values(current_solution, momentum_values);
+         fe_values_y[energy].get_function_values(current_solution, energy_values);
+      }
+      
+      for(unsigned int q=0; q<n_q_points; ++q)
+      {
+         double pressure = (gas_gamma-1.0)*(energy_values[q] -
+                                            0.5*momentum_values[q].norm_square()/density_values[q]);
+         if(pressure < eps)
          {
-            std::cout << "Problem in positivity limiter\n";
-            std::cout << "\t a1, b1, c1 = " << a1 << " " << b1 << " " << c1 << "\n";
-            std::cout << "\t t1, t2 = " << t1 << " " << t2 << "\n";
-            std::cout << "\t eps, rho_min = " << eps << " " << rho_min << "\n";
-            std::cout << "\t theta1 = " << theta1 << "\n";
-            std::cout << "\t pressure = " << pressure << "\n";
-            exit(0);
+            double drho = density_values[q] - density_average;
+            Tensor<1,dim> dm = momentum_values[q] - momentum_average;
+            double dE = energy_values[q] - energy_average;
+            double a1 = 2.0*drho*dE - dm*dm;
+            double b1 = 2.0*drho*(energy_average - eps/(gas_gamma-1.0))
+                        + 2.0*density_average*dE
+                        - 2.0*momentum_average*dm;
+            double c1 = 2.0*density_average*energy_average
+                        - momentum_average*momentum_average
+                        - 2.0*eps*density_average/(gas_gamma-1.0);
+            // Divide by a1 to avoid round-off error
+            b1 /= a1; c1 /= a1;
+            double D = std::sqrt( std::fabs(b1*b1 - 4.0*c1) );
+            double t1 = 0.5*(-b1 - D);
+            double t2 = 0.5*(-b1 + D);
+            double t;
+            if(t1 > -1.0e-12 && t1 < 1.0 + 1.0e-12)
+               t = t1;
+            else if(t2 > -1.0e-12 && t2 < 1.0 + 1.0e-12)
+               t = t2;
+            else
+            {
+               std::cout << "Problem in positivity limiter\n";
+               std::cout << "\t a1, b1, c1 = " << a1 << " " << b1 << " " << c1 << "\n";
+               std::cout << "\t t1, t2 = " << t1 << " " << t2 << "\n";
+               std::cout << "\t eps, rho_min = " << eps << " " << rho_min << "\n";
+               std::cout << "\t theta1 = " << theta1 << "\n";
+               std::cout << "\t pressure = " << pressure << "\n";
+               exit(0);
+            }
+            // t should strictly lie in [0,1]
+            t = std::min(1.0, t);
+            t = std::max(0.0, t);
+            // Need t < 1.0. If t==1 upto machine precision
+            // then we are suffering from round off error.
+            // In this case we take the cell average value, t=0.
+            if(std::fabs(1.0-t) < 1.0e-14) t = 0.0;
+            theta2 = std::min(theta2, t);
          }
-         // t should strictly lie in [0,1]
-         t = std::min(1.0, t);
-         t = std::max(0.0, t);
-         // Need t < 1.0. If t==1 upto machine precision
-         // then we are suffering from round off error.
-         // In this case we take the cell average value, t=0.
-         if(std::fabs(1.0-t) < 1.0e-14) t = 0.0;
-         theta2 = std::min(theta2, t);
       }
    }
    
