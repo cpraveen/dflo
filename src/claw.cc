@@ -733,10 +733,15 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
    {
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
+      double bc_time;
+      if(rk==0)
+         bc_time = elapsed_time;
+      else
+         bc_time = elapsed_time + global_dt;
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
            ++boundary_id)
       {
-         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+         parameters.boundary_conditions[boundary_id].values.set_time(bc_time);
       }
       
       assemble_system (integrator);

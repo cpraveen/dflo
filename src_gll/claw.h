@@ -259,6 +259,7 @@ private:
    // distributing the degrees of freedom.
    dealii::SparseMatrix<double> system_matrix;
    dealii::SparsityPattern      sparsity_pattern;
+   dealii::PreconditionBlockJacobi<dealii::SparseMatrix<double>,double> inv_mass_matrix_full;
    
    // MOOD data
    std::vector<unsigned int> cell_degree;
@@ -266,8 +267,8 @@ private:
    std::vector<dealii::FullMatrix<double> > Rmatrix;
    dealii::Vector<double> min_mood_var, max_mood_var;
 
-   std::vector< dealii::Vector<double> > inv_mass_matrix;
-   
+   std::vector< dealii::Vector<double> > inv_mass_matrix_diag;
+
    // For FE_DGP, maps dof index to its degree
    std::vector<unsigned int> index_to_degree;
    

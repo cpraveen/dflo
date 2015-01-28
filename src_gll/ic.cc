@@ -160,52 +160,6 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    predictor = old_solution;
 }
 
-//------------------------------------------------------------------------------
-// Sets initial condition based on input file.
-// For Pk basis we have to do an L2 projection.
-//------------------------------------------------------------------------------
-template <int dim>
-void ConservationLaw<dim>::set_initial_condition_Pk ()
-{
-   if(parameters.ic_function == "rt")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           RayleighTaylor<dim>(parameters.gravity),
-                                           current_solution);
-   else if(parameters.ic_function == "isenvort")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           IsentropicVortex<dim>(5.0, 0.0, 0.0),
-                                           current_solution);
-   else if(parameters.ic_function == "vortsys")
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           VortexSystem<dim>(),
-                                           current_solution);
-   else
-      VectorTools::create_right_hand_side (mapping(), dof_handler,
-                                           QGauss<dim>(fe.degree+1),
-                                           parameters.initial_conditions,
-                                           current_solution);
-   
-   std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-   typename DoFHandler<dim>::active_cell_iterator
-      cell = dof_handler.begin_active(),
-      endc = dof_handler.end();
-   
-   for (; cell!=endc; ++cell)
-   {
-      cell->get_dof_indices(dof_indices);
-      unsigned int c = cell_number(cell);
-      
-      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         old_solution(dof_indices[i]) = current_solution(dof_indices[i]) *
-                                        inv_mass_matrix[c][i];
-   }
-   
-   current_solution = old_solution;
-   predictor = old_solution;
-}
 
 //------------------------------------------------------------------------------
 // Set intitial condition by interpolation or projection depending on
@@ -214,10 +168,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
-   if(parameters.basis == Parameters::AllParameters<dim>::Qk)
-      set_initial_condition_Qk();
-   else
-      set_initial_condition_Pk();
+   set_initial_condition_Qk();
 }
 
 template class RayleighTaylor<2>;

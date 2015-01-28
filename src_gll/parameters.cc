@@ -337,6 +337,10 @@ namespace Parameters
                         Patterns::Selection("q1|q2|cartesian"),
                         "mapping type to reference element");
       
+      prm.declare_entry("mass matrix", "diagonal",
+                        Patterns::Selection("diagonal|full"),
+                        "Mass matrix can be diagonal or full");
+      
       prm.declare_entry("diffusion power", "2.0",
                         Patterns::Double(),
                         "power of mesh size in shock capturing term");
@@ -439,6 +443,14 @@ namespace Parameters
       potential.initialize(FunctionParser<dim>::default_variable_names(),
                            potential_function,
                            std::map<std::string, double>());
+      
+      std::string mass_matrix = prm.get("mass matrix");
+      if(mass_matrix == "diagonal")
+         mass_matrix_type = diagonal;
+      else if(mass_matrix == "full")
+         mass_matrix_type = full;
+      else
+         AssertThrow (false, ExcNotImplemented());
       
       std::string map = prm.get("mapping");
       if(map == "q1")

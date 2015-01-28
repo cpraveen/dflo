@@ -238,7 +238,7 @@ void ConservationLaw<dim>::compute_inv_mass_matrix ()
       cell = dof_handler.begin_active(),
       endc = dof_handler.end();
    
-   inv_mass_matrix.resize(triangulation.n_active_cells(),
+   inv_mass_matrix_diag.resize(triangulation.n_active_cells(),
                           Vector<double>(fe.dofs_per_cell));
    for (; cell!=endc; ++cell)
    {
@@ -247,12 +247,12 @@ void ConservationLaw<dim>::compute_inv_mass_matrix ()
       fe_values.reinit(cell);
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
       {
-         inv_mass_matrix[c][i] = 0.0;
+         inv_mass_matrix_diag[c][i] = 0.0;
          for(unsigned int q=0; q<n_q_points; ++q)
-            inv_mass_matrix[c][i] += fe_values.shape_value(i,q) *
+            inv_mass_matrix_diag[c][i] += fe_values.shape_value(i,q) *
                                      fe_values.shape_value(i,q) *
                                      fe_values.JxW(q);
-         inv_mass_matrix[c][i] = 1.0 / inv_mass_matrix[c][i];
+         inv_mass_matrix_diag[c][i] = 1.0 / inv_mass_matrix_diag[c][i];
       }
    }
 }
@@ -301,7 +301,38 @@ void ConservationLaw<dim>::setup_system ()
    if(parameters.implicit == false)
    {
       std::cout << "Creating mass matrix ...\n";
-      compute_inv_mass_matrix ();
+      if(parameters.mass_matrix_type == Parameters::AllParameters<dim>::diagonal)
+         compute_inv_mass_matrix ();
+      else
+      {
+         Table<2,DoFTools::Coupling> coupling(EulerEquations<dim>::n_components,
+                                              EulerEquations<dim>::n_components);
+         for(unsigned int i=0; i<EulerEquations<dim>::n_components; ++i)
+         {
+            for(unsigned int j=0; j<EulerEquations<dim>::n_components; ++j)
+               coupling[i][j] = DoFTools::none;
+            coupling[i][i] = DoFTools::always;
+         }
+         CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
+         DoFTools::make_sparsity_pattern (dof_handler, coupling, c_sparsity);
+         sparsity_pattern.copy_from(c_sparsity);
+         system_matrix.reinit (sparsity_pattern);
+         MatrixCreator::create_mass_matrix (mapping(),
+                                            dof_handler,
+                                            QGauss<dim>(fe.degree+1),
+                                            system_matrix);
+         // Compute the inverse of the blocks
+         unsigned int n_block_size = fe.dofs_per_cell / EulerEquations<dim>::n_components;
+         std::cout << "   Block size = " << n_block_size << std::endl;
+         inv_mass_matrix_full.initialize (system_matrix, n_block_size);
+         // Once inv_mass_matrix is created, we can delete system_matrix
+         system_matrix.clear();
+         
+         // Visualize sparsity pattern
+         //std::ofstream out ("sparsity_pattern.1");
+         //sparsity_pattern.print_gnuplot (out);
+         //abort ();
+      }
    }
    else
    {
@@ -696,20 +727,41 @@ ConservationLaw<dim>::solve (Vector<double> &newton_update,
       case Parameters::Solver::rk3:
       case Parameters::Solver::mood:
       {
-         // Multiply newton_update by time step dt
-         std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-         typename DoFHandler<dim>::active_cell_iterator
-            cell = dof_handler.begin_active(),
-            endc = dof_handler.end();
-         for (; cell!=endc; ++cell)
+         if(parameters.mass_matrix_type == Parameters::AllParameters<dim>::diagonal)
          {
-            const unsigned int cell_no = cell_number (cell);
-
-            cell->get_dof_indices (dof_indices);
-            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-               newton_update(dof_indices[i]) = dt(cell_no) *
-                                               right_hand_side(dof_indices[i]) *
-                                               inv_mass_matrix[cell_no][i];
+            // Multiply newton_update by time step dt
+            std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+            typename DoFHandler<dim>::active_cell_iterator
+               cell = dof_handler.begin_active(),
+               endc = dof_handler.end();
+            for (; cell!=endc; ++cell)
+            {
+               const unsigned int cell_no = cell_number (cell);
+               
+               cell->get_dof_indices (dof_indices);
+               for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+                  newton_update(dof_indices[i]) = dt(cell_no) *
+                                                  right_hand_side(dof_indices[i]) *
+                                                  inv_mass_matrix_diag[cell_no][i];
+            }
+         }
+         else
+         {
+            inv_mass_matrix_full.vmult (newton_update, right_hand_side);
+            
+            // Multiply newton_update by time step dt
+            std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
+            typename DoFHandler<dim>::active_cell_iterator
+               cell = dof_handler.begin_active(),
+               endc = dof_handler.end();
+            for (; cell!=endc; ++cell)
+            {
+               const unsigned int cell_no = cell_number (cell);
+               
+               cell->get_dof_indices (dof_indices);
+               for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+                  newton_update(dof_indices[i]) *= dt(cell_no);
+            }
          }
          return std::pair<unsigned int, double> (0,0);
       }
