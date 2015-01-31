@@ -697,6 +697,9 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
 template <int dim>
 void ConservationLaw<dim>::run ()
 {
+   Timer timer_all;
+   timer_all.start();
+   
    {
       GridIn<dim> grid_in;
       grid_in.attach_triangulation(triangulation);
@@ -764,6 +767,9 @@ void ConservationLaw<dim>::run ()
    IntegratorExplicit<dim> integrator_explicit (dof_handler);
    setup_mesh_worker (integrator_explicit);
    
+   Timer timer_iterations;
+   timer_iterations.start ();
+   
    while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
@@ -819,6 +825,15 @@ void ConservationLaw<dim>::run ()
          //parameters.cfl = 1.2;
       }
    }
+   
+   timer_iterations.stop ();
+   timer_all.stop ();
+   
+   pcout << std::endl;
+   pcout << "Elapsed CPU time  (iter): " << timer_iterations()/60 << " min.\n";
+   pcout << "Elapsed wall time (iter): " << timer_iterations.wall_time()/60 << " min.\n";
+   pcout << "Elapsed CPU time  (all) : " << timer_all()/60 << " min.\n";
+   pcout << "Elapsed wall time (all) : " << timer_all.wall_time()/60 << " min.\n";
    
    computing_timer.print_summary ();
    computing_timer.reset ();
