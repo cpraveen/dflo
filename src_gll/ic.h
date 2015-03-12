@@ -46,6 +46,25 @@ private:
 };
 
 //------------------------------------------------------------------------
+
+template <int dim>
+class IsothermalHydrostatic : public dealii::Function<dim>
+{
+public:
+   IsothermalHydrostatic ()
+   :
+   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   {}
+   virtual void vector_value (const dealii::Point<dim>  &p,
+                              dealii::Vector<double>  &values) const;
+   
+private:
+   const double rho0 = 1.21;
+   const double p0 = 1.0;
+   const double g  = 1.0;
+};
+
+//------------------------------------------------------------------------
 // Isentropic vortex, just rotates about itself
 //------------------------------------------------------------------------
 template <int dim>

@@ -74,6 +74,29 @@ void RadialRayleighTaylor<dim>::vector_value (const Point<dim> &p,
 }
 
 //--------------------------------------------------------------------------------------------
+// Isothermal hydrostatic test case from Xing and Shu
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void IsothermalHydrostatic<dim>::vector_value (const Point<dim> &p,
+                                               Vector<double>   &values) const
+{
+   double ff1 = - (rho0 * g)/p0 * (p[0] + p[1]);
+   double ff2 = - (100 * rho0 * g)/p0 * ((p[0]-0.3)*(p[0]-0.3) + (p[1]-0.3)*(p[1]-0.3));
+   
+   values[EulerEquations<dim>::density_component] = rho0 * std::exp(ff1);
+   
+   double eta = 1.0e-3;
+   double pressure = p0 * std::exp(ff1) + eta * std::exp(ff2);
+   
+   // Momentum
+   for(unsigned int d=0; d<dim; ++d)
+      values[d] = 0.0;
+   
+   // Energy
+   values[EulerEquations<dim>::energy_component] =  pressure/(EulerEquations<dim>::gas_gamma - 1.0);
+}
+
+//--------------------------------------------------------------------------------------------
 // Initial condition for isentropic vortex problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
@@ -146,6 +169,9 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    else if(parameters.ic_function == "rrt")
       VectorTools::interpolate(mapping(), dof_handler,
                                RadialRayleighTaylor<dim>(), old_solution);
+   else if(parameters.ic_function == "isohydro")
+      VectorTools::interpolate(mapping(), dof_handler,
+                               IsothermalHydrostatic<dim>(), old_solution);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
                                IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);
@@ -172,6 +198,7 @@ void ConservationLaw<dim>::set_initial_condition ()
 }
 
 template class RayleighTaylor<2>;
+template class IsothermalHydrostatic<2>;
 template class IsentropicVortex<2>;
 template class VortexSystem<2>;
 template class ConservationLaw<2>;

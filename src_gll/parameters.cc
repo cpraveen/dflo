@@ -410,7 +410,7 @@ namespace Parameters
       prm.enter_subsection("initial condition");
       {
          prm.declare_entry("function", "none",
-                           Patterns::Selection("none|rt|rrt|isenvort|vortsys"),
+                           Patterns::Selection("none|rt|rrt|isohydro|isenvort|vortsys"),
                            "function for initial condition");
          
          for (unsigned int di=0; di<EulerEquations<dim>::n_components; ++di)
