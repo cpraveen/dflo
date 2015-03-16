@@ -1,0 +1,85 @@
+# Listing of Parameters
+# ---------------------
+
+# The input grid 
+set mesh type = gmsh
+set mesh file = grid_cart.msh
+set degree = 1
+set mapping = cartesian
+
+# Stabilization parameter
+set diffusion power       = 2.0
+set diffusion coefficient = 0.0
+#set gravity = 0.1
+set potential = x + y
+
+# --------------------------------------------------
+# Boundary conditions
+# We may specify boundary conditions for up to MAX_BD boundaries.
+# Your .inp file should have these boundaries designated.
+# farfield supersonic inflow boundary
+subsection boundary_1
+   set type = farfield
+   set w_0 value = 1.0 + 0.2*sin(_pi*(x+y-2*t))
+   set w_1 value = 1.0 + 0.2*sin(_pi*(x+y-2*t))
+   set w_2 value = 1.0 + 0.2*sin(_pi*(x+y-2*t))
+   set w_3 value = (4.5-x-y+2*t+0.2*cos(_pi*(x+y-2*t))/_pi)/0.4+1.0+0.2*sin(_pi*(x+y-2*t))
+end
+
+# --------------------------------------------------
+# Initial Conditions
+# We set the initial conditions of the conservative variables.  These lines
+# are passed to the expression parsing function.  You should use x,y,z for
+# the coordinate variables.
+
+subsection initial condition
+   set w_0 value = 1.0 + 0.2*sin(_pi*(x+y))
+   set w_1 value = 1.0 + 0.2*sin(_pi*(x+y))
+   set w_2 value = 1.0 + 0.2*sin(_pi*(x+y))
+   set w_3 value = (4.5-x-y+0.2*cos(_pi*(x+y))/_pi)/0.4 + 1.0 + 0.2*sin(_pi*(x+y))
+end
+
+# --------------------------------------------------
+# Time stepping control
+subsection time stepping
+  set time step type = global
+  set cfl = 0.9
+  set final time = 0.1
+  set nonlinear iterations = 1
+end
+
+subsection linear solver
+  set output         = quiet
+  set method         = rk3
+end
+
+# --------------------------------------------------
+# Output frequency and kind
+subsection output
+  set iter step      = 100
+  set schlieren plot = true
+  set format         = vtk
+end
+
+# --------------------------------------------------
+# Refinement control
+subsection refinement
+  set refinement = false # none only other option
+  set iter step  = 5
+  set shock value = 1.0
+  set shock levels = 3
+end
+
+# --------------------------------------------------
+# Flux parameters
+subsection flux
+ set flux = hllc
+end
+
+subsection limiter
+   set type = none
+   set beta = 2.0
+   set characteristic limiter = true
+   set positivity limiter = false
+   set M = 100.0
+end
