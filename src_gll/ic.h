@@ -46,7 +46,8 @@ private:
 };
 
 //------------------------------------------------------------------------
-
+// Test case from Xing/Shu
+//------------------------------------------------------------------------
 template <int dim>
 class IsothermalHydrostatic : public dealii::Function<dim>
 {
@@ -62,6 +63,28 @@ private:
    const double rho0 = 1.21;
    const double p0 = 1.0;
    const double g  = 1.0;
+};
+
+//------------------------------------------------------------------------
+// Test case from Xing/Shu sec. 5.4
+//------------------------------------------------------------------------
+template <int dim>
+class UnsteadyGravity : public dealii::Function<dim>
+{
+public:
+   UnsteadyGravity (double time)
+   :
+   dealii::Function<dim>(EulerEquations<dim>::n_components),
+   time (time)
+   {}
+   virtual void vector_value (const dealii::Point<dim>  &p,
+                              dealii::Vector<double>  &values) const;
+   
+private:
+   double time;
+   const double u0 = 1.0;
+   const double v0 = 1.0;
+   const double p0 = 4.5;
 };
 
 //------------------------------------------------------------------------

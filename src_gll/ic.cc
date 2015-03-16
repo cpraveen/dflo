@@ -97,6 +97,30 @@ void IsothermalHydrostatic<dim>::vector_value (const Point<dim> &p,
 }
 
 //--------------------------------------------------------------------------------------------
+// Isothermal hydrostatic test case from Xing and Shu
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void UnsteadyGravity<dim>::vector_value (const Point<dim> &p,
+                                               Vector<double>   &values) const
+{
+   values[EulerEquations<dim>::density_component]
+      = 1.0 + 0.2 * std::sin(M_PI*(p[0]+p[1] - time*(u0+v0)));
+   
+   
+   // Momentum
+   values[0] = values[EulerEquations<dim>::density_component] * u0;
+   values[1] = values[EulerEquations<dim>::density_component] * v0;
+   
+   double pressure = p0 - p[0] - p[1] + time*(u0+v0)
+                     + 0.2 * std::cos(M_PI*(p[0]+p[1]-time*(u0+v0)))/M_PI;
+
+   // Energy
+   values[EulerEquations<dim>::energy_component] =
+      pressure/(EulerEquations<dim>::gas_gamma - 1.0)
+      + 0.5*(u0*u0+v0*v0)*values[EulerEquations<dim>::density_component];
+}
+
+//--------------------------------------------------------------------------------------------
 // Initial condition for isentropic vortex problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
@@ -194,11 +218,13 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
+   std::cout << "Setting initial condition\n";
    set_initial_condition_Qk();
 }
 
 template class RayleighTaylor<2>;
 template class IsothermalHydrostatic<2>;
+template class UnsteadyGravity<2>;
 template class IsentropicVortex<2>;
 template class VortexSystem<2>;
 template class ConservationLaw<2>;
