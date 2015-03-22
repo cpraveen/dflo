@@ -87,6 +87,7 @@ private:
    void set_initial_condition ();
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
+   void set_initial_condition_Rayleigh_Taylor();
    
    std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
    
@@ -133,6 +134,7 @@ private:
    void apply_limiter_TVB_Pk ();
    void apply_positivity_limiter ();
    void compute_shock_indicator ();
+   void compute_shock_indicator_residual ();
    void compute_shock_indicator_u2 ();
    void compute_shock_indicator_kxrcf ();
    
