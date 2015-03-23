@@ -380,7 +380,7 @@ private:
       }
       else
       {  // compute average solution on child cells
-         auto child_cells =
+         std::vector<typename dealii::DoFHandler<dim>::active_cell_iterator> child_cells =
             dealii::GridTools::get_active_child_cells< dealii::DoFHandler<dim> > (cell);
          avg = 0;
          double measure = 0;
