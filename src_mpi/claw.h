@@ -171,6 +171,7 @@ private:
    void apply_limiter ();
    void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
+   void apply_limiter_minmax_Qk ();
    void apply_positivity_limiter ();
    void apply_positivity_limiter_cell
       (typename DoFHandler<dim>::active_cell_iterator& cell,
