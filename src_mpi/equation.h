@@ -744,6 +744,93 @@ struct EulerEquations
       }
       
    }
+   // --------------------------------------------------------------------------
+   // Compute dissipation matrix in entropy stable flux
+   // --------------------------------------------------------------------------
+   static
+   void kep_diff_matrix(const dealii::Point<dim>     &normal,
+                        const dealii::Vector<double> &W_l,
+                        const dealii::Vector<double> &W_r,
+                        double (&Dm)[n_components][n_components])
+   {
+      static const double BETA = 1.0/6.0;
+
+      double rhol = W_l[density_component];
+      double rhor = W_r[density_component];
+      double rho = logavg( rhol, rhor );
+      
+      double v_l[dim], v_r[dim], vel[dim];
+      double v2_l = 0, v2_r = 0;
+      double vnl = 0, vnr = 0;
+      double vel_normal = 0, v2 = 0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         v_l[d]  = W_l[d] / W_l[density_component];
+         v_r[d]  = W_r[d] / W_r[density_component];
+         v2_l   += v_l[d] * v_l[d];
+         v2_r   += v_r[d] * v_r[d];
+         vnl    += v_l[d] * normal[d];
+         vnr    += v_r[d] * normal[d];
+         
+         vel[d]      = 0.5 * (v_l[d] + v_r[d]);
+         vel_normal += vel[d] * normal[d];
+         v2         += vel[d] * vel[d];
+      }
+      
+      double vel2 = 0.5 * (v2_l + v2_r);
+      
+      //pressure
+      double p_l = (gas_gamma-1) * (W_l[energy_component] - 0.5 * W_l[density_component] * v2_l);
+      double p_r = (gas_gamma-1) * (W_r[energy_component] - 0.5 * W_r[density_component] * v2_r);
+      
+      double betal = 0.5 * rhol / p_l;
+      double betar = 0.5 * rhor / p_r;
+      double beta  = logavg(betal, betar);
+      
+      double a     = sqrt(0.5 * gas_gamma / beta);
+      double p     = 0.5 * (rhol + rhor) / (betal + betar);
+      
+      // entropy dissipation
+      // eigenvectors
+      double H  = a*a/(gas_gamma-1.0) + 0.5*v2;
+      double v1 = vel[0] * normal[1] - vel[1] * normal[0];
+      double R[][4] = {
+         {            1,             1,     0,              1                },
+         {vel[0] - a*normal[0],   vel[0],   normal[1],  vel[0] + a*normal[0] },
+         {vel[1] - a*normal[1],   vel[1],  -normal[0],  vel[1] + a*normal[1] },
+         {H      - a*vel_normal,  0.5*v2,   v1,         H      + a*vel_normal}
+      };
+      
+      // eigenvalues
+      double al  = sqrt (gas_gamma * p_l / rhol);
+      double ar  = sqrt (gas_gamma * p_r / rhor);
+      double LambdaL[] = { vnl - al, vnl, vnl, vnl + al };
+      double LambdaR[] = { vnr - ar, vnr, vnr, vnr + ar };
+      double l2, l3;
+      l2 = l3 = fabs(vel_normal);
+      double Lambda[]  = { fabs(vel_normal - a) + BETA*fabs(LambdaL[0]-LambdaR[0]),
+                           l2,
+                           l3,
+                           fabs(vel_normal + a) + BETA*fabs(LambdaL[3]-LambdaR[3])};
+      
+      double S[] = { 0.5*rho/gas_gamma, (gas_gamma-1.0)*rho/gas_gamma, p, 0.5*rho/gas_gamma };
+      double D[] = { Lambda[0]*S[0],
+                     Lambda[1]*S[1],
+                     Lambda[2]*S[2],
+                     Lambda[3]*S[3]
+                   };
+      
+      // Symmetric diffusion matrix
+      for(int i=0; i<4; ++i)
+      {
+         for(int j=0; j<i; ++j)
+            Dm[i][j] = Dm[j][i];
+         
+         for(int j=i; j<4; ++j)
+            for(int k=0; k<4; ++k)
+               Dm[i][j] = R[i][k] * D[j] * R[j][k];
+      }
+   }
    
    // --------------------------------------------------------------------------
    // My kinetic energy preserving and entropy stable flux
@@ -752,6 +839,90 @@ struct EulerEquations
    template <typename InputVector>
    static
    void kep_flux
+   (
+    const dealii::Point<dim>         &normal,
+    const InputVector                &W_l,
+    const InputVector                &W_r,
+    const dealii::Vector<double>     &Aplus,
+    const dealii::Vector<double>     &Aminus,
+    typename InputVector::value_type (&normal_flux)[n_components]
+    )
+   {
+      typedef typename InputVector::value_type number;
+      
+      number rhol = W_l[density_component];
+      number rhor = W_r[density_component];
+      number rho = logavg( rhol, rhor );
+      
+      number v_l[dim], v_r[dim], vel[dim];
+      number v2_l = 0, v2_r = 0;
+      number vnl = 0, vnr = 0;
+      number vel_normal = 0, v2 = 0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         v_l[d]  = W_l[d] / W_l[density_component];
+         v_r[d]  = W_r[d] / W_r[density_component];
+         v2_l   += v_l[d] * v_l[d];
+         v2_r   += v_r[d] * v_r[d];
+         vnl    += v_l[d] * normal[d];
+         vnr    += v_r[d] * normal[d];
+         
+         vel[d]      = 0.5 * (v_l[d] + v_r[d]);
+         vel_normal += vel[d] * normal[d];
+         v2         += vel[d] * vel[d];
+      }
+      
+      number vel2 = 0.5 * (v2_l + v2_r);
+      
+      //pressure
+      number p_l = (gas_gamma-1) * (W_l[energy_component] - 0.5 * W_l[density_component] * v2_l);
+      number p_r = (gas_gamma-1) * (W_r[energy_component] - 0.5 * W_r[density_component] * v2_r);
+      
+      number betal = 0.5 * rhol / p_l;
+      number betar = 0.5 * rhor / p_r;
+      number beta  = logavg(betal, betar);
+      
+      number a     = sqrt(0.5 * gas_gamma / beta);
+      number p     = 0.5 * (rhol + rhor) / (betal + betar);
+      
+      // central flux
+      normal_flux[density_component] = rho * vel_normal;
+      for(unsigned int d=0; d<dim;++d)
+         normal_flux[d] = normal[d] * p + vel[d] * normal_flux[density_component];
+      normal_flux[energy_component] =
+         0.5 * ( 1.0/((gas_gamma-1.0)*beta) - vel2) * normal_flux[density_component]
+         + normal_flux[0] * vel[0] + normal_flux[1] * vel[1];
+      
+      number Dm[n_components][n_components];
+      kep_diff_matrix(normal, Aplus, Aminus, Dm);
+      
+      // jump in entropy: s = log(p) - gamma*log(rho)
+      number ds    = log(p_r/p_l) - gas_gamma * log(rhor/rhol);
+      // Jump in entropy variables
+      number dV[] = { -ds/(gas_gamma-1.0) - (betar*v2_r - betal*v2_l),
+                       2.0*(betar*v_r[0] - betal*v_l[0]),
+                       2.0*(betar*v_r[1] - betal*v_l[1]),
+                      -2.0*(betar - betal) };
+      
+      // diffusive flux = R * Lambda * S * R^T * dV
+      number Diff[] = {0.0, 0.0, 0.0, 0.0};
+      for(unsigned int i=0; i<4; ++i)
+         for(unsigned int j=0; j<4; ++j)
+               Diff[i] += Dm[i][j] * dV[j];
+      
+      normal_flux[density_component] -= 0.5 * Diff[0];
+      normal_flux[0]                 -= 0.5 * Diff[1];
+      normal_flux[1]                 -= 0.5 * Diff[2];
+      normal_flux[energy_component]  -= 0.5 * Diff[3];
+   }
+   
+   // --------------------------------------------------------------------------
+   // My kinetic energy preserving and entropy stable flux
+   // Written only for 2-D case
+   // --------------------------------------------------------------------------
+   template <typename InputVector>
+   static
+   void kep_flux2
    (
     const dealii::Point<dim>         &normal,
     const InputVector                &W_l,

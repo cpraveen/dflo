@@ -357,6 +357,8 @@ private:
             EulerEquations<dim>::kep_flux (normal,
                                            Wplus,
                                            Wminus,
+                                           Aplus,
+                                           Aminus,
                                            normal_flux);
             break;
 
