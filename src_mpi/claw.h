@@ -352,6 +352,13 @@ private:
                                             Wminus,
                                             normal_flux);
             break;
+            
+         case Parameters::Flux::kep:
+            EulerEquations<dim>::kep_flux (normal,
+                                           Wplus,
+                                           Wminus,
+                                           normal_flux);
+            break;
 
 	      default:
             Assert (false, dealii::ExcNotImplemented());
