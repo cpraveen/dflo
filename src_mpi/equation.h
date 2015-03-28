@@ -827,8 +827,11 @@ struct EulerEquations
             Dm[i][j] = Dm[j][i];
          
          for(int j=i; j<4; ++j)
+         {
+            Dm[i][j] = 0;
             for(int k=0; k<4; ++k)
-               Dm[i][j] = R[i][k] * D[j] * R[j][k];
+               Dm[i][j] += R[i][k] * D[k] * R[j][k];
+         }
       }
    }
    
@@ -927,6 +930,8 @@ struct EulerEquations
     const dealii::Point<dim>         &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
+    const dealii::Vector<double>     &Aplus,
+    const dealii::Vector<double>     &Aminus,
     typename InputVector::value_type (&normal_flux)[n_components]
     )
    {
