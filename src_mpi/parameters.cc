@@ -544,7 +544,7 @@ namespace Parameters
       if(solver == mood)
          AssertThrow(basis == Pk, ExcMessage("MOOD is implemented only for Pk"));
       
-      if(limiter_type == TVB)
+      if(degree > 0 && limiter_type == TVB)
          AssertThrow(mapping_type == cartesian, ExcMessage("TVB limiter works on cartesian grids only"));
       
       if(limiter_type == minmax)
