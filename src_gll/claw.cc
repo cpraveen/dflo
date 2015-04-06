@@ -53,7 +53,7 @@
 #include "ic.h"
 
 // Coefficients for SSP-RK scheme
-double ark[3];
+double ark[3], bcrk[3];
 unsigned int n_rk;
 
 using namespace dealii;
@@ -142,12 +142,14 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    if(fe.degree == 0)
    {
       ark[0] = 0.0;
+      bcrk[0] = 0.0;
       n_rk = 1;
    }
    else if(fe.degree==1)
    {
       ark[0] = 0.0;
       ark[1] = 1.0/2.0;
+      bcrk[0] = 0.0; bcrk[1] = 1.0;
       n_rk = 2;
    }
    else
@@ -155,6 +157,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
       ark[0] = 0.0;
       ark[1] = 3.0/4.0;
       ark[2] = 1.0/3.0;
+      bcrk[0] = 0.0; bcrk[1] = 1.0; bcrk[2] = 0.5;
       n_rk = 3;
    }
 }
@@ -787,10 +790,11 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
    {
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
+      double bc_time = elapsed_time + bcrk[rk] * global_dt;
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
            ++boundary_id)
       {
-         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+         parameters.boundary_conditions[boundary_id].values.set_time(bc_time);
       }
       
       assemble_system (integrator);
