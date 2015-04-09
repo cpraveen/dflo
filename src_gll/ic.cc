@@ -89,7 +89,6 @@ void IsothermalHydrostatic<dim>::vector_value (const Point<dim> &p,
    
    values[EulerEquations<dim>::density_component] = rho0 * std::exp(ff1);
    
-   double eta = 1.0e-3;
    double pressure = p0 * std::exp(ff1) + eta * std::exp(ff2);
    
    // Momentum
@@ -185,16 +184,24 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
 //------------------------------------------------------------------------------
 double Rayleigh_Taylor_Pressure (double y)
 {
-
-   
    if(y < 0.0)
       return exp(-y/Tl);
    else
       return exp(-y/Tu);
 }
 //------------------------------------------------------------------------------
+double Rayleigh_Taylor_Density (double yc, double y)
+{
+   if(yc < 0.0)
+      return exp(-y/Tl) / Tl;
+   else
+      return exp(-y/Tu) / Tu;
+}
+//------------------------------------------------------------------------------
+// eta is amplitude of y velocity
+//------------------------------------------------------------------------------
 template <int dim>
-void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor ()
+void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor (const double eta)
 {
    AssertThrow(dim==2, ExcNotImplemented());
    
@@ -203,10 +210,11 @@ void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor ()
    FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
    
    std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   double rho, pressure, v;
    
    typename DoFHandler<dim>::active_cell_iterator
-   cell = dof_handler.begin_active(),
-   endc = dof_handler.end();
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
    
    for(; cell != endc; ++cell)
    {
@@ -218,24 +226,32 @@ void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor ()
       const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
       for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
       {
+         const double x = p[i][0];
+         const double y = p[i][1];
          unsigned int comp_i = fe.system_to_component_index(i).first;
-         double pressure = Rayleigh_Taylor_Pressure(p[i][1]);
+
          switch(comp_i)
          {
             case 0: // x momentum
-            case 1: // y momentum
                old_solution(dof_indices[i]) = 0.0;
                break;
                
+            case 1: // y momentum
+               rho = Rayleigh_Taylor_Density(yc, y);
+               v   = eta * std::sin(4.0*M_PI*x) * std::exp(-50*y*y);
+               old_solution(dof_indices[i]) = rho * v;
+               break;
+               
             case 2: // density
-               if(yc < 0.0)
-                  old_solution(dof_indices[i]) = pressure/Tl;
-               else
-                  old_solution(dof_indices[i]) = pressure/Tu;
+               old_solution(dof_indices[i]) = Rayleigh_Taylor_Density(yc, y);
                break;
                
             case 3: // energy
-               old_solution(dof_indices[i]) = pressure/(EulerEquations<dim>::gas_gamma-1);
+               pressure = Rayleigh_Taylor_Pressure(y);
+               rho = Rayleigh_Taylor_Density(yc, y);
+               v   = eta * std::sin(4.0*M_PI*x) * std::exp(-50*y*y);
+               old_solution(dof_indices[i]) = pressure/(EulerEquations<dim>::gas_gamma-1) +
+                                              0.5 * rho * v * v;
                break;
                
             default:

@@ -87,7 +87,7 @@ private:
    void set_initial_condition ();
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
-   void set_initial_condition_Rayleigh_Taylor();
+   void set_initial_condition_Rayleigh_Taylor(const double eta = 0.0);
    
    std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
    
