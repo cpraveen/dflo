@@ -588,7 +588,7 @@ ConservationLaw<dim>::compute_time_step_q ()
          q2 += std::pow(cell_average[c][d]/density, 2.0);
       
       double max_eigenvalue = std::sqrt(q2) + sonic;
-      dt(c) = parameters.cfl / (max_eigenvalue * (2.0*fe.degree + 1.0) * dim);
+      dt(c) = parameters.cfl * h / (max_eigenvalue * (2.0*fe.degree + 1.0) * dim);
       
       global_dt = std::min(global_dt, dt(c));
    }
