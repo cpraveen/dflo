@@ -73,6 +73,7 @@ public:
                     const unsigned int degree,
                     const dealii::FE_DGP<dim> &fe_scalar);
    void run ();
+   void compute_errors ();
    
 private:
    void read_parameters (const char *file_name);
@@ -88,6 +89,7 @@ private:
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    void set_initial_condition_Rayleigh_Taylor(const double eta = 0.0);
+   void set_initial_condition_shocktube();
    
    std::pair<unsigned int, double> solve (dealii::Vector<double> &solution, double current_residual);
    

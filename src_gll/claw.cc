@@ -1182,4 +1182,60 @@ void ConservationLaw<dim>::run ()
    }
 }
 
+//------------------------------------------------------------------------------
+// Compute error norm at final time
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_errors ()
+{
+   std::vector<double> L2_error(EulerEquations<2>::n_components);
+
+   std::cout << "Computing errors at time " << elapsed_time << std::endl;
+   
+   if(parameters.ic_function == "isohydro")
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               IsothermalHydrostatic<dim>(), old_solution);
+   }
+   else if(parameters.ic_function == "rt")
+   {
+      set_initial_condition_Rayleigh_Taylor ();
+   }
+   else if(parameters.ic_function == "rrt")
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               RadialRayleighTaylor<dim>(), old_solution);
+   }
+   else
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               parameters.initial_conditions, old_solution);
+   }
+   
+   current_solution -= old_solution;
+   output_results();
+   
+   Vector<double> difference_per_cell (triangulation.n_active_cells());
+   
+   for(unsigned c = 0; c < EulerEquations<dim>::n_components; ++c)
+   {
+      const ComponentSelectFunction<dim> component_mask (c, EulerEquations<dim>::n_components);
+      VectorTools::integrate_difference (mapping(),
+                                         dof_handler,
+                                         current_solution,
+                                         ZeroFunction<dim>(EulerEquations<dim>::n_components),
+                                         /*UnsteadyGravity<dim>(elapsed_time),*/
+                                         difference_per_cell,
+                                         QGauss<dim>(fe.degree+2),
+                                         VectorTools::L2_norm,
+                                         &component_mask);
+      L2_error[c] = difference_per_cell.l2_norm();
+   }
+
+   double area = M_PI; //4.0;
+   for(unsigned int c=0; c<EulerEquations<2>::n_components; ++c)
+      std::cout << L2_error[c]/std::sqrt(area) << "  ";
+   std::cout << std::endl;
+}
+
 template class ConservationLaw<2>;

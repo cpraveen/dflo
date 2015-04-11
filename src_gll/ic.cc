@@ -262,6 +262,67 @@ void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor (const double e
 }
 
 //------------------------------------------------------------------------------
+// eta is amplitude of y velocity
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition_shocktube ()
+{
+   AssertThrow(dim==2, ExcNotImplemented());
+   
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
+   Quadrature<dim> qsupport (fe.get_unit_support_points());
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   double rho, pressure, v;
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for(; cell != endc; ++cell)
+   {
+      cell->get_dof_indices(dof_indices);
+      fe_values.reinit (cell);
+      
+      double xc = cell->center()[0];
+      
+      const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+      {
+         const double x = p[i][0];
+         const double y = p[i][1];
+         unsigned int comp_i = fe.system_to_component_index(i).first;
+         
+         switch(comp_i)
+         {
+            case 0: // x momentum
+            case 1: // y momentum
+               old_solution(dof_indices[i]) = 0.0;
+               break;
+               
+            case 2: // density
+               if(xc < 0.5)
+                  old_solution(dof_indices[i]) = 1.0;
+               else
+                  old_solution(dof_indices[i]) = 0.125;
+               break;
+               
+            case 3: // energy
+               if(xc < 0.5)
+                  old_solution(dof_indices[i]) = 2.5;
+               else
+                  old_solution(dof_indices[i]) = 0.25;
+               break;
+               
+            default:
+               AssertThrow(false, ExcMessage("Error in set_initial_condition_Rayleigh_Taylor"));
+         }
+      }
+   }
+}
+
+//------------------------------------------------------------------------------
 // Sets initial condition based on input file.
 // For Qk basis we can just do interpolation.
 //------------------------------------------------------------------------------
@@ -284,6 +345,8 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    else if(parameters.ic_function == "vortsys")
       VectorTools::interpolate(mapping(), dof_handler,
                                VortexSystem<dim>(), old_solution);
+   else if(parameters.ic_function == "shocktube")
+      set_initial_condition_shocktube ();
    else
       VectorTools::interpolate(mapping(), dof_handler,
                                parameters.initial_conditions, old_solution);
