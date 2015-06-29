@@ -136,40 +136,56 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
          }
          
          // Backward difference of cell averages
-         dbx = Dx;
+         dbx = 0; //Dx;
          if(lcell[c] != endc0)
          {
             get_cell_average (lcell[c], avg_nbr);
             for(unsigned int i=0; i<n_components; ++i)
                dbx(i) = cell_average[c][i] - avg_nbr(i);
          }
+	 else
+	 {
+		 dbx(0) = 2*cell_average[c][0];
+	 }
          
          // Forward difference of cell averages
-         dfx = Dx;
+         dfx = 0; //Dx;
          if(rcell[c] != endc0)
          {
             get_cell_average (rcell[c], avg_nbr);
             for(unsigned int i=0; i<n_components; ++i)
                dfx(i) = avg_nbr(i) - cell_average[c][i];
          }
+	 else
+ 	 {
+ 		 dfx(0) = -2*cell_average[c][0];
+ 	 }
          
          // Backward difference of cell averages
-         dby = Dy;
+         dby = 0; //Dy;
          if(bcell[c] != endc0)
          {
             get_cell_average (bcell[c], avg_nbr);
             for(unsigned int i=0; i<n_components; ++i)
                dby(i) = cell_average[c][i] - avg_nbr(i);
          }
+         else
+  	 {
+ 		 dby(1)= 2*cell_average[c][1];
+ 	 }
          
          // Forward difference of cell averages
-         dfy = Dy;
+         dfy = 0; //Dy;
          if(tcell[c] != endc0)
          {
             get_cell_average (tcell[c], avg_nbr);
             for(unsigned int i=0; i<n_components; ++i)
                dfy(i) = avg_nbr(i) - cell_average[c][i];
          }
+	 else
+ 	 {
+		 dfy(1) = -2*cell_average[c][1];
+ 	 }
          
          // Transform to characteristic variables
          typedef double EigMatrix[n_components][n_components];
@@ -215,7 +231,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             {
                unsigned int i_loc = dof_indices[i] - local_range.first;
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Point<dim> dr = p[i] - cell->center();
+               Point<dim> dr = Point<dim>(p[i] - cell->center());
                current_solution.local_element(i_loc) = cell_average[c][comp_i]
                                                        + dr[0] * Dx_new(comp_i)
                                                        + dr[1] * Dy_new(comp_i);
