@@ -197,11 +197,32 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
                                            Wplus[q],
                                            boundary_values[q],
                                            Wminus[q]);
+
+      // Apply bc on cell average also. This part is bit ugly.
+      Table<2,double> avg (2, EulerEquations<dim>::n_components);
+      for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
+      {
+         avg[0][ic] = cell_average[cell_no][ic];
+         avg[1][ic] = cell_average[cell_no][ic];
+      }
+      EulerEquations<dim>::compute_Wminus (boundary_kind,
+                                           fe_v.normal_vector(q),
+                                           avg[0],
+                                           boundary_values[q],
+                                           avg[1]);
+      Vector<double> Aplus (EulerEquations<dim>::n_components);
+      Vector<double> Aminus(EulerEquations<dim>::n_components);
+      for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
+      {
+         Aplus[ic]  = avg[0][ic];
+         Aminus[ic] = avg[1][ic];
+      }
+
       numerical_normal_flux(fe_v.normal_vector(q),
                             Wplus[q],
                             Wminus[q],
-                            cell_average[cell_no],
-                            cell_average[cell_no],
+                            Aplus,
+                            Aminus,
                             normal_fluxes[q]);
    }
    

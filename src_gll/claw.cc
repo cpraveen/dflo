@@ -53,7 +53,7 @@
 #include "ic.h"
 
 // Coefficients for SSP-RK scheme
-double ark[3];
+double ark[3], bcrk[3];
 unsigned int n_rk;
 
 using namespace dealii;
@@ -142,12 +142,14 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    if(fe.degree == 0)
    {
       ark[0] = 0.0;
+      bcrk[0] = 0.0;
       n_rk = 1;
    }
    else if(fe.degree==1)
    {
       ark[0] = 0.0;
       ark[1] = 1.0/2.0;
+      bcrk[0] = 0.0; bcrk[1] = 1.0;
       n_rk = 2;
    }
    else
@@ -155,6 +157,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
       ark[0] = 0.0;
       ark[1] = 3.0/4.0;
       ark[2] = 1.0/3.0;
+      bcrk[0] = 0.0; bcrk[1] = 1.0; bcrk[2] = 0.5;
       n_rk = 3;
    }
 }
@@ -585,7 +588,7 @@ ConservationLaw<dim>::compute_time_step_q ()
          q2 += std::pow(cell_average[c][d]/density, 2.0);
       
       double max_eigenvalue = std::sqrt(q2) + sonic;
-      dt(c) = parameters.cfl / (max_eigenvalue * (2.0*fe.degree + 1.0) * dim);
+      dt(c) = parameters.cfl * h / (max_eigenvalue * (2.0*fe.degree + 1.0) * dim);
       
       global_dt = std::min(global_dt, dt(c));
    }
@@ -787,10 +790,11 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
    {
       // set time in boundary condition
       // NOTE: We need to check if this is time accurate.
+      double bc_time = elapsed_time + bcrk[rk] * global_dt;
       for (unsigned int boundary_id=0; boundary_id<Parameters::AllParameters<dim>::max_n_boundaries;
            ++boundary_id)
       {
-         parameters.boundary_conditions[boundary_id].values.set_time(elapsed_time);
+         parameters.boundary_conditions[boundary_id].values.set_time(bc_time);
       }
       
       assemble_system (integrator);
@@ -1176,6 +1180,62 @@ void ConservationLaw<dim>::run ()
          //parameters.cfl = 1.2;
       }
    }
+}
+
+//------------------------------------------------------------------------------
+// Compute error norm at final time
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_errors ()
+{
+   std::vector<double> L2_error(EulerEquations<2>::n_components);
+
+   std::cout << "Computing errors at time " << elapsed_time << std::endl;
+   
+   if(parameters.ic_function == "isohydro")
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               IsothermalHydrostatic<dim>(), old_solution);
+   }
+   else if(parameters.ic_function == "rt")
+   {
+      set_initial_condition_Rayleigh_Taylor ();
+   }
+   else if(parameters.ic_function == "rrt")
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               RadialRayleighTaylor<dim>(), old_solution);
+   }
+   else
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               parameters.initial_conditions, old_solution);
+   }
+   
+   current_solution -= old_solution;
+   output_results();
+   
+   Vector<double> difference_per_cell (triangulation.n_active_cells());
+   
+   for(unsigned c = 0; c < EulerEquations<dim>::n_components; ++c)
+   {
+      const ComponentSelectFunction<dim> component_mask (c, EulerEquations<dim>::n_components);
+      VectorTools::integrate_difference (mapping(),
+                                         dof_handler,
+                                         current_solution,
+                                         ZeroFunction<dim>(EulerEquations<dim>::n_components),
+                                         /*UnsteadyGravity<dim>(elapsed_time),*/
+                                         difference_per_cell,
+                                         QGauss<dim>(fe.degree+2),
+                                         VectorTools::L2_norm,
+                                         &component_mask);
+      L2_error[c] = difference_per_cell.l2_norm();
+   }
+
+   double area = M_PI; //4.0;
+   for(unsigned int c=0; c<EulerEquations<2>::n_components; ++c)
+      std::cout << L2_error[c]/std::sqrt(area) << "  ";
+   std::cout << std::endl;
 }
 
 template class ConservationLaw<2>;

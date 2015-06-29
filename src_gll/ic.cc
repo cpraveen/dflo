@@ -4,6 +4,10 @@
 
 using namespace dealii;
 
+// Temperatures used in Rayleigh-Taylor problem
+const double Tl = 2.0;
+const double Tu = 1.0;
+
 //--------------------------------------------------------------------------------------------
 // Initial condition for Rayleigh-Taylor problem
 // This is setup for 2-d case only
@@ -74,6 +78,52 @@ void RadialRayleighTaylor<dim>::vector_value (const Point<dim> &p,
 }
 
 //--------------------------------------------------------------------------------------------
+// Isothermal hydrostatic test case from Xing and Shu
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void IsothermalHydrostatic<dim>::vector_value (const Point<dim> &p,
+                                               Vector<double>   &values) const
+{
+   double ff1 = - (rho0 * g)/p0 * (p[0] + p[1]);
+   double ff2 = - (100 * rho0 * g)/p0 * ((p[0]-0.3)*(p[0]-0.3) + (p[1]-0.3)*(p[1]-0.3));
+   
+   values[EulerEquations<dim>::density_component] = rho0 * std::exp(ff1);
+   
+   double pressure = p0 * std::exp(ff1) + eta * std::exp(ff2);
+   
+   // Momentum
+   for(unsigned int d=0; d<dim; ++d)
+      values[d] = 0.0;
+   
+   // Energy
+   values[EulerEquations<dim>::energy_component] =  pressure/(EulerEquations<dim>::gas_gamma - 1.0);
+}
+
+//--------------------------------------------------------------------------------------------
+// Isothermal hydrostatic test case from Xing and Shu
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void UnsteadyGravity<dim>::vector_value (const Point<dim> &p,
+                                               Vector<double>   &values) const
+{
+   values[EulerEquations<dim>::density_component]
+      = 1.0 + 0.2 * std::sin(M_PI*(p[0]+p[1] - time*(u0+v0)));
+   
+   
+   // Momentum
+   values[0] = values[EulerEquations<dim>::density_component] * u0;
+   values[1] = values[EulerEquations<dim>::density_component] * v0;
+   
+   double pressure = p0 - p[0] - p[1] + time*(u0+v0)
+                     + 0.2 * std::cos(M_PI*(p[0]+p[1]-time*(u0+v0)))/M_PI;
+
+   // Energy
+   values[EulerEquations<dim>::energy_component] =
+      pressure/(EulerEquations<dim>::gas_gamma - 1.0)
+      + 0.5*(u0*u0+v0*v0)*values[EulerEquations<dim>::density_component];
+}
+
+//--------------------------------------------------------------------------------------------
 // Initial condition for isentropic vortex problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
@@ -131,7 +181,146 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
    values[EulerEquations<dim>::energy_component] = pre/(gamma-1.0)
                                                  + 0.5 * rho * (vex*vex + vey*vey);
 }
+//------------------------------------------------------------------------------
+double Rayleigh_Taylor_Pressure (double y)
+{
+   if(y < 0.0)
+      return exp(-y/Tl);
+   else
+      return exp(-y/Tu);
+}
+//------------------------------------------------------------------------------
+double Rayleigh_Taylor_Density (double yc, double y)
+{
+   if(yc < 0.0)
+      return exp(-y/Tl) / Tl;
+   else
+      return exp(-y/Tu) / Tu;
+}
+//------------------------------------------------------------------------------
+// eta is amplitude of y velocity
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition_Rayleigh_Taylor (const double eta)
+{
+   AssertThrow(dim==2, ExcNotImplemented());
+   
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
+   Quadrature<dim> qsupport (fe.get_unit_support_points());
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   double rho, pressure, v;
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for(; cell != endc; ++cell)
+   {
+      cell->get_dof_indices(dof_indices);
+      fe_values.reinit (cell);
+      
+      double yc = cell->center()[1];
+      
+      const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+      {
+         const double x = p[i][0];
+         const double y = p[i][1];
+         unsigned int comp_i = fe.system_to_component_index(i).first;
 
+         switch(comp_i)
+         {
+            case 0: // x momentum
+               old_solution(dof_indices[i]) = 0.0;
+               break;
+               
+            case 1: // y momentum
+               rho = Rayleigh_Taylor_Density(yc, y);
+               v   = eta * std::sin(4.0*M_PI*x) * std::exp(-50*y*y);
+               old_solution(dof_indices[i]) = rho * v;
+               break;
+               
+            case 2: // density
+               old_solution(dof_indices[i]) = Rayleigh_Taylor_Density(yc, y);
+               break;
+               
+            case 3: // energy
+               pressure = Rayleigh_Taylor_Pressure(y);
+               rho = Rayleigh_Taylor_Density(yc, y);
+               v   = eta * std::sin(4.0*M_PI*x) * std::exp(-50*y*y);
+               old_solution(dof_indices[i]) = pressure/(EulerEquations<dim>::gas_gamma-1) +
+                                              0.5 * rho * v * v;
+               break;
+               
+            default:
+               AssertThrow(false, ExcMessage("Error in set_initial_condition_Rayleigh_Taylor"));
+         }
+      }
+   }
+}
+
+//------------------------------------------------------------------------------
+// eta is amplitude of y velocity
+//------------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::set_initial_condition_shocktube ()
+{
+   AssertThrow(dim==2, ExcNotImplemented());
+   
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
+   Quadrature<dim> qsupport (fe.get_unit_support_points());
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   double rho, pressure, v;
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for(; cell != endc; ++cell)
+   {
+      cell->get_dof_indices(dof_indices);
+      fe_values.reinit (cell);
+      
+      double xc = cell->center()[0];
+      
+      const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+      {
+         const double x = p[i][0];
+         const double y = p[i][1];
+         unsigned int comp_i = fe.system_to_component_index(i).first;
+         
+         switch(comp_i)
+         {
+            case 0: // x momentum
+            case 1: // y momentum
+               old_solution(dof_indices[i]) = 0.0;
+               break;
+               
+            case 2: // density
+               if(xc < 0.5)
+                  old_solution(dof_indices[i]) = 1.0;
+               else
+                  old_solution(dof_indices[i]) = 0.125;
+               break;
+               
+            case 3: // energy
+               if(xc < 0.5)
+                  old_solution(dof_indices[i]) = 2.5;
+               else
+                  old_solution(dof_indices[i]) = 0.25;
+               break;
+               
+            default:
+               AssertThrow(false, ExcMessage("Error in set_initial_condition_Rayleigh_Taylor"));
+         }
+      }
+   }
+}
 
 //------------------------------------------------------------------------------
 // Sets initial condition based on input file.
@@ -141,17 +330,23 @@ template <int dim>
 void ConservationLaw<dim>::set_initial_condition_Qk ()
 {
    if(parameters.ic_function == "rt")
-      VectorTools::interpolate(mapping(), dof_handler,
-                               RayleighTaylor<dim>(parameters.gravity), old_solution);
+      set_initial_condition_Rayleigh_Taylor ();
+//      VectorTools::interpolate(mapping(), dof_handler,
+//                               RayleighTaylor<dim>(parameters.gravity), old_solution);
    else if(parameters.ic_function == "rrt")
       VectorTools::interpolate(mapping(), dof_handler,
                                RadialRayleighTaylor<dim>(), old_solution);
+   else if(parameters.ic_function == "isohydro")
+      VectorTools::interpolate(mapping(), dof_handler,
+                               IsothermalHydrostatic<dim>(), old_solution);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
                                IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);
    else if(parameters.ic_function == "vortsys")
       VectorTools::interpolate(mapping(), dof_handler,
                                VortexSystem<dim>(), old_solution);
+   else if(parameters.ic_function == "shocktube")
+      set_initial_condition_shocktube ();
    else
       VectorTools::interpolate(mapping(), dof_handler,
                                parameters.initial_conditions, old_solution);
@@ -168,10 +363,13 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
 template <int dim>
 void ConservationLaw<dim>::set_initial_condition ()
 {
+   std::cout << "Setting initial condition\n";
    set_initial_condition_Qk();
 }
 
 template class RayleighTaylor<2>;
+template class IsothermalHydrostatic<2>;
+template class UnsteadyGravity<2>;
 template class IsentropicVortex<2>;
 template class VortexSystem<2>;
 template class ConservationLaw<2>;

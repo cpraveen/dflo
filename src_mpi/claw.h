@@ -172,6 +172,7 @@ private:
    void apply_limiter ();
    void apply_limiter_TVB_Qk ();
    void apply_limiter_TVB_Pk ();
+   void apply_limiter_minmax_Qk ();
    void apply_positivity_limiter ();
    void apply_positivity_limiter_cell
       (typename DoFHandler<dim>::active_cell_iterator& cell,
@@ -352,6 +353,15 @@ private:
                                             Wminus,
                                             normal_flux);
             break;
+            
+         case Parameters::Flux::kep:
+            EulerEquations<dim>::kep_flux (normal,
+                                           Wplus,
+                                           Wminus,
+                                           Aplus,
+                                           Aminus,
+                                           normal_flux);
+            break;
 
 	      default:
             Assert (false, dealii::ExcNotImplemented());
@@ -381,7 +391,7 @@ private:
       }
       else
       {  // compute average solution on child cells
-         auto child_cells =
+         std::vector<typename dealii::DoFHandler<dim>::active_cell_iterator> child_cells =
             dealii::GridTools::get_active_child_cells< dealii::DoFHandler<dim> > (cell);
          avg = 0;
          double measure = 0;

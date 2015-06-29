@@ -46,6 +46,9 @@ void ConservationLaw<dim>::apply_limiter ()
          case Parameters::Limiter::TVB:
             apply_limiter_TVB_Qk ();
             break;
+         case Parameters::Limiter::minmax:
+            apply_limiter_minmax_Qk ();
+            break;
          default:
             AssertThrow(false, ExcMessage("Unknown limiter_type"));
       }
@@ -387,6 +390,166 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
    }
 
    current_solution.update_ghost_values();
+}
+
+
+//------------------------------------------------------------------------------
+// Apply gradient limiter using minmax idea of Barth-Jespersen
+//-----------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
+{
+   if(fe.degree == 0) return;
+   const unsigned int n_components = EulerEquations<dim>::n_components;
+   
+   // Quadrature rule for average gradient
+   // No. of quadrature points = fe.degree/2 + 1
+   unsigned int nq;
+   if(fe.degree%2 == 0)
+      nq = fe.degree/2 + 1;
+   else
+      nq = (fe.degree+1)/2 + 1;
+   QGauss<dim> qrule (nq);
+   FEValues<dim> fe_values_grad (mapping(), fe, qrule, update_gradients | update_JxW_values);
+   
+   // NOTE: We get multiple sets of same support points since fe is an FESystem
+   Quadrature<dim> qsupport (fe.get_unit_support_points());
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   
+   Vector<double> avg_nbr (n_components);
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
+   std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
+                                                     std::vector< Tensor<1,dim> >(n_components));
+   
+   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
+   
+   // Data for positivity limiter
+   PosLimData<dim> pos_lim_data (fe, mapping(), local_range);
+   
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for(; cell != endc; ++cell)
+   if(cell->is_locally_owned())
+   {
+      const unsigned int c = cell_number(cell);
+      if(shock_indicator[c] > 1.0)
+      {
+         const double dx = cell->diameter() / std::sqrt(1.0*dim);
+         const double Mdx2 = parameters.M * dx * dx;
+         
+         Vector<double> avg_min(n_components), avg_max(n_components), avg_cell(n_components);
+         avg_cell = cell_average[c];
+         
+         // Transform to characteristic variables
+         typedef double EigMatrix[n_components][n_components];
+         EigMatrix R, L;
+         if(parameters.char_lim)
+         {
+            EulerEquations<dim>::compute_eigen_matrix (cell_average[c], R, L);
+            EulerEquations<dim>::transform_to_char (L, avg_cell);
+            avg_min = avg_cell;
+            avg_max = avg_cell;
+         }
+
+         for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
+            if (! cell->at_boundary(face_no))
+            {
+               const typename DoFHandler<dim>::cell_iterator
+               neighbor = cell->neighbor(face_no);
+               Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
+                      ExcInternalError());
+               get_cell_average (neighbor, avg_nbr);
+               if(parameters.char_lim)
+                  EulerEquations<dim>::transform_to_char (L, avg_nbr);
+               for(unsigned int i=0; i<n_components; ++i)
+               {
+                  avg_min[i] = std::min( avg_min[i], avg_nbr(i));
+                  avg_max[i] = std::max( avg_max[i], avg_nbr(i));
+               }
+            }
+         
+         std::vector<double> dumin(n_components), dumax(n_components);
+         
+         // Compute average gradient in cell
+         fe_values_grad.reinit(cell);
+         fe_values_grad.get_function_gradients(current_solution, grad);
+         Tensor<1,dim> avg_grad;
+         Vector<double> Dx(n_components), Dy(n_components);
+         
+         for(unsigned int i=0; i<n_components; ++i)
+         {
+            dumin[i] = avg_min[i] - avg_cell[i];
+            dumax[i] = avg_max[i] - avg_cell[i];
+
+            avg_grad = 0;
+            for(unsigned int q=0; q<qrule.size(); ++q)
+               avg_grad += grad[q][i] * fe_values_grad.JxW(q);
+            avg_grad /= cell->measure();
+            Dx(i) = avg_grad[0];
+            Dy(i) = avg_grad[1];
+         }
+         if(parameters.char_lim)
+         {
+            EulerEquations<dim>::transform_to_char (L, Dx);
+            EulerEquations<dim>::transform_to_char (L, Dy);
+         }
+         
+         std::vector<double> theta(n_components, 1.0);
+         for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
+         {
+            Point<dim> dr = cell->face(face_no)->center() - cell->center();
+            for(unsigned int i=0; i<n_components; ++i)
+            if(dumax[i] - dumin[i] > Mdx2)
+            {
+               double du = dr[0]*Dx(i) + dr[1]*Dy(i);
+               if(du > 0.0)
+                  theta[i] = std::min(theta[i], dumax[i]/du);
+               else if(du < 0.0)
+                  theta[i] = std::min(theta[i], dumin[i]/du);
+            }
+         }
+         
+         // Apply minmod limiter
+         double change = 0;
+         for(unsigned int i=0; i<n_components; ++i)
+            change += theta[i];
+         change /= n_components;
+         
+         // If limiter is active, reduce polynomial to linear
+         if(change < 0.99)
+         {
+            for(unsigned int i=0; i<n_components; ++i)
+            {
+               Dx(i) *= theta[i];
+               Dy(i) *= theta[i];
+            }
+            if(parameters.char_lim)
+            {
+               EulerEquations<dim>::transform_to_con (R, Dx);
+               EulerEquations<dim>::transform_to_con (R, Dy);
+            }
+            cell->get_dof_indices(dof_indices);
+            fe_values.reinit (cell);
+            const std::vector<Point<dim> >& p = fe_values.get_quadrature_points();
+            for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+            {
+               unsigned int i_loc = dof_indices[i] - local_range.first;
+               unsigned int comp_i = fe.system_to_component_index(i).first;
+               Point<dim> dr = p[i] - cell->center();
+               current_solution.local_element(i_loc) = cell_average[c][comp_i]
+                  + dr[0] * Dx(comp_i) + dr[1] * Dy(comp_i);
+            }
+         }
+      }
+      
+      // Apply positivity limiter
+      if(parameters.pos_lim)
+         apply_positivity_limiter_cell (cell, pos_lim_data);
+   }
+   
+   current_solution.update_ghost_values ();
 }
 
 template class ConservationLaw<2>;

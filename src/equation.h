@@ -617,7 +617,7 @@ struct EulerEquations
       
       // speed of sound at l and r
       number s_l = std::min(vel_normal-c, v_l_normal-c_l);
-      number s_r = std::min(vel_normal+c, v_r_normal+c_r);
+      number s_r = std::max(vel_normal+c, v_r_normal+c_r);
 
       // speed of contact
       number s_m = (p_l - p_r
