@@ -147,8 +147,8 @@ namespace Parameters
       prm.enter_subsection("flux");
       {
          prm.declare_entry("flux", "lxf",
-                           Patterns::Selection("lxf|sw|kfvs|roe|hllc"),
-                           "Numerical flux: lxf | sw | kfvs | roe | hllc");
+                           Patterns::Selection("lxf|sw|kfvs|roe|hllc|kep"),
+                           "Numerical flux: lxf | sw | kfvs | roe | hllc | kep");
          prm.declare_entry("stab", "mesh",
                            Patterns::Selection("constant|mesh"),
                            "Whether to use a constant stabilization parameter or "
@@ -176,6 +176,8 @@ namespace Parameters
             flux_type = roe;
          else if(flux == "hllc")
             flux_type = hllc;
+         else if(flux == "kep")
+            flux_type = kep;
          else
             AssertThrow (false, ExcNotImplemented());
 
@@ -200,8 +202,8 @@ namespace Parameters
                            Patterns::Selection("limiter|density|energy|u2"),
                            "Shock indicator type: limiter | density | energy | u2");
          prm.declare_entry("type", "none",
-                           Patterns::Selection("none|TVB"),
-                           "Limiter type: none | TVB");
+                           Patterns::Selection("none|TVB|minmax"),
+                           "Limiter type: none | TVB | minmax");
          prm.declare_entry("characteristic limiter", "false",
                            Patterns::Bool(),
                            "whether to use characteristic limiter");
@@ -243,6 +245,8 @@ namespace Parameters
             limiter_type = none;
          else if(type == "TVB")
             limiter_type = TVB;
+         else if(type == "minmax")
+            limiter_type = minmax;
          else
             AssertThrow (false, ExcNotImplemented());
          
@@ -540,8 +544,11 @@ namespace Parameters
       if(solver == mood)
          AssertThrow(basis == Pk, ExcMessage("MOOD is implemented only for Pk"));
       
-      if(limiter_type == TVB)
+      if(degree > 0 && limiter_type == TVB)
          AssertThrow(mapping_type == cartesian, ExcMessage("TVB limiter works on cartesian grids only"));
+      
+      if(limiter_type == minmax)
+         AssertThrow(basis == Qk, ExcMessage("minmax limiter is implemented only for Qk"));
       
       if(basis == Pk)
          AssertThrow(mapping_type == cartesian, ExcMessage("Pk basis can only be used with Cartesian grids"));

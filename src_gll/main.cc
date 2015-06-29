@@ -35,18 +35,11 @@ int main (int argc, char *argv[])
       
       Timer timer;
       timer.start ();
-      if(basis=="Qk")
-      {
-         const FE_DGQArbitraryNodes<2> fe_scalar(QGaussLobatto<1>(degree+1));
-         ConservationLaw<2> cons (argv[1], degree, fe_scalar);
-         cons.run ();
-      }
-      else
-      {
-         const FE_DGP<2> fe_scalar(degree);
-         ConservationLaw<2> cons (argv[1], degree, fe_scalar);
-         cons.run ();
-      }
+      
+      const FE_DGQArbitraryNodes<2> fe_scalar(QGaussLobatto<1>(degree+1));
+      ConservationLaw<2> cons (argv[1], degree, fe_scalar);
+      cons.run ();
+      //cons.compute_errors ();
       timer.stop ();
 
       std::cout << std::endl;

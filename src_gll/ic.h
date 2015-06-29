@@ -52,9 +52,10 @@ template <int dim>
 class IsothermalHydrostatic : public dealii::Function<dim>
 {
 public:
-   IsothermalHydrostatic ()
+   IsothermalHydrostatic (double eta=0.0)
    :
-   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   dealii::Function<dim>(EulerEquations<dim>::n_components),
+   eta (eta)
    {}
    virtual void vector_value (const dealii::Point<dim>  &p,
                               dealii::Vector<double>  &values) const;
@@ -63,6 +64,7 @@ private:
    const double rho0 = 1.21;
    const double p0 = 1.0;
    const double g  = 1.0;
+   double eta; // Amplitude of pressure perturbation
 };
 
 //------------------------------------------------------------------------

@@ -20,6 +20,10 @@ void ConservationLaw<dim>::compute_shock_indicator ()
    {
       shock_indicator = 1e20;
    }
+   else if(parameters.shock_indicator_type == Parameters::Limiter::residual)
+   {
+      compute_shock_indicator_residual();
+   }
    else if(parameters.shock_indicator_type == Parameters::Limiter::u2)
    {
       compute_shock_indicator_u2();
@@ -29,7 +33,33 @@ void ConservationLaw<dim>::compute_shock_indicator ()
       compute_shock_indicator_kxrcf();
    }
 }
+//-----------------------------------------------------------------------------
+// If residual is large we limit solution in the cell
+//-----------------------------------------------------------------------------
+template <int dim>
+void ConservationLaw<dim>::compute_shock_indicator_residual ()
+{
+   std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
 
+   typename DoFHandler<dim>::active_cell_iterator
+      cell = dof_handler.begin_active(),
+      endc = dof_handler.end();
+   
+   for(; cell != endc; ++cell)
+   {
+      unsigned int c = cell_number(cell);
+      shock_indicator[c] = 0;
+      
+      cell->get_dof_indices(dof_indices);
+      
+      for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
+         shock_indicator[c] += pow(right_hand_side(dof_indices[i]), 2);
+      
+      shock_indicator[c] /= fe.dofs_per_cell;
+      shock_indicator[c] = sqrt(shock_indicator[c]);
+      if(shock_indicator[c] > 1.0e-12) shock_indicator[c] = 1.0e20;
+   }
+}
 //-----------------------------------------------------------------------------
 template <int dim>
 void ConservationLaw<dim>::compute_shock_indicator_u2 ()
