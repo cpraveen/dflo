@@ -335,7 +335,7 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Point<dim> dr = Point<dim>(neighbor->center() - cell->center());
+            Point<dim> dr = neighbor->center() - cell->center();
             if(dr(0) < -0.5*dx)
                lcell[c] = neighbor;
             else if(dr(0) > 0.5*dx)
@@ -611,8 +611,6 @@ ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
 {
    TimerOutput::Scope t(computing_timer, "Solve");
    
-   std::pair<unsigned int,unsigned int> local_range = newton_update.local_range();
-   
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -624,12 +622,9 @@ ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
          
          cell->get_dof_indices (dof_indices);
          for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
-         {
-            unsigned int i_loc = dof_indices[i] - local_range.first;
-            newton_update.local_element(i_loc) = dt(cell_no) *
-                                                 right_hand_side.local_element(i_loc) *
-                                                 inv_mass_matrix[cell_no][i];
-         }
+            newton_update(dof_indices[i]) = dt(cell_no) *
+                                            right_hand_side(dof_indices[i]) *
+                                            inv_mass_matrix[cell_no][i];
       }
    return std::pair<unsigned int, double> (0,0);
 }
@@ -697,9 +692,6 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
 template <int dim>
 void ConservationLaw<dim>::run ()
 {
-   Timer timer_all;
-   timer_all.start();
-   
    {
       GridIn<dim> grid_in;
       grid_in.attach_triangulation(triangulation);
@@ -767,9 +759,6 @@ void ConservationLaw<dim>::run ()
    IntegratorExplicit<dim> integrator_explicit (dof_handler);
    setup_mesh_worker (integrator_explicit);
    
-   Timer timer_iterations;
-   timer_iterations.start ();
-   
    while (elapsed_time < parameters.final_time)
    {
       // compute time step in each cell using cfl condition
@@ -825,15 +814,6 @@ void ConservationLaw<dim>::run ()
          //parameters.cfl = 1.2;
       }
    }
-   
-   timer_iterations.stop ();
-   timer_all.stop ();
-   
-   pcout << std::endl;
-   pcout << "Elapsed CPU time  (iter): " << timer_iterations()/60 << " min.\n";
-   pcout << "Elapsed wall time (iter): " << timer_iterations.wall_time()/60 << " min.\n";
-   pcout << "Elapsed CPU time  (all) : " << timer_all()/60 << " min.\n";
-   pcout << "Elapsed wall time (all) : " << timer_all.wall_time()/60 << " min.\n";
    
    computing_timer.print_summary ();
    computing_timer.reset ();
