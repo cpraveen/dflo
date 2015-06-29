@@ -335,7 +335,7 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Point<dim> dr = neighbor->center() - cell->center();
+            Point<dim> dr = Point<dim>(neighbor->center() - cell->center());
             if(dr(0) < -0.5*dx)
                lcell[c] = neighbor;
             else if(dr(0) > 0.5*dx)
