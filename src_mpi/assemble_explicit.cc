@@ -51,6 +51,10 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
    typedef double FluxMatrix[EulerEquations<dim>::n_components][dim];
    FluxMatrix *flux = new FluxMatrix[n_q_points];
    
+   std::vector<Vector<double> > ext_force_values(n_q_points, Vector<double>(dim));
+   parameters.external_force.vector_value_list(fe_v.get_quadrature_points(),
+                                               ext_force_values);
+   
    typedef double ForcingVector[EulerEquations<dim>::n_components];
    ForcingVector *forcing = new ForcingVector[n_q_points];
    
@@ -75,7 +79,7 @@ void ConservationLaw<dim>::integrate_cell_term_explicit
       }
       
       EulerEquations<dim>::compute_flux_matrix (W[q], flux[q]);
-      EulerEquations<dim>::compute_forcing_vector (W[q], forcing[q]);
+      EulerEquations<dim>::compute_forcing_vector (W[q], ext_force_values[q], forcing[q]);
    }
    
    
