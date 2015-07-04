@@ -1,22 +1,22 @@
 #ifndef __EQUATION_H__
 #define __EQUATION_H__
 
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/parameter_handler.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
 
-#include <numerics/data_out.h>
-#include <numerics/vector_tools.h>
-#include <numerics/solution_transfer.h>
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/numerics/vector_tools.h>
+#include <deal.II/numerics/solution_transfer.h>
 
-#include <lac/parallel_vector.h>
+#include <deal.II/lac/parallel_vector.h>
 
-#include <distributed/tria.h>
-#include <distributed/grid_refinement.h>
-#include <distributed/solution_transfer.h>
+#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/grid_refinement.h>
+#include <deal.II/distributed/solution_transfer.h>
 
 #include <iostream>
 #include <fstream>
