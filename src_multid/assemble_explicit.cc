@@ -343,36 +343,32 @@ void ConservationLaw<dim>::integrate_face_term_explicit
    }
    
    // Compute flux at first and last quadrature points using Balsara
-   /*
+   unsigned int v0, v1;
    double dist0 = q_points[0].distance(dinfo1.face->vertex(0));
    double dist1 = q_points[0].distance(dinfo1.face->vertex(1));
    if(dist0 < 1.0-12)
    {
-      unsigned int v0 = dinfo1.face->vertex_index(0);
-      balsara_flux (fe_v.normal_vector(0),
-                    UL[v0], UR[v0], LL[v0], LR[v0],
-                    normal_fluxes[0]);
-      
-      unsigned int v1 = dinfo1.face->vertex_index(1);
-      balsara_flux (fe_v.normal_vector(n_q_points-1),
-                    UL[v1], UR[v1], LL[v1], LR[v1],
-                    normal_fluxes[n_q_points-1]);
+      v0 = dinfo1.face->vertex_index(0);
+      v1 = dinfo1.face->vertex_index(1);
    }
    else if(dist1 < 1.0e-12)
    {
-      unsigned int v0 = dinfo1.face->vertex_index(1);
-      balsara_flux (fe_v.normal_vector(0),
-                    UL[v0], UR[v0], LL[v0], LR[v0],
-                    normal_fluxes[0]);
-      
-      unsigned int v1 = dinfo1.face->vertex_index(0);
-      balsara_flux (fe_v.normal_vector(n_q_points-1),
-                    UL[v1], UR[v1], LL[v1], LR[v1],
-                    normal_fluxes[n_q_points-1]);
+      v0 = dinfo1.face->vertex_index(1);
+      v1 = dinfo1.face->vertex_index(0);
    }
    else
       AssertThrow(false, ExcMessage("Fatal error"));
-    */
+   
+   for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+   {
+      normal_fluxes[0][c]            = 0;
+      normal_fluxes[n_q_points-1][c] = 0;
+      for(unsigned int d=0; d<dim; ++d)
+      {
+         normal_fluxes[0][c]            += corner_flux[v0][d][c] * fe_v.normal_vector(0)[d];
+         normal_fluxes[n_q_points-1][c] += corner_flux[v1][d][c] * fe_v.normal_vector(n_q_points-1)[d];
+      }
+   }
    
    // Now assemble the face term
    for (unsigned int i=0; i<dofs_per_cell; ++i)

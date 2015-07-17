@@ -219,6 +219,7 @@ private:
    
    // Data for corner states
    std::vector<dealii::Table<2,double> > vertex_states;
+   std::vector<dealii::Table<2,double> > corner_flux;
    std::vector< std::vector<std::pair<unsigned int,unsigned int> > > cell2vertex;
 
    
@@ -336,12 +337,12 @@ private:
    inline
    void balsara_flux
    (
-    const dealii::Point<dim>         &normal,
-    const InputVector                &UL,
-    const InputVector                &UR,
-    const InputVector                &LL,
-    const InputVector                &LR,
-    typename InputVector::value_type (&normal_flux)[EulerEquations<dim>::n_components]
+    const InputVector &UL,
+    const InputVector &UR,
+    const InputVector &LL,
+    const InputVector &LR,
+    const InputVector &F,
+    const InputVector &G
     ) const
    {
    }

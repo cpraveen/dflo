@@ -288,6 +288,8 @@ void ConservationLaw<dim>::setup_system ()
    
    vertex_states.resize (triangulation.n_vertices(),
                          Table<2,double>(4,EulerEquations<dim>::n_components));
+   corner_flux.resize (triangulation.n_vertices(),
+                       Table<2,double>(2,EulerEquations<dim>::n_components));
    cell2vertex.resize (triangulation.n_active_cells(),
                        std::vector<std::pair<unsigned int,unsigned int> >(4));
    
@@ -701,7 +703,7 @@ ConservationLaw<dim>::compute_corner_states ()
       fe_values.get_function_values (current_solution, solution_values);
       unsigned int c = cell_number(cell);
       
-      for(unsigned int v=0; v<4; ++v)
+      for(unsigned int v=0; v<GeometryInfo<dim>::vertices_per_cell; ++v)
       {
          unsigned int vno = cell2vertex[c][v].first;
          unsigned int pos = cell2vertex[c][v].second;
@@ -712,10 +714,21 @@ ConservationLaw<dim>::compute_corner_states ()
 }
 
 //------------------------------------------------------------------------------
+// Compute fluxes at all vertices
+//------------------------------------------------------------------------------
 template <int dim>
 void
 ConservationLaw<dim>::compute_corner_fluxes ()
 {
+   for(unsigned int v=0; v<triangulation.n_vertices(); ++v)
+   {
+      balsara_flux (vertex_states[v][0],
+                    vertex_states[v][1],
+                    vertex_states[v][2],
+                    vertex_states[v][3],
+                    corner_flux[v][0],
+                    corner_flux[v][1]);
+   }
 }
 
 //------------------------------------------------------------------------------
