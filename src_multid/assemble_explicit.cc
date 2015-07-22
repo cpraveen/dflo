@@ -342,11 +342,11 @@ void ConservationLaw<dim>::integrate_face_term_explicit
                             normal_fluxes[q]);
    }
    
-   // Compute flux at first and last quadrature points using Balsara
+   // Compute flux at first and last quadrature points using Balsara scheme
    unsigned int v0, v1;
    double dist0 = q_points[0].distance(dinfo1.face->vertex(0));
    double dist1 = q_points[0].distance(dinfo1.face->vertex(1));
-   if(dist0 < 1.0-12)
+   if(dist0 < 1.0e-12)
    {
       v0 = dinfo1.face->vertex_index(0);
       v1 = dinfo1.face->vertex_index(1);
