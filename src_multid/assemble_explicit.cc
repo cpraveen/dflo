@@ -465,6 +465,9 @@ void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
    // Compute artificial viscosity for shock capturing
    compute_mu_shock ();
 
+   compute_corner_states();
+   compute_corner_fluxes ();
+   
    right_hand_side = 0;
 
    MeshWorker::loop<dim,dim,MeshWorker::DoFInfo<dim>,MeshWorker::IntegrationInfoBox<dim> >
