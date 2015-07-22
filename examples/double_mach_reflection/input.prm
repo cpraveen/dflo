@@ -6,6 +6,7 @@ set mesh type = gmsh
 set mesh file = grid.msh
 set degree = 1
 set mapping = cartesian
+set basis = Pk
 
 # Stabilization parameter
 set diffusion power       = 2.0
@@ -99,7 +100,7 @@ subsection flux
 end
 
 subsection limiter
-   set type = grad
+   set type = TVB
    set shock indicator = limiter
    set characteristic limiter = true
    set positivity limiter = false
