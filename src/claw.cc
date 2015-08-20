@@ -4,6 +4,7 @@
 #include <deal.II/base/function_parser.h>
 #include <deal.II/base/utilities.h>
 #include <deal.II/base/conditional_ostream.h>
+#include <deal.II/algorithms/any_data.h>
 
 #include <deal.II/lac/vector.h>
 #include <deal.II/lac/compressed_sparsity_pattern.h>
@@ -361,7 +362,7 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Point<dim> dr = neighbor->center() - cell->center();
+            Point<dim> dr = Point<dim>(neighbor->center() - cell->center());
             if(dr(0) < -0.5*dx)
                lcell[c] = neighbor;
             else if(dr(0) > 0.5*dx)
@@ -430,9 +431,10 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< Vector<double>* > rhs;
+   
+   AnyData rhs;
    Vector<double>* data = &right_hand_side;
-   rhs.add (data, "RHS");
+   rhs.add< Vector<double>* > (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
 
