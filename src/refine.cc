@@ -123,7 +123,7 @@ ConservationLaw<dim>::refine_forward_step ()
       cell->clear_coarsen_flag();
       cell->clear_refine_flag();
    
-      Point<dim> dr = cell->center() - corner;
+      Point<dim> dr = Point<dim>(cell->center() - corner);
       if(dr.norm() < radius)
          cell->set_refine_flag();
    }
