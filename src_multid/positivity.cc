@@ -58,7 +58,7 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
 
    FEValues<dim> fe_values_x (mapping(), fe, quadrature_x, update_values);
    FEValues<dim> fe_values_y (mapping(), fe, quadrature_y, update_values);
-   FEValues<dim> fe_values_z (mapping(), fe, quadrature_y, update_values);	// define even in 2D to avoid compiling errors
+   FEValues<dim> fe_values_z (mapping(), fe, quadrature_y, update_values);	// define it in 2D to avoid compiling errors
    if(dim==3)
      FEValues<dim> fe_values_z (mapping(), fe, quadrature_z, update_values);
    

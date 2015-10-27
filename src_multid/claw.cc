@@ -378,7 +378,7 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Tensor<1,dim,double> dr = neighbor->center() - cell->center();
+            Tensor<1,dim> dr = neighbor->center() - cell->center();
             if(dr[0] < -0.5*dx)
                lcell[c] = neighbor;
             else if(dr[0] > 0.5*dx)
@@ -403,7 +403,7 @@ void ConservationLaw<dim>::setup_system ()
          double ds = q_points[v].distance(cell->vertex(v));
          AssertThrow(ds < 1.0e-13, ExcMessage("Vertices and quadrature points mismatch"));
          
-         Tensor<1,dim,double> dr = cell->vertex(v) - cell->center();
+         Tensor<1,dim> dr = cell->vertex(v) - cell->center();
          if(dr[0]<0 && dr[1]<0)
             cell2vertex[c][v] = std::pair<unsigned int,unsigned int>(cell->vertex_index(v),3);
          else if(dr[0]>0 && dr[1]<0)

@@ -207,7 +207,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk_deprecated ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Tensor<1,dim,double> dr = p[i] - cell->center();
+               Tensor<1,dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
@@ -360,7 +360,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Tensor<1, dim, double> dr = p[i] - cell->center();
+               Tensor<1, dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
