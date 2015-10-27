@@ -19,7 +19,7 @@ namespace Parameters
                            Patterns::Selection("euler|mhd"),
                            "Select the system of equations to solve "
                            "Choices are <euler|mhd>.");
-	 prm.declare_entry("method", "rk3",
+	     prm.declare_entry("method", "rk3",
                            Patterns::Selection("gmres|direct|umfpack|rk3|mood"),
                            "The kind of solver for the linear system. "
                            "Choices are <gmres|direct|umfpack|rk3|mood>.");
@@ -157,8 +157,8 @@ namespace Parameters
       prm.enter_subsection("flux");
       {
          prm.declare_entry("flux", "lxf",
-                           Patterns::Selection("lxf|sw|kfvs|roe|hllc"),
-                           "Numerical flux: lxf | sw | kfvs | roe | hllc");
+                           Patterns::Selection("lxf|sw|kfvs|roe|hllc|kep"),
+                           "Numerical flux: lxf | sw | kfvs | roe | hllc | kep");
          prm.declare_entry("stab", "mesh",
                            Patterns::Selection("constant|mesh"),
                            "Whether to use a constant stabilization parameter or "
@@ -186,6 +186,8 @@ namespace Parameters
             flux_type = roe;
          else if(flux == "hllc")
             flux_type = hllc;
+         else if(flux == "kep")
+            flux_type = kep;
          else
             AssertThrow (false, ExcNotImplemented());
 
@@ -210,8 +212,8 @@ namespace Parameters
                            Patterns::Selection("limiter|density|energy|u2"),
                            "Shock indicator type: limiter | density | energy | u2");
          prm.declare_entry("type", "none",
-                           Patterns::Selection("none|TVB"),
-                           "Limiter type: none | TVB");
+                           Patterns::Selection("none|TVB|minmax"),
+                           "Limiter type: none | TVB | minmax");
          prm.declare_entry("characteristic limiter", "false",
                            Patterns::Bool(),
                            "whether to use characteristic limiter");
@@ -253,6 +255,8 @@ namespace Parameters
             limiter_type = none;
          else if(type == "TVB")
             limiter_type = TVB;
+         else if(type == "minmax")
+            limiter_type = minmax;
          else
             AssertThrow (false, ExcNotImplemented());
          
@@ -357,6 +361,12 @@ namespace Parameters
                         Patterns::Double(0.0),
                         "gravitational force");
       
+      // Components of external force
+      for(int d=0; d<dim; ++d)
+         prm.declare_entry("f_" + Utilities::int_to_string(d) +
+                           " value", "0.0",
+                           Patterns::Anything(),
+                           "expression in x,y,z");
       
       prm.enter_subsection("time stepping");
       {
@@ -480,6 +490,17 @@ namespace Parameters
       std::string variables = "x,y,t";
       if(dim==3) variables = "x,y,z,t";
       
+      // External force
+      std::vector<std::string> force_expressions(dim, "0.0");
+      for(unsigned int d=0; d<dim; ++d)
+         force_expressions[d] = prm.get("f_" + Utilities::int_to_string(d) +
+                                        " value");
+      external_force.initialize(variables,
+                                force_expressions,
+                                std::map<std::string,double>(),
+                                true);
+      
+      // Boundary conditions
       for (unsigned int boundary_id=0; boundary_id<max_n_boundaries;
            ++boundary_id)
       {
@@ -550,8 +571,11 @@ namespace Parameters
       if(solver == mood)
          AssertThrow(basis == Pk, ExcMessage("MOOD is implemented only for Pk"));
       
-      if(limiter_type == TVB)
+      if(degree > 0 && limiter_type == TVB)
          AssertThrow(mapping_type == cartesian, ExcMessage("TVB limiter works on cartesian grids only"));
+      
+      if(limiter_type == minmax)
+         AssertThrow(basis == Qk, ExcMessage("minmax limiter is implemented only for Qk"));
       
       if(basis == Pk)
          AssertThrow(mapping_type == cartesian, ExcMessage("Pk basis can only be used with Cartesian grids"));

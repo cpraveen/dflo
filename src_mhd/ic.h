@@ -85,4 +85,31 @@ private:
    double x[3], y[3];
 };
 
+//------------------------------------------------------------------------
+// Keplerian Disk TODO TO BE COMPLETED
+//------------------------------------------------------------------------
+template <int dim>
+class KeplerianDisk : public dealii::Function<dim>
+{
+public:
+   KeplerianDisk ()
+   :
+   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   {
+      r0 = 0.5;
+      r1 = 2.0;
+      rs = 0.01;
+      
+      rho_out = 1.0e-6;
+      rho_disk= 1.0;
+      pressure= 1.0e-6;
+   }
+   virtual void vector_value (const dealii::Point<dim>  &p,
+                              dealii::Vector<double>    &values) const;
+   
+private:
+   double r0, r1, rs;
+   double rho_out, rho_disk, pressure;
+};
+
 #endif

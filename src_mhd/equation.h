@@ -23,6 +23,27 @@
 #include <vector>
 #include <memory>
 
+//------------------------------------------------------------------------------
+inline
+double logavg(double a, double b)
+{
+   double xi = b/a;
+   double f = (xi - 1.0) / (xi + 1.0);
+   double u = f * f;
+   
+   double F;
+   if (u < 1.0e-2)
+   {
+      double u2 = u * u;
+      double u3 = u2 * u;
+      F = 1.0 + u/3.0 + u2/5.0 + u3/7.0;
+   }
+   else
+      F = log(xi)/2.0/f;
+   
+   return 0.5*(a+b)/F;
+}
+
 template <int dim>
 struct EulerEquations
 {
@@ -124,8 +145,7 @@ struct EulerEquations
    static
    typename InputVector::value_type
    max_eigenvalue (const InputVector        &W,
-                   const dealii::Tensor<1,dim, double> &normal)
-                   //const dealii::Point<dim> &normal)
+                   const dealii::Tensor<1,dim> &normal)
    {
       typedef typename InputVector::value_type number;
       
@@ -270,6 +290,46 @@ struct EulerEquations
    }
    
    //---------------------------------------------------------------------------
+   // Left and right eigenvector matrices in the direction of (kx,ky)
+   // Following function uses the streamline direction.
+   // Expressions taken from
+   // http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf
+   // Note: This is implemented only for 2-D
+   //---------------------------------------------------------------------------
+   static
+   void compute_eigen_matrix (const dealii::Vector<double> &W,
+                              double            (&R)[n_components][n_components],
+                              double            (&L)[n_components][n_components])
+   {
+      double g1   = gas_gamma - 1.0;
+      double rho  = W[density_component];
+      double E    = W[energy_component];
+      double u    = W[0] / rho;
+      double v    = W[1] / rho;
+      double q2   = u*u + v*v;
+      double p    = g1 * (E - 0.5 * rho * q2);
+      double c2   = gas_gamma * p / rho;
+      double c    = std::sqrt(c2);
+      double beta = 0.5/c2;
+      double phi2 = 0.5*g1*q2;
+      double h    = c2/g1 + 0.5*q2;
+      double theta= atan2(v,u);
+      double kx   = cos(theta);
+      double ky   = sin(theta);
+      double uk   = u*kx + v*ky;
+      
+      R[0][0] = 1;      R[0][1] = 0;         R[0][2] = 1;      R[0][3] = 1;
+      R[1][0] = u;      R[1][1] = ky;        R[1][2] = u+kx*c; R[1][3] = u-kx*c;
+      R[2][0] = v;      R[2][1] = -kx;       R[2][2] = v+ky*c; R[2][3] = v-ky*c;
+      R[3][0] = 0.5*q2; R[3][1] = ky*u-kx*v; R[3][2] = h+c*uk; R[3][3] = h-c*uk;
+      
+      L[0][0] = 1-phi2/c2;        L[0][1] = g1*u/c2;          L[0][2] = g1*v/c2;           L[0][3] = -g1/c2;
+      L[1][0] =-(ky*u-kx*v);      L[1][1] = ky;               L[1][2] = -kx;               L[1][3] = 0;
+      L[2][0] = beta*(phi2-c*uk); L[2][1] = beta*(kx*c-g1*u); L[2][2] =  beta*(ky*c-g1*v); L[2][3] = beta*g1;
+      L[3][0] = beta*(phi2+c*uk); L[3][1] =-beta*(kx*c+g1*u); L[3][2] = -beta*(ky*c+g1*v); L[3][3] = beta*g1;
+   }
+   
+   //---------------------------------------------------------------------------
    // convert from conserved to characteristic variables: W = L*W
    //---------------------------------------------------------------------------
    static
@@ -330,8 +390,7 @@ struct EulerEquations
    static
    void lxf_flux 
    (
-    const dealii::Tensor<1,dim, double> &normal,
-    //const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim> &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     const dealii::Vector<double>     &Aplus,
@@ -389,8 +448,7 @@ struct EulerEquations
    static
    void steger_warming_flux 
    (
-    const dealii::Tensor<1,dim, double> &normal,
-    //const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim> &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -477,8 +535,7 @@ struct EulerEquations
    static
    void roe_flux
    (
-    const dealii::Tensor<1,dim, double> &normal,
-    //const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim> &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -572,8 +629,7 @@ struct EulerEquations
    static
    void hllc_flux
    (
-    const dealii::Tensor<1,dim, double> &normal,
-    //const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim> &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -626,7 +682,7 @@ struct EulerEquations
       
       // speed of sound at l and r
       number s_l = std::min(vel_normal-c, v_l_normal-c_l);
-      number s_r = std::min(vel_normal+c, v_r_normal+c_r);
+      number s_r = std::max(vel_normal+c, v_r_normal+c_r);
 
       // speed of contact
       number s_m = (p_l - p_r
@@ -1938,7 +1994,7 @@ struct MHDEquations
       }
       
    }
-   
+
    // --------------------------------------------------------------------------
    // Error function
    // --------------------------------------------------------------------------
@@ -2088,23 +2144,16 @@ struct MHDEquations
    template <typename InputVector, typename number>
    static
    void compute_forcing_vector (const InputVector &W,
+                                const dealii::Vector<double> &ext_force,
                                 number            (&forcing)[n_components])
    {
-      const double gravity = -1.0;
+      forcing[density_component] = 0.0;
+      forcing[energy_component] = 0.0;
       
-      for (unsigned int c=0; c<n_components; ++c)
-      switch (c)
+      for(int d=0; d<dim; ++d)
       {
-	      case dim-1:
-            forcing[c] = gravity * W[density_component];
-            break;
-
-	      case energy_component:
-            forcing[c] = gravity * W[dim-1];
-            break;
-
-	      default:
-            forcing[c] = 0;
+         forcing[d] = W[density_component] * ext_force[d];
+         forcing[energy_component] += W[d] * ext_force[d];
       }
    }
    
@@ -2475,7 +2524,5 @@ struct MHDEquations
       const bool do_schlieren_plot;
    };
 };
-
-
 
 #endif
