@@ -95,6 +95,39 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
                                                  + 0.5 * rho * (vex*vex + vey*vey);
 }
 
+//--------------------------------------------------------------------------------------------
+// Keplerian disk
+// TODO TO BE COMPLETED
+//--------------------------------------------------------------------------------------------
+template <int dim>
+void KeplerianDisk<dim>::vector_value (const Point<dim> &p,
+                                       Vector<double>   &values) const
+{
+   const double gamma = EulerEquations<dim>::gas_gamma;
+   
+   double r   = p.norm();
+   double vtheta = 1/std::sqrt(r);
+   
+   double vex = -vtheta * p[1] / r;
+   double vey =  vtheta * p[0] / r;
+   
+   double rho = 1.0;
+
+   if(r < r0-rs || r > r1+rs)
+      rho = rho_out;
+   else if(r >= r0-rs && r <= r1+rs)
+      rho = rho_disk;
+   else if(r <= r0+rs)
+      rho = 0;
+   else if(r >= r1-rs)
+      rho = 0;
+   
+   values[0] = rho * vex;
+   values[1] = rho * vey;
+   values[EulerEquations<dim>::density_component] = rho;
+   values[EulerEquations<dim>::energy_component] = pressure/(gamma-1.0)
+                                                   + 0.5 * rho * (vex*vex + vey*vey);
+}
 
 //------------------------------------------------------------------------------
 // Sets initial condition based on input file.

@@ -29,6 +29,8 @@
 #include <deal.II/numerics/solution_transfer.h>
 #include <deal.II/numerics/matrix_tools.h>
 
+#include <deal.II/algorithms/any_data.h>
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -335,19 +337,19 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Point<dim> dr = Point<dim>(neighbor->center() - cell->center());
-            if(dr(0) < -0.5*dx)
+            Tensor<1,dim> dr = neighbor->center() - cell->center();
+            if(dr[0] < -0.5*dx)
                lcell[c] = neighbor;
-            else if(dr(0) > 0.5*dx)
+            else if(dr[0] > 0.5*dx)
                rcell[c] = neighbor;
-            else if(dr(1) < -0.5*dx)
+            else if(dr[1] < -0.5*dx)
                bcell[c] = neighbor;
-            else if(dr(1) > 0.5*dx)
+            else if(dr[1] > 0.5*dx)
                tcell[c] = neighbor;
             else
             {
                std::cout << "Did not find all neighbours\n";
-               std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
+               std::cout << "dx, dy = " << dr[0] << "  " << dr[1] << std::endl;
                exit(0);
             }
          }

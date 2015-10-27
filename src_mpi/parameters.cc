@@ -351,6 +351,12 @@ namespace Parameters
                         Patterns::Double(0.0),
                         "gravitational force");
       
+      // Components of external force
+      for(int d=0; d<dim; ++d)
+         prm.declare_entry("f_" + Utilities::int_to_string(d) +
+                           " value", "0.0",
+                           Patterns::Anything(),
+                           "expression in x,y,z");
       
       prm.enter_subsection("time stepping");
       {
@@ -474,6 +480,17 @@ namespace Parameters
       std::string variables = "x,y,t";
       if(dim==3) variables = "x,y,z,t";
       
+      // External force
+      std::vector<std::string> force_expressions(dim, "0.0");
+      for(unsigned int d=0; d<dim; ++d)
+         force_expressions[d] = prm.get("f_" + Utilities::int_to_string(d) +
+                                        " value");
+      external_force.initialize(variables,
+                                force_expressions,
+                                std::map<std::string,double>(),
+                                true);
+      
+      // Boundary conditions
       for (unsigned int boundary_id=0; boundary_id<max_n_boundaries;
            ++boundary_id)
       {

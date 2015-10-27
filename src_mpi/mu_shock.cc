@@ -114,7 +114,7 @@ void ConservationLaw<dim>::shock_boundary_term (DoFInfo& dinfo,
 {
    std::vector<unsigned int>& dof_indices = dinfo.indices;
    const unsigned int& face_no = dinfo.face_number;
-   const unsigned int& boundary_id = dinfo.face->boundary_indicator();
+   const unsigned int& boundary_id = dinfo.face->boundary_id();
    
    const FEValuesBase<dim>& fe_v = info.fe_values();
    const unsigned int n_q_points = fe_v.n_quadrature_points;

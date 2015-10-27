@@ -9,7 +9,6 @@
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/timer.h>
 
-#include <deal.II/lac/parallel_vector.h>
 #include <deal.II/lac/vector.h>
 #include <deal.II/lac/parallel_vector.h>
 
