@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
       prm.print_parameters(std::cout, ParameterHandler::Text);
       unsigned int degree  = prm.get_integer("degree"); // Degree of FEM
       std::string basis = prm.get("basis");
-      
+     
       const unsigned int dim=3;
       
       Timer timer;

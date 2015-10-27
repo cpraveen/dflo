@@ -378,6 +378,7 @@ namespace Parameters
       double diffusion_coef;
       
       double gravity;
+      dealii::FunctionParser<dim> external_force;
       
       unsigned int degree;
       enum BasisType { Qk, Pk };

@@ -197,6 +197,5 @@ void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
    jump_ind_avg /= triangulation.n_active_cells();
 }
 
-
 template class ConservationLaw<2>;
 template class ConservationLaw<3>;

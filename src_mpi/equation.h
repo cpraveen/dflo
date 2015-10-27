@@ -1197,23 +1197,16 @@ struct EulerEquations
    template <typename InputVector, typename number>
    static
    void compute_forcing_vector (const InputVector &W,
+                                const dealii::Vector<double> &ext_force,
                                 number            (&forcing)[n_components])
    {
-      const double gravity = -1.0;
+      forcing[density_component] = 0.0;
+      forcing[energy_component] = 0.0;
       
-      for (unsigned int c=0; c<n_components; ++c)
-      switch (c)
+      for(int d=0; d<dim; ++d)
       {
-	      case dim-1:
-            forcing[c] = gravity * W[density_component];
-            break;
-
-	      case energy_component:
-            forcing[c] = gravity * W[dim-1];
-            break;
-
-	      default:
-            forcing[c] = 0;
+         forcing[d] = W[density_component] * ext_force[d];
+         forcing[energy_component] += W[d] * ext_force[d];
       }
    }
    
