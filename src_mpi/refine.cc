@@ -1,6 +1,6 @@
-#include <distributed/tria.h>
-#include <distributed/grid_refinement.h>
-#include <distributed/solution_transfer.h>
+#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/grid_refinement.h>
+#include <deal.II/distributed/solution_transfer.h>
 
 #include "claw.h"
 #include "equation.h"
@@ -122,7 +122,9 @@ ConservationLaw<dim>::refine_forward_step ()
       cell->clear_coarsen_flag();
       cell->clear_refine_flag();
    
-      Point<dim> dr = cell->center() - corner;
+      //Point<dim> dr = cell->center() - corner;
+      Tensor<1,dim,double> dr = cell->center() - corner;
+
       if(dr.norm() < radius)
          cell->set_refine_flag();
    }

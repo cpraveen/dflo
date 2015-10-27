@@ -1,9 +1,9 @@
-#include <base/utilities.h>
-#include <base/timer.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/timer.h>
 
-#include <dofs/dof_handler.h>
+#include <deal.II/dofs/dof_handler.h>
 
-#include <numerics/data_out.h>
+#include <deal.II/numerics/data_out.h>
 
 #include <iostream>
 #include <fstream>
