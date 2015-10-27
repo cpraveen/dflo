@@ -1,22 +1,22 @@
 #ifndef __EQUATION_H__
 #define __EQUATION_H__
 
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/parameter_handler.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
 
-#include <numerics/data_out.h>
-#include <numerics/vector_tools.h>
-#include <numerics/solution_transfer.h>
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/numerics/vector_tools.h>
+#include <deal.II/numerics/solution_transfer.h>
 
-#include <lac/parallel_vector.h>
+#include <deal.II/lac/parallel_vector.h>
 
-#include <distributed/tria.h>
-#include <distributed/grid_refinement.h>
-#include <distributed/solution_transfer.h>
+#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/grid_refinement.h>
+#include <deal.II/distributed/solution_transfer.h>
 
 #include <iostream>
 #include <fstream>
@@ -145,7 +145,8 @@ struct EulerEquations
    static
    typename InputVector::value_type
    max_eigenvalue (const InputVector        &W,
-                   const dealii::Point<dim> &normal)
+                   const dealii::Tensor<1, dim, double> &normal)
+		   //const dealii::Point<dim> &normal)
    {
       typedef typename InputVector::value_type number;
       
@@ -390,7 +391,8 @@ struct EulerEquations
    static
    void lxf_flux 
    (
-    const dealii::Point<dim>         &normal,
+    //const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     const dealii::Vector<double>     &Aplus,
@@ -448,7 +450,8 @@ struct EulerEquations
    static
    void steger_warming_flux 
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>         &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -535,7 +538,8 @@ struct EulerEquations
    static
    void roe_flux
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>         &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -629,7 +633,8 @@ struct EulerEquations
    static
    void hllc_flux
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>         &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -748,7 +753,8 @@ struct EulerEquations
    // Compute dissipation matrix in entropy stable flux
    // --------------------------------------------------------------------------
    static
-   void kep_diff_matrix(const dealii::Point<dim>     &normal,
+   void kep_diff_matrix(const dealii::Tensor<1, dim, double> &normal,
+			//const dealii::Point<dim>     &normal,
                         const dealii::Vector<double> &W_l,
                         const dealii::Vector<double> &W_r,
                         double (&Dm)[n_components][n_components])
@@ -777,7 +783,7 @@ struct EulerEquations
          v2         += vel[d] * vel[d];
       }
       
-      double vel2 = 0.5 * (v2_l + v2_r);
+      //double vel2 = 0.5 * (v2_l + v2_r);
       
       //pressure
       double p_l = (gas_gamma-1) * (W_l[energy_component] - 0.5 * W_l[density_component] * v2_l);
@@ -843,7 +849,8 @@ struct EulerEquations
    static
    void kep_flux
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>         &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     const dealii::Vector<double>     &Aplus,
@@ -1075,7 +1082,8 @@ struct EulerEquations
    void kinetic_split_flux
    (
     int                               sign,
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>         &normal,
     const InputVector                &W,
     typename InputVector::value_type (&normal_flux)[n_components]
    )
@@ -1116,7 +1124,8 @@ struct EulerEquations
    static
    void kfvs_flux 
    (
-    const dealii::Point<dim>          &normal,
+    const dealii::Tensor<1, dim, double> &normal,
+    //const dealii::Point<dim>          &normal,
     const InputVector                 &Wplus,
     const InputVector                 &Wminus,
     typename InputVector::value_type  (&normal_flux)[n_components]
@@ -1299,7 +1308,8 @@ struct EulerEquations
    static
    void
    compute_Wminus (const BoundaryKind           &boundary_kind,
-                   const dealii::Point<dim>     &normal_vector,
+		   const dealii::Tensor<1, dim, double> &normal_vector,
+                   //const dealii::Point<dim>     &normal_vector,
                    const DataVector             &Wplus,
                    const dealii::Vector<double> &boundary_values,
                    const DataVector             &Wminus)

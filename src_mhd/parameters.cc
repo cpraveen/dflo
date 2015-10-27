@@ -15,7 +15,11 @@ namespace Parameters
                            Patterns::Selection("quiet|verbose"),
                            "State whether output from solver runs should be printed. "
                            "Choices are <quiet|verbose>.");
-         prm.declare_entry("method", "rk3",
+         prm.declare_entry("equation", "euler",
+                           Patterns::Selection("euler|mhd"),
+                           "Select the system of equations to solve "
+                           "Choices are <euler|mhd>.");
+	 prm.declare_entry("method", "rk3",
                            Patterns::Selection("gmres|direct|umfpack|rk3|mood"),
                            "The kind of solver for the linear system. "
                            "Choices are <gmres|direct|umfpack|rk3|mood>.");
@@ -53,6 +57,12 @@ namespace Parameters
             output = verbose;
          if (op == "quiet")
             output = quiet;
+	 
+	 const std::string eq = prm.get("equation");
+         if (eq == "euler")
+            equation = euler;
+         if (eq == "mhd")
+            equation = mhd;
          
          const std::string sv = prm.get("method");
          if (sv == "direct")

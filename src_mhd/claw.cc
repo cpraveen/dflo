@@ -1,33 +1,33 @@
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/parameter_handler.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
 
-#include <lac/vector.h>
+#include <deal.II/lac/vector.h>
 
-#include <grid/grid_generator.h>
-#include <grid/grid_out.h>
-#include <grid/tria_accessor.h>
-#include <grid/tria_iterator.h>
-#include <grid/grid_in.h>
-#include <grid/tria_boundary_lib.h>
+#include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_out.h>
+#include <deal.II/grid/tria_accessor.h>
+#include <deal.II/grid/tria_iterator.h>
+#include <deal.II/grid/grid_in.h>
+#include <deal.II/grid/tria_boundary_lib.h>
 
-#include <dofs/dof_handler.h>
-#include <dofs/dof_accessor.h>
-#include <dofs/dof_tools.h>
+#include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_accessor.h>
+#include <deal.II/dofs/dof_tools.h>
 
-#include <fe/fe_values.h>
-#include <fe/fe_system.h>
-#include <fe/mapping_q1.h>
-#include <fe/mapping_cartesian.h>
-#include <fe/fe_dgq.h>
-#include <fe/fe_dgp.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/mapping_q1.h>
+#include <deal.II/fe/mapping_cartesian.h>
+#include <deal.II/fe/fe_dgq.h>
+#include <deal.II/fe/fe_dgp.h>
 
-#include <numerics/vector_tools.h>
-#include <numerics/solution_transfer.h>
-#include <numerics/matrix_tools.h>
+#include <deal.II/numerics/vector_tools.h>
+#include <deal.II/numerics/solution_transfer.h>
+#include <deal.II/numerics/matrix_tools.h>
 
 #include <iostream>
 #include <fstream>
@@ -54,7 +54,7 @@ using namespace dealii;
 //------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
-                                       const unsigned int degree,
+                                       //const unsigned int degree,
                                        const FE_DGQArbitraryNodes<dim> &fe_scalar)
    :
    mpi_communicator (MPI_COMM_WORLD),
@@ -76,7 +76,7 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
 //------------------------------------------------------------------------------
 template <int dim>
 ConservationLaw<dim>::ConservationLaw (const char *input_filename,
-                                       const unsigned int degree,
+                                       //const unsigned int degree,
                                        const FE_DGP<dim> &fe_scalar)
 :
    mpi_communicator (MPI_COMM_WORLD),
@@ -112,7 +112,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    // Create directory to save solution files
    if(Utilities::MPI::this_mpi_process(mpi_communicator)==0)
    {
-      system("mkdir -p output");
+      //system("mkdir -p output");
       
       // Save all parameters in xml format
       //std::ofstream xml_file ("input.xml");
@@ -314,7 +314,7 @@ void ConservationLaw<dim>::setup_system ()
    bcell.resize(triangulation.n_active_cells());
    tcell.resize(triangulation.n_active_cells());
 
-   const double EPS = 1.0e-10;
+   //const double EPS = 1.0e-10;
    typename DoFHandler<dim>::active_cell_iterator
       cell = dh_cell.begin_active(),
       endc = dh_cell.end();
@@ -335,19 +335,21 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Point<dim> dr = neighbor->center() - cell->center();
-            if(dr(0) < -0.5*dx)
+            Tensor<1,dim, double> dr = neighbor->center() - cell->center();
+	    //Point<dim> dr = neighbor->center() - cell->center();
+            if(dr[0] < -0.5*dx)
                lcell[c] = neighbor;
-            else if(dr(0) > 0.5*dx)
+            else if(dr[0] > 0.5*dx)
                rcell[c] = neighbor;
-            else if(dr(1) < -0.5*dx)
+            else if(dr[1] < -0.5*dx)
                bcell[c] = neighbor;
-            else if(dr(1) > 0.5*dx)
+            else if(dr[1] > 0.5*dx)
                tcell[c] = neighbor;
             else
             {
                std::cout << "Did not find all neighbours\n";
-               std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
+               std::cout << "dx, dy = " << dr[0] << "  " << dr[1] << std::endl;
+               //std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
                exit(0);
             }
          }
@@ -376,9 +378,10 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< LA::Vector<double>* > rhs;
+   //NamedData< LA::Vector<double>* > rhs;
+   AnyData rhs;
    LA::Vector<double>* data = &right_hand_side;
-   rhs.add (data, "RHS");
+   rhs.add< LA::Vector<double>* > (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
 
@@ -606,8 +609,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
 //------------------------------------------------------------------------------
 template <int dim>
 std::pair<unsigned int, double>
-ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
-                             double              current_residual)
+ConservationLaw<dim>::solve (LA::Vector<double> &newton_update)// , double              current_residual)
 {
    TimerOutput::Scope t(computing_timer, "Solve");
    
@@ -654,8 +656,7 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
       res_norm = right_hand_side.l2_norm();
       if(rk == 0) res_norm0 = res_norm;
       
-      std::pair<unsigned int, double> convergence
-         = solve (newton_update, res_norm);
+      //std::pair<unsigned int, double> convergence = solve (newton_update, res_norm);
       
       {
          TimerOutput::Scope t(computing_timer, "RK update");
@@ -770,7 +771,7 @@ void ConservationLaw<dim>::run ()
             << ", cfl = " << std::setprecision(2) << parameters.cfl
             << std::endl;
       
-      unsigned int nonlin_iter = 0;
+      //unsigned int nonlin_iter = 0;
       double res_norm0 = 1.0;
       double res_norm  = 1.0;
 
