@@ -1,33 +1,33 @@
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/parameter_handler.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
 
-#include <lac/vector.h>
+#include <deal.II/lac/vector.h>
 
-#include <grid/grid_generator.h>
-#include <grid/grid_out.h>
-#include <grid/tria_accessor.h>
-#include <grid/tria_iterator.h>
-#include <grid/grid_in.h>
-#include <grid/tria_boundary_lib.h>
+#include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_out.h>
+#include <deal.II/grid/tria_accessor.h>
+#include <deal.II/grid/tria_iterator.h>
+#include <deal.II/grid/grid_in.h>
+#include <deal.II/grid/tria_boundary_lib.h>
 
-#include <dofs/dof_handler.h>
-#include <dofs/dof_accessor.h>
-#include <dofs/dof_tools.h>
+#include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_accessor.h>
+#include <deal.II/dofs/dof_tools.h>
 
-#include <fe/fe_values.h>
-#include <fe/fe_system.h>
-#include <fe/mapping_q1.h>
-#include <fe/mapping_cartesian.h>
-#include <fe/fe_dgq.h>
-#include <fe/fe_dgp.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/mapping_q1.h>
+#include <deal.II/fe/mapping_cartesian.h>
+#include <deal.II/fe/fe_dgq.h>
+#include <deal.II/fe/fe_dgp.h>
 
-#include <numerics/vector_tools.h>
-#include <numerics/solution_transfer.h>
-#include <numerics/matrix_tools.h>
+#include <deal.II/numerics/vector_tools.h>
+#include <deal.II/numerics/solution_transfer.h>
+#include <deal.II/numerics/matrix_tools.h>
 
 #include <iostream>
 #include <fstream>
@@ -376,10 +376,11 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   NamedData< LA::Vector<double>* > rhs;
+   AnyData rhs;
    LA::Vector<double>* data = &right_hand_side;
-   rhs.add (data, "RHS");
+   rhs.add< LA::Vector<double>* > (data, "RHS");
    integrator.assembler.initialize (rhs);
+
 }
 
 //------------------------------------------------------------------------------

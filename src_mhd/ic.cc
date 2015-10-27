@@ -145,9 +145,16 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    FEValues<dim> fe_values (mapping(), fe, quadrature, 
                             update_values|update_q_points|update_JxW_values);
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
-   std::vector< Vector<double> > ic_values(n_q_points, 
-                                           Vector<double>(EulerEquations<dim>::n_components));
+   
+   unsigned int n_comp=4;
+   
+   if(parameters.equation=='euler')
+     n_comp=EulerEquations<dim>::n_components;
+   if(parameters.equation=='mhd')
+     n_comp=MHDEquations<dim>::n_components;
 
+   std::vector< Vector<double> > ic_values(n_q_points, Vector<double>(n_comp));
+   
    old_solution = 0.0;
 
    typename DoFHandler<dim>::active_cell_iterator

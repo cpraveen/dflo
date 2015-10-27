@@ -1,36 +1,36 @@
 #ifndef __CLAW_H__
 #define __CLAW_H__
 
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/parameter_handler.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
-#include <base/timer.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
+#include <deal.II/base/timer.h>
 
-#include <lac/parallel_vector.h>
-#include <lac/vector.h>
-#include <lac/parallel_vector.h>
+#include <deal.II/lac/parallel_vector.h>
+#include <deal.II/lac/vector.h>
+#include <deal.II/lac/parallel_vector.h>
 
-#include <grid/grid_refinement.h>
-#include <grid/tria_accessor.h>
-#include <grid/tria_iterator.h>
-#include <grid/grid_tools.h>
+#include <deal.II/grid/grid_refinement.h>
+#include <deal.II/grid/tria_accessor.h>
+#include <deal.II/grid/tria_iterator.h>
+#include <deal.II/grid/grid_tools.h>
 
-#include <dofs/dof_handler.h>
-#include <dofs/dof_accessor.h>
-#include <dofs/dof_tools.h>
+#include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_accessor.h>
+#include <deal.II/dofs/dof_tools.h>
 
-#include <fe/fe_values.h>
-#include <fe/fe_system.h>
-#include <fe/mapping_q1.h>
-#include <fe/fe_dgq.h>
-#include <fe/fe_dgp.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/mapping_q1.h>
+#include <deal.II/fe/fe_dgq.h>
+#include <deal.II/fe/fe_dgp.h>
 
-#include <distributed/tria.h>
-#include <distributed/grid_refinement.h>
-#include <distributed/solution_transfer.h>
+#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/grid_refinement.h>
+#include <deal.II/distributed/solution_transfer.h>
 
 #include <vector>
 
@@ -101,10 +101,10 @@ class ConservationLaw
 {
 public:
    ConservationLaw (const char *input_filename,
-                    const unsigned int degree,
+                    //const unsigned int degree,
                     const dealii::FE_DGQArbitraryNodes<dim> &fe_scalar);
    ConservationLaw (const char *input_filename,
-                    const unsigned int degree,
+                    //const unsigned int degree,
                     const dealii::FE_DGP<dim> &fe_scalar);
    void run ();
    
@@ -122,7 +122,7 @@ private:
    void set_initial_condition_Qk ();
    void set_initial_condition_Pk ();
    
-   std::pair<unsigned int, double> solve (LA::Vector<double> &solution, double current_residual);
+   std::pair<unsigned int, double> solve (LA::Vector<double> &solution); //, double current_residual);
    
    void compute_refinement_indicators (Vector<double> &indicator) const;
    void refine_grid (const Vector<double> &indicator);
@@ -291,7 +291,8 @@ private:
    inline
    void numerical_normal_flux 
    (
-      const dealii::Point<dim>         &normal,
+      const dealii::Tensor<1,dim, double> &normal,
+      //const dealii::Point<dim>         &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,
