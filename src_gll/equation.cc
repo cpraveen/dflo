@@ -63,7 +63,7 @@ compute_derived_quantities_vector (const std::vector<Vector<double> >           
                                    const std::vector<std::vector<Tensor<1,dim> > > &duh,
                                    const std::vector<std::vector<Tensor<2,dim> > > &/*dduh*/,
                                    const std::vector<Point<dim> >                  &/*normals*/,
-                                   const std::vector<Point<dim> >                  &/*evaluation_points*/,
+                                   const std::vector<Point<dim> >                  &evaluation_points,
                                    std::vector<Vector<double> >                    &computed_quantities) const
 {
    // At the beginning of the function, let us
@@ -118,6 +118,11 @@ compute_derived_quantities_vector (const std::vector<Vector<double> >           
          computed_quantities[q](d) = uh[q](d) / density;
       
       computed_quantities[q](dim) = compute_pressure<double> (uh[q]);
+
+      // Perturbation pressure useful for hydrostatic tests
+      /*
+      computed_quantities[q](dim) = compute_pressure<double> (uh[q]) - std::pow(1.0 - evaluation_points[q][0]/6.0,6);
+      */
       
       if (do_schlieren_plot == true)
          computed_quantities[q](dim+1) = duh[q][density_component] *
@@ -169,9 +174,9 @@ UpdateFlags
 EulerEquations<dim>::Postprocessor::get_needed_update_flags () const
 {
   if (do_schlieren_plot == true)
-    return update_values | update_gradients;
+    return update_values | update_gradients | update_q_points;
   else
-    return update_values;
+    return update_values | update_q_points;
 }
 
 

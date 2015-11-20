@@ -29,7 +29,7 @@ void PolytropicHydrostatic<dim>::vector_value (const Point<dim> &p,
 }
 
 //--------------------------------------------------------------------------------------------
-// Initial condition for Rayleigh-Taylor problem
+// Initial condition for planar Rayleigh-Taylor problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
 template <int dim>
@@ -60,6 +60,8 @@ void RayleighTaylor<dim>::vector_value (const Point<dim> &p,
       + 0.5 * values[EulerEquations<dim>::density_component] * vel * vel;
 }
 
+//--------------------------------------------------------------------------------------------
+// Radial Rayleigh-Taylor from Leveque & Bale
 //--------------------------------------------------------------------------------------------
 template <int dim>
 void RadialRayleighTaylor<dim>::vector_value (const Point<dim> &p,
