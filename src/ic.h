@@ -1,8 +1,8 @@
 #ifndef __IC_H__
 #define __IC_H__
 
-#include <base/function.h>
-#include <lac/vector.h>
+#include <deal.II/base/function.h>
+#include <deal.II/lac/vector.h>
 
 #include "equation.h"
 
