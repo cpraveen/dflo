@@ -62,6 +62,7 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    mpi_communicator (MPI_COMM_WORLD),
    triangulation(mpi_communicator),
    fe (fe_scalar, EulerEquations<dim>::n_components),
+   //fe (fe_scalar, MHDEquations<dim>::n_components),
    dof_handler (triangulation),
    fe_cell (FE_DGQ<dim>(0)),
    dh_cell (triangulation),
@@ -84,6 +85,7 @@ ConservationLaw<dim>::ConservationLaw (const char *input_filename,
    mpi_communicator (MPI_COMM_WORLD),
    triangulation(mpi_communicator),
    fe (fe_scalar, EulerEquations<dim>::n_components),
+   //fe (fe_scalar, MHDEquations<dim>::n_components),
    dof_handler (triangulation),
    fe_cell (FE_DGQ<dim>(0)),
    dh_cell (triangulation),
@@ -371,7 +373,9 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
                                                    n_gauss_points);
    
    integrator.info_box.initialize_update_flags   ();
-   integrator.info_box.add_update_flags_all 	    (update_values | update_JxW_values);
+   integrator.info_box.add_update_flags_all (update_values | 
+					     update_quadrature_points |
+					     update_JxW_values);
    integrator.info_box.add_update_flags_cell     (update_gradients);
    integrator.info_box.add_update_flags_boundary (update_normal_vectors | update_quadrature_points);
    integrator.info_box.add_update_flags_face     (update_normal_vectors);

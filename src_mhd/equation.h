@@ -749,7 +749,7 @@ struct EulerEquations
    // Compute dissipation matrix in entropy stable flux
    // --------------------------------------------------------------------------
    static
-   void kep_diff_matrix(const dealii::Point<dim>     &normal,
+   void kep_diff_matrix(const dealii::Tensor<1,dim>     &normal,
                         const dealii::Vector<double> &W_l,
                         const dealii::Vector<double> &W_r,
                         double (&Dm)[n_components][n_components])
@@ -844,7 +844,7 @@ struct EulerEquations
    static
    void kep_flux
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     const dealii::Vector<double>     &Aplus,
@@ -1076,7 +1076,7 @@ struct EulerEquations
    void kinetic_split_flux
    (
     int                               sign,
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim>         &normal,
     const InputVector                &W,
     typename InputVector::value_type (&normal_flux)[n_components]
    )
@@ -1117,7 +1117,7 @@ struct EulerEquations
    static
    void kfvs_flux 
    (
-    const dealii::Point<dim>          &normal,
+    const dealii::Tensor<1,dim>       &normal,
     const InputVector                 &Wplus,
     const InputVector                 &Wminus,
     typename InputVector::value_type  (&normal_flux)[n_components]
@@ -1293,7 +1293,7 @@ struct EulerEquations
    static
    void
    compute_Wminus (const BoundaryKind           &boundary_kind,
-                   const dealii::Point<dim>     &normal_vector,
+                   const dealii::Tensor<1,dim>  &normal_vector,
                    const DataVector             &Wplus,
                    const dealii::Vector<double> &boundary_values,
                    const DataVector             &Wminus)

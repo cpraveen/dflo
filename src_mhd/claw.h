@@ -56,13 +56,13 @@ struct PosLimData
    
    dealii::Quadrature<dim> quadrature_x;
    dealii::Quadrature<dim> quadrature_y;
-   dealii::Quadrature<dim> quadrature_z;
+   //dealii::Quadrature<dim> quadrature_z;
 
    unsigned int n_q_points;
    
    dealii::FEValues<dim> fe_values_x;
    dealii::FEValues<dim> fe_values_y;
-   dealii::FEValues<dim> fe_values_z;
+   //dealii::FEValues<dim> fe_values_z;
 
    std::vector<double> density_values, energy_values;
    std::vector< Tensor<1,dim> > momentum_values;
@@ -82,6 +82,7 @@ PosLimData<dim>::PosLimData(const dealii::FESystem<dim>    &fe,
    n_q_points (quadrature_x.size()),
    fe_values_x (mapping, fe, quadrature_x, update_values),
    fe_values_y (mapping, fe, quadrature_y, update_values),
+   //fe_values_z (mapping, fe, quadrature_z, update_values),
    density_values (n_q_points),
    energy_values (n_q_points),
    momentum_values (n_q_points),
@@ -309,7 +310,7 @@ private:
    void numerical_normal_flux 
    (
       //const dealii::Tensor<1,dim, double> &normal,
-      const dealii::Point<dim>         &normal,
+      const dealii::Tensor<1,dim>      &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,

@@ -181,10 +181,10 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    
    unsigned int n_comp=4;
    
-   if(parameters.equation=='euler')
+   /*if(parameters.equation=='euler')
      n_comp=EulerEquations<dim>::n_components;
    if(parameters.equation=='mhd')
-     n_comp=MHDEquations<dim>::n_components;
+     n_comp=MHDEquations<dim>::n_components;//*/
 
    std::vector< Vector<double> > ic_values(n_q_points, Vector<double>(n_comp));
    
