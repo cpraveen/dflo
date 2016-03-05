@@ -14,9 +14,9 @@ void RayleighTaylor<dim>::vector_value (const Point<dim> &p,
 {
    // Density
    if(p[1] < 0.0)
-      values[EulerEquations<dim>::density_component] = 1.0;
+      values[MHDEquations<dim>::density_component] = 1.0;
    else
-      values[EulerEquations<dim>::density_component] = 2.0;
+      values[MHDEquations<dim>::density_component] = 2.0;
    
    // Momentum
    for(unsigned int d=0; d<dim; ++d)
@@ -26,14 +26,14 @@ void RayleighTaylor<dim>::vector_value (const Point<dim> &p,
                 (1.0 + std::cos(2.0*numbers::PI*p[0]/Lx))/2.0 *
                 (1.0 + std::cos(2.0*numbers::PI*p[1]/Ly))/2.0;
    
-   values[1] = values[EulerEquations<dim>::density_component] * vel;
+   values[1] = values[MHDEquations<dim>::density_component] * vel;
    
-   double pressure = P0 - gravity * values[EulerEquations<dim>::density_component] * p[1];
+   double pressure = P0 - gravity * values[MHDEquations<dim>::density_component] * p[1];
 
    // Energy
-   values[EulerEquations<dim>::energy_component] =
-      pressure/(EulerEquations<dim>::gas_gamma - 1.0)
-      + 0.5 * values[EulerEquations<dim>::density_component] * vel * vel;
+   values[MHDEquations<dim>::energy_component] =
+      pressure/(MHDEquations<dim>::gas_gamma - 1.0)
+      + 0.5 * values[MHDEquations<dim>::density_component] * vel * vel;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ template <int dim>
 void IsentropicVortex<dim>::vector_value (const Point<dim> &p,
                                           Vector<double>   &values) const	
 {
-   const double gamma = EulerEquations<dim>::gas_gamma;
+   const double gamma = MHDEquations<dim>::gas_gamma;
    
    double r2   = (p[0]-x0)*(p[0]-x0) + (p[1]-y0)*(p[1]-y0);
    
@@ -55,8 +55,8 @@ void IsentropicVortex<dim>::vector_value (const Point<dim> &p,
    
    values[0] = rho * vex;
    values[1] = rho * vey;
-   values[EulerEquations<dim>::density_component] = rho;
-   values[EulerEquations<dim>::energy_component] = pre/(gamma-1.0)
+   values[MHDEquations<dim>::density_component] = rho;
+   values[MHDEquations<dim>::energy_component] = pre/(gamma-1.0)
                                                    + 0.5 * rho * (vex*vex + vey*vey);
 }
 
@@ -68,7 +68,7 @@ template <int dim>
 void VortexSystem<dim>::vector_value (const Point<dim> &p,
                                       Vector<double>   &values) const
 {
-   const double gamma = EulerEquations<dim>::gas_gamma;
+   const double gamma = MHDEquations<dim>::gas_gamma;
    
    double rho = 0, vex = 0, vey = 0, pre = 0;
    for(unsigned int i=0; i<3; ++i)
@@ -90,8 +90,8 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
    
    values[0] = rho * vex;
    values[1] = rho * vey;
-   values[EulerEquations<dim>::density_component] = rho;
-   values[EulerEquations<dim>::energy_component] = pre/(gamma-1.0)
+   values[MHDEquations<dim>::density_component] = rho;
+   values[MHDEquations<dim>::energy_component] = pre/(gamma-1.0)
                                                  + 0.5 * rho * (vex*vex + vey*vey);
 }
 
@@ -103,7 +103,7 @@ template <int dim>
 void KeplerianDisk<dim>::vector_value (const Point<dim> &p,
                                        Vector<double>   &values) const
 {
-   const double gamma = EulerEquations<dim>::gas_gamma;
+   const double gamma = MHDEquations<dim>::gas_gamma;
    
    double r   = p.norm();
    double vtheta = 1/std::sqrt(r);
@@ -124,8 +124,8 @@ void KeplerianDisk<dim>::vector_value (const Point<dim> &p,
    
    values[0] = rho * vex;
    values[1] = rho * vey;
-   values[EulerEquations<dim>::density_component] = rho;
-   values[EulerEquations<dim>::energy_component] = pressure/(gamma-1.0)
+   values[MHDEquations<dim>::density_component] = rho;
+   values[MHDEquations<dim>::energy_component] = pressure/(gamma-1.0)
                                                    + 0.5 * rho * (vex*vex + vey*vey);
 }
 
@@ -148,6 +148,10 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    else
       VectorTools::interpolate(mapping(), dof_handler,
                                parameters.initial_conditions, old_solution);
+   
+   for(unsigned int i = 0; i < old_solution.size(); i++)
+     if(isnan(old_solution[i]))
+       std::cout<<"\n \t The initial caondition has a NaN values! in : "<< i << "\n" ;
    
    current_solution = old_solution;
    predictor = old_solution;

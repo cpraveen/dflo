@@ -35,16 +35,16 @@ void ConservationLaw<dim>::output_results ()
 {
    TimerOutput::Scope t(computing_timer, "Output");
 
-   typename EulerEquations<dim>::Postprocessor
+   typename MHDEquations<dim>::Postprocessor
    postprocessor (parameters.schlieren_plot);
    
    DataOut<dim> data_out;
    data_out.attach_dof_handler (dof_handler);
    
    data_out.add_data_vector (current_solution,
-                             EulerEquations<dim>::component_names (),
+                             MHDEquations<dim>::component_names (),
                              DataOut<dim>::type_dof_data,
-                             EulerEquations<dim>::component_interpretation ());
+                             MHDEquations<dim>::component_interpretation ());
    
    data_out.add_data_vector (current_solution, postprocessor);
    

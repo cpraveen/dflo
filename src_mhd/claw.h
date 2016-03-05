@@ -315,13 +315,16 @@ private:
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,
       const dealii::Vector<double>     &Aminus,
-      typename InputVector::value_type (&normal_flux)[EulerEquations<dim>::n_components]
+      typename InputVector::value_type (&normal_flux)[MHDEquations<dim>::n_components]
+      //typename InputVector::value_type (&normal_flux)[EulerEquations<dim>::n_components]
+
    ) const
    {
       switch(parameters.flux_type)
       {
          case Parameters::Flux::lxf:
-            EulerEquations<dim>::lxf_flux (normal,
+            MHDEquations<dim>::lxf_flux (normal,
+	    //EulerEquations<dim>::lxf_flux (normal,
                                            Wplus,
                                            Wminus,
                                            Aplus,
@@ -329,7 +332,7 @@ private:
                                            normal_flux);
             break;
 
-         case Parameters::Flux::sw:
+         /*case Parameters::Flux::sw:
             EulerEquations<dim>::steger_warming_flux (normal,
                                                       Wplus,
                                                       Wminus,
@@ -364,7 +367,7 @@ private:
                                            Aplus,
                                            Aminus,
                                            normal_flux);
-            break;
+            break;//*/
 
 	      default:
             Assert (false, dealii::ExcNotImplemented());
@@ -389,7 +392,8 @@ private:
       if(cell->active())
       {
          unsigned int cell_no = cell_number(cell);
-         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+	 //for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+         for(unsigned int c=0; c<MHDEquations<dim>::n_components; ++c)
             avg(c) = cell_average[cell_no][c];
       }
       else
@@ -401,7 +405,8 @@ private:
          for(unsigned int i=0; i<child_cells.size(); ++i)
          {
             unsigned int child_cell_no = cell_number(child_cells[i]);
-            for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+            //for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+	    for(unsigned int c=0; c<MHDEquations<dim>::n_components; ++c)
                avg(c) += cell_average[child_cell_no][c] * child_cells[i]->measure();
             measure += child_cells[i]->measure();
          }

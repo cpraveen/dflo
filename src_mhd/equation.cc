@@ -179,6 +179,126 @@ EulerEquations<dim>::Postprocessor::n_output_variables () const
     return dim+1;
 }
 
+
+//***********************************************************************
+//	MHD version 
+//***********************************************************************
+
+template <int dim>
+const double MHDEquations<dim>::gas_gamma = 1.4;
+
+template <int dim>
+MHDEquations<dim>::Postprocessor::
+Postprocessor (const bool do_schlieren_plot)
+		:
+		do_schlieren_plot (do_schlieren_plot)
+{}
+
+template <int dim>
+void
+MHDEquations<dim>::Postprocessor::
+compute_derived_quantities_vector (const std::vector<Vector<double> >              &uh,
+                                   const std::vector<std::vector<Tensor<1,dim> > > &duh,
+                                   const std::vector<std::vector<Tensor<2,dim> > > &/*dduh*/,
+                                   const std::vector<Point<dim> >                  &/*normals*/,
+                                   const std::vector<Point<dim> >                  &/*evaluation_points*/,
+                                   std::vector<Vector<double> >                    &computed_quantities) const
+{
+   const unsigned int n_quadrature_points = uh.size();
+   
+   if (do_schlieren_plot == true)
+      Assert (duh.size() == n_quadrature_points,
+              ExcInternalError());
+   
+   Assert (computed_quantities.size() == n_quadrature_points,
+           ExcInternalError());
+   
+   Assert (uh[0].size() == n_components,
+           ExcInternalError());
+   
+   if (do_schlieren_plot == true)
+      Assert (computed_quantities[0].size() == dim+2, ExcInternalError())
+      else
+         Assert (computed_quantities[0].size() == dim+1, ExcInternalError());
+   
+
+   for (unsigned int q=0; q<n_quadrature_points; ++q)
+   {
+      const double density = uh[q](density_component);
+      
+      for (unsigned int d=0; d<dim; ++d)
+         computed_quantities[q](d) = uh[q](d) / density;
+      
+      computed_quantities[q](dim) = compute_pressure<double> (uh[q]);
+      
+      if (do_schlieren_plot == true)
+         computed_quantities[q](dim+1) = duh[q][density_component] *
+                                         duh[q][density_component];
+   }
+}
+
+
+template <int dim>
+std::vector<std::string>
+MHDEquations<dim>::Postprocessor::get_names () const
+{
+  std::vector<std::string> names;
+  names.push_back ("XVelocity");
+  names.push_back ("YVelocity");
+  if(dim==3)
+     names.push_back ("ZVelocity");
+  names.push_back ("Pressure");
+
+  if (do_schlieren_plot == true)
+    names.push_back ("schlieren_plot");
+
+  return names;
+}
+
+
+template <int dim>
+std::vector<DataComponentInterpretation::DataComponentInterpretation>
+MHDEquations<dim>::Postprocessor::get_data_component_interpretation () const
+{
+  std::vector<DataComponentInterpretation::DataComponentInterpretation>
+    interpretation (dim,
+		    DataComponentInterpretation::component_is_part_of_vector);
+
+  interpretation.push_back (DataComponentInterpretation::
+			    component_is_scalar);
+
+  if (do_schlieren_plot == true)
+    interpretation.push_back (DataComponentInterpretation::
+			      component_is_scalar);
+
+  return interpretation;
+}
+
+
+
+template <int dim>
+UpdateFlags
+MHDEquations<dim>::Postprocessor::get_needed_update_flags () const
+{
+  if (do_schlieren_plot == true)
+    return update_values | update_gradients;
+  else
+    return update_values;
+}
+
+
+
+template <int dim>
+unsigned int
+MHDEquations<dim>::Postprocessor::n_output_variables () const
+{
+  if (do_schlieren_plot == true)
+    return dim+2;
+  else
+    return dim+1;
+}
+
+
 // To handle linking errors
 template struct EulerEquations<2>;
-
+template struct MHDEquations<2>;

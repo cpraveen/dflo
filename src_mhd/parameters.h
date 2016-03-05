@@ -162,8 +162,8 @@ namespace Parameters
       enum  OutputType { quiet, verbose };
       OutputType output;
       
-      enum System_Equation {euler, mhd};
-      System_Equation equation;
+      enum System_model {euler, mhd};
+      System_model model;
       
       double linear_residual;
       int max_iterations;
@@ -367,7 +367,8 @@ namespace Parameters
       
       struct BoundaryConditions
       {
-         typename EulerEquations<dim>::BoundaryKind kind;
+         typename MHDEquations<dim>::BoundaryKind kind;
+	 //typename EulerEquations<dim>::BoundaryKind kind;
          
          dealii::FunctionParser<dim> values;
          

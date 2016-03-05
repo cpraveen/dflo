@@ -13,7 +13,7 @@ class RayleighTaylor : public dealii::Function<dim>
 public:
    RayleighTaylor (double gravity)
    :
-   dealii::Function<dim>(EulerEquations<dim>::n_components),
+   dealii::Function<dim>(MHDEquations<dim>::n_components),
    gravity (gravity)
    {}
    virtual void vector_value (const dealii::Point<dim>  &p,
@@ -36,12 +36,12 @@ class IsentropicVortex : public dealii::Function<dim>
 public:
    IsentropicVortex (double beta, double x0, double y0)
    :
-   dealii::Function<dim>(EulerEquations<dim>::n_components),
+   dealii::Function<dim>(MHDEquations<dim>::n_components),
    beta (beta),
    x0 (x0),
    y0 (y0)
    {
-      const double gamma = EulerEquations<dim>::gas_gamma;
+      const double gamma = MHDEquations<dim>::gas_gamma;
       a1 = 0.5*beta/M_PI;
       a2 = (gamma-1.0)*std::pow(a1,2)/2.0;
    }
@@ -63,12 +63,12 @@ class VortexSystem : public dealii::Function<dim>
 public:
    VortexSystem ()
    :
-   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   dealii::Function<dim>(MHDEquations<dim>::n_components)
    {
       beta = 5.0;
       Rc = 4.0;
       
-      const double gamma = EulerEquations<dim>::gas_gamma;
+      const double gamma = MHDEquations<dim>::gas_gamma;
       a1 = 0.5*beta/M_PI;
       a2 = (gamma-1.0)*std::pow(a1,2)/2.0;
       
@@ -94,7 +94,7 @@ class KeplerianDisk : public dealii::Function<dim>
 public:
    KeplerianDisk ()
    :
-   dealii::Function<dim>(EulerEquations<dim>::n_components)
+   dealii::Function<dim>(MHDEquations<dim>::n_components)
    {
       r0 = 0.5;
       r1 = 2.0;
