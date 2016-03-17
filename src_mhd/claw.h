@@ -128,6 +128,9 @@ public:
 private:
 
    void read_parameters (const char *file_name);
+   
+   void configure_periodic_boundary(std::vector<std::vector<int> > &); // In case of periodic boundary conditions.
+   
    const Mapping<dim,dim>& mapping() const;
    void compute_cartesian_mesh_size ();
    void compute_inv_mass_matrix();

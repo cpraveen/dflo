@@ -148,6 +148,29 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    }
 }
 
+
+template <int dim>
+void ConservationLaw<dim>::configure_periodic_boundary(std::vector<std::vector<int> > &periodic_pairs)
+{
+   //	Create periodicity vector to store the periodic info.
+   std::vector<GridTools::PeriodicFacePair<typename parallel::distributed::Triangulation<dim>::cell_iterator> >
+	periodicity_vector;
+   
+   for(unsigned int i=0; i<periodic_pairs.size();++i)
+   {
+     //	Read boundary pair
+     std::vector<int> boundary_pair = periodic_pairs[i];
+     //	Create periodicity with collect_periodic_faces
+     GridTools::collect_periodic_faces(triangulation,
+				       boundary_pair[0],
+				       boundary_pair[1],
+				       0,
+				       periodicity_vector);
+   }
+   triangulation.add_periodicity(periodicity_vector);
+}
+
+
 //------------------------------------------------------------------------------
 // Return mapping type based on selected type
 //------------------------------------------------------------------------------
@@ -736,6 +759,10 @@ void ConservationLaw<dim>::run ()
       else if(parameters.mesh_type == "gmsh")
          grid_in.read_msh(input_file);
    }
+   
+   // Set periodic boundary conditions
+   if(parameters.is_periodic)
+     configure_periodic_boundary(parameters.periodic_pair);
    
 //   {
 //      // Use this refine around corner in forward step
