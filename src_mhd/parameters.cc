@@ -406,8 +406,8 @@ namespace Parameters
                               Utilities::int_to_string(b));
          {
             prm.declare_entry("type", "outflow",
-                              Patterns::Selection("slip|inflow|outflow|pressure|farfield"),
-                              "<slip|inflow|outflow|pressure|farfield>");
+                              Patterns::Selection("slip|inflow|outflow|pressure|farfield|periodic"),
+                              "<slip|inflow|outflow|pressure|farfield|periodic>");
             
             //for (unsigned int di=0; di<EulerEquations<dim>::n_components; ++di)
 	    for (unsigned int di=0; di<MHDEquations<dim>::n_components; ++di)
@@ -537,6 +537,17 @@ namespace Parameters
                boundary_conditions[boundary_id].kind
                = MHDEquations<dim>::farfield_boundary;
 	       //= EulerEquations<dim>::farfield_boundary;
+            else if (boundary_type == "periodic")
+	    {
+	      boundary_conditions[boundary_id].kind
+		  = MHDEquations<dim>::periodic;
+	      is_periodic=true;
+	      
+	      std::vector<int> boundary_pair;
+	      boundary_pair.push_back(boundary_id);
+	      boundary_pair.push_back(prm.get_integer("pair"));
+	      periodic_pair.push_back(boundary_pair);
+	    }
             else
                AssertThrow (false, ExcNotImplemented());
             

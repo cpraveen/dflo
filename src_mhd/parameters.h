@@ -365,6 +365,11 @@ namespace Parameters
    {
       static const unsigned int max_n_boundaries = 10;
       
+      // In case of periodic boundary conditions
+      bool is_periodic = 0;
+      std::vector<std::vector<int>> periodic_pair;
+      
+      
       struct BoundaryConditions
       {
          typename MHDEquations<dim>::BoundaryKind kind;
