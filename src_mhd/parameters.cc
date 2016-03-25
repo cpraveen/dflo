@@ -543,10 +543,26 @@ namespace Parameters
 		  = MHDEquations<dim>::periodic;
 	      is_periodic=true;
 	      
-	      std::vector<int> boundary_pair;
-	      boundary_pair.push_back(boundary_id);
-	      boundary_pair.push_back(prm.get_integer("pair"));
-	      periodic_pair.push_back(boundary_pair);
+	      std::pair<int,int> boundary_pair;
+	      boundary_pair.first = boundary_id;
+	      boundary_pair.second = prm.get_integer("pair");
+	      
+	      // Check if the pair already exists
+	      if(periodic_pair.size()==0)
+		periodic_pair.push_back(boundary_pair);
+	      else{
+		std::pair<int,int> tmp_pair (boundary_pair.second, boundary_pair.first),
+				   tmp_pair1;
+		bool pair_flag = false;
+		for(unsigned int i=0; i<periodic_pair.size();++i)
+		{
+		  tmp_pair1 = periodic_pair[i];
+		  if(tmp_pair == tmp_pair1)
+		     pair_flag = true;			// WARNING : Save only if it's not there
+		}
+		if(!pair_flag)
+		  periodic_pair.push_back(boundary_pair);
+	      }
 	    }
             else
                AssertThrow (false, ExcNotImplemented());

@@ -367,7 +367,7 @@ namespace Parameters
       
       // In case of periodic boundary conditions
       bool is_periodic = 0;
-      std::vector<std::vector<int>> periodic_pair;
+      std::vector<std::pair<int,int>> periodic_pair;
       
       
       struct BoundaryConditions
