@@ -246,11 +246,15 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
          Wplus[q][c] += current_solution(dof_indices[i]) * 
                         fe_v.shape_value_component(i, q, c);
       }
+      // Check face_flip of the boundary face and change order of quadrature points if necesary
+      unsigned int q1=q;
+      if(face_pair.orientation[1])
+	q1 = n_q_points - q;
       for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
       {
-         const unsigned int c = fe_v_n.get_fe().system_to_component_index(i).first;
-         Wminus[q][c] += current_solution(dof_indices_n[i]) *
-                         fe_v_n.shape_value_component(i, q, c);
+	 const unsigned int c = fe_v_n.get_fe().system_to_component_index(i).first;
+	 Wminus[q][c] += current_solution(dof_indices_n[i]) *
+                         fe_v_n.shape_value_component(i, q1, c);
       }
       numerical_normal_flux(fe_v.normal_vector(q),
                             Wplus[q],
