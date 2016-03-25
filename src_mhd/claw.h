@@ -36,6 +36,8 @@
 #include "parameters.h"
 #include "integrator.h"
 
+#include"DealiiExtensions.h"
+
 using namespace dealii;
 
 namespace LA
@@ -129,7 +131,8 @@ private:
 
    void read_parameters (const char *file_name);
    
-   void configure_periodic_boundary(std::vector<std::vector<int> > &); // In case of periodic boundary conditions.
+   //void PeriodicBoundaryNotPossible(const char*);
+   void configure_periodic_boundary();
    
    const Mapping<dim,dim>& mapping() const;
    void compute_cartesian_mesh_size ();
@@ -234,6 +237,12 @@ private:
    // Iterators to neighbouring cells
    std::vector<typename dealii::DoFHandler<dim>::cell_iterator>
          lcell, rcell, bcell, tcell;
+
+   //	Create periodicity vector to store the periodic info.
+   std::vector<dealii::GridTools::PeriodicFacePair< dealii::TriaIterator<dealii::CellAccessor<dim>> > >
+	 periodicity_vector;
+   //	Create a PeriodicCellMap object in case we have of periodic boudary conditions
+   PeriodicCellMap<dim> periodic_map;
    
    // Next come a number of data
    // vectors that correspond to the

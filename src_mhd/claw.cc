@@ -20,6 +20,7 @@
 
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/mapping_q.h>
 #include <deal.II/fe/mapping_q1.h>
 #include <deal.II/fe/mapping_cartesian.h>
 #include <deal.II/fe/fe_dgq.h>
@@ -148,27 +149,34 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    }
 }
 
+/******************************************************************************************
+ * 	Configure the periodic boundaries
+ ******************************************************************************************/
 
 template <int dim>
-void ConservationLaw<dim>::configure_periodic_boundary(std::vector<std::vector<int> > &periodic_pairs)
+void ConservationLaw<dim>::configure_periodic_boundary()
 {
-   //	Create periodicity vector to store the periodic info.
-   std::vector<GridTools::PeriodicFacePair<typename parallel::distributed::Triangulation<dim>::cell_iterator> >
-	periodicity_vector;
-   
-   for(unsigned int i=0; i<periodic_pairs.size();++i)
+   for(unsigned int i=0; i<parameters.periodic_pair.size();++i)
    {
-     //	Read boundary pair
-     std::vector<int> boundary_pair = periodic_pairs[i];
+     //	Read boundary pair from the input parameters
+     std::pair<int,int> boundary_pair = parameters.periodic_pair[i];
      //	Create periodicity with collect_periodic_faces
      GridTools::collect_periodic_faces(triangulation,
-				       boundary_pair[0],
-				       boundary_pair[1],
+				       boundary_pair.first,
+				       boundary_pair.second,
 				       0,
 				       periodicity_vector);
+     // Map to identify cells in both sides of the boundary
+     DealIIExtensions::make_periodicity_map_dg<dealii::DoFHandler<dim>>(dof_handler,
+									boundary_pair.first,
+									boundary_pair.second,
+									0,
+									periodic_map);
    }
+   //	Add the periodic information to the triangulation
    triangulation.add_periodicity(periodicity_vector);
 }
+/******************************************************************************************/
 
 
 //------------------------------------------------------------------------------
@@ -184,7 +192,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::q2)
    {
-      static MappingQ<dim> m(2);
+      static MappingQ<dim, dim> m(2);
       return m;
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
@@ -762,7 +770,7 @@ void ConservationLaw<dim>::run ()
    
    // Set periodic boundary conditions
    if(parameters.is_periodic)
-     configure_periodic_boundary(parameters.periodic_pair);
+     configure_periodic_boundary();
    
 //   {
 //      // Use this refine around corner in forward step
