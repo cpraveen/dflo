@@ -306,7 +306,7 @@ private:
    inline
    void numerical_normal_flux 
    (
-      const dealii::Point<dim>         &normal,
+      const dealii::Tensor<1,dim>      &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,
