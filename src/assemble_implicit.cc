@@ -1,18 +1,18 @@
-#include <base/quadrature_lib.h>
-#include <base/function.h>
-#include <base/function_parser.h>
-#include <base/utilities.h>
-#include <base/conditional_ostream.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/function.h>
+#include <deal.II/base/function_parser.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/conditional_ostream.h>
 
-#include <lac/vector.h>
+#include <deal.II/lac/vector.h>
 
-#include <dofs/dof_handler.h>
-#include <dofs/dof_accessor.h>
-#include <dofs/dof_tools.h>
+#include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_accessor.h>
+#include <deal.II/dofs/dof_tools.h>
 
-#include <fe/fe_values.h>
-#include <fe/fe_system.h>
-#include <fe/fe_dgq.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/fe_dgq.h>
 
 #include <Sacado.hpp>
 
@@ -286,7 +286,7 @@ void ConservationLaw<dim>::integrate_boundary_term (DoFInfo& dinfo,
    std::vector<unsigned int>& dof_indices = dinfo.indices;
    const unsigned int& face_no = dinfo.face_number;
    const double& face_diameter = dinfo.face->diameter();
-   const unsigned int& boundary_id = dinfo.face->boundary_indicator();
+   const unsigned int& boundary_id = dinfo.face->boundary_id();
    
    const FEValuesBase<dim>& fe_v = info.fe_values();
    const unsigned int n_q_points = fe_v.n_quadrature_points;
