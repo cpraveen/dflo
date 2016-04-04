@@ -367,7 +367,9 @@ namespace Parameters
       
       // In case of periodic boundary conditions
       bool is_periodic = 0;
-      std::vector<std::pair<int,int>> periodic_pair;
+      std::string direction;
+      std::vector<unsigned int> directions; 
+      std::vector<std::pair<dealii::types::boundary_id,dealii::types::boundary_id>> periodic_pair;
       
       
       struct BoundaryConditions

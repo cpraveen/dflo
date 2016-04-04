@@ -417,6 +417,10 @@ namespace Parameters
                                  Patterns::Anything(),
                                  "expression in x,y,z");
             }
+            prm.declare_entry("pair", "0", Patterns::Integer(),
+			      "Boundary pair in case of periodic boundary conditions");
+	    prm.declare_entry("direction", "x", Patterns::Selection("x|y"),
+			      "Direction of the periodic boundary");
          }
          prm.leave_subsection();
       }
@@ -543,15 +547,23 @@ namespace Parameters
 		  = MHDEquations<dim>::periodic;
 	      is_periodic=true;
 	      
-	      std::pair<int,int> boundary_pair;
+	      std::pair<dealii::types::boundary_id,dealii::types::boundary_id> boundary_pair;
 	      boundary_pair.first = boundary_id;
 	      boundary_pair.second = prm.get_integer("pair");
+	      direction = prm.get("direction");
+	      
+	      unsigned int dir_int=0;
+	      if(direction=="y")
+		dir_int=1;
 	      
 	      // Check if the pair already exists
 	      if(periodic_pair.size()==0)
+	      {
 		periodic_pair.push_back(boundary_pair);
+		directions.push_back(dir_int);
+	      }
 	      else{
-		std::pair<int,int> tmp_pair (boundary_pair.second, boundary_pair.first),
+		std::pair<dealii::types::boundary_id,dealii::types::boundary_id> tmp_pair (boundary_pair.second, boundary_pair.first),
 				   tmp_pair1;
 		bool pair_flag = false;
 		for(unsigned int i=0; i<periodic_pair.size();++i)
@@ -561,7 +573,10 @@ namespace Parameters
 		     pair_flag = true;			// WARNING : Save only if it's not there
 		}
 		if(!pair_flag)
+		{
 		  periodic_pair.push_back(boundary_pair);
+		  directions.push_back(dir_int);
+		}
 	      }
 	    }
             else
