@@ -131,7 +131,6 @@ private:
 
    void read_parameters (const char *file_name);
    
-   //void PeriodicBoundaryNotPossible(const char*);
    void configure_periodic_boundary();
    
    const Mapping<dim,dim>& mapping() const;
@@ -238,9 +237,6 @@ private:
    std::vector<typename dealii::DoFHandler<dim>::cell_iterator>
          lcell, rcell, bcell, tcell;
 
-   //	Create periodicity vector to store the periodic info.
-   std::vector<dealii::GridTools::PeriodicFacePair< dealii::TriaIterator<dealii::CellAccessor<dim>> > >
-	 periodicity_vector;
    //	Create a PeriodicCellMap object in case we have of periodic boudary conditions
    PeriodicCellMap<dim> periodic_map;
    
