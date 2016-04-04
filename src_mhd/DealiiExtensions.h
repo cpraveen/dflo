@@ -38,11 +38,12 @@
  * @note	One pair to rule them all!
  */
 template<size_t dim, size_t spacedim = dim>
-using FaceCellPair = std::pair<dealii::TriaIterator< dealii::CellAccessor<dim, spacedim> >, int >;
+using FaceCellPair = std::pair<typename dealii::parallel::distributed::Triangulation<dim>::cell_iterator, int >;
 
 
 template<size_t dim, size_t spacedim = dim>
-using FacePair = dealii::GridTools::PeriodicFacePair< dealii::TriaIterator<dealii::CellAccessor<dim, spacedim> > >;
+using FacePair = dealii::GridTools::PeriodicFacePair<
+				    typename dealii::parallel::distributed::Triangulation<dim>::cell_iterator >;
 
 /**
  * @short	A std::map that maps cells to face pairs
