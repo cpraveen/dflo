@@ -88,11 +88,13 @@ void VortexSystem<dim>::vector_value (const Point<dim> &p,
    // Put large pressure in the region { |x| < 0.1 and |y| < 0.1 }
    if(std::fabs(p[0]) < 0.1 && std::fabs(p[1]) < 0.1) pre = 50.0;
    
-   values[0] = rho * vex;
-   values[1] = rho * vey;
+   values[MHDEquations<dim>::momentum_component] = rho * vex;
+   values[MHDEquations<dim>::momentum_component+1] = rho * vey;
    values[MHDEquations<dim>::density_component] = rho;
    values[MHDEquations<dim>::energy_component] = pre/(gamma-1.0)
                                                  + 0.5 * rho * (vex*vex + vey*vey);
+   for(unsigned int i=0; i<dim; ++i)
+     values[MHDEquations<dim>::magnetic_component+i]=0;
 }
 
 //--------------------------------------------------------------------------------------------

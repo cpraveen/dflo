@@ -1931,9 +1931,9 @@ struct MHDEquations
       const number magnetic_pressure = compute_magnetic_pressure<number> (W);
       
       // Compute the flux function for the momentum
-      for (unsigned int d=0, i=dim; d<dim, i<2*dim; ++d, ++i)
+      for (unsigned int d=0, i=dim; d<dim; ++d, ++i)
       {
-         for (unsigned int e=0, j=dim; e<dim, j<2*dim; ++e, ++j)
+         for (unsigned int e=0, j=dim; e<dim; ++e, ++j)
             flux[d][e] = W[d] * W[e] / W[density_component]
 						 + W[i] * W[j];
          
@@ -1953,9 +1953,9 @@ struct MHDEquations
       }
       else
       {
-	for (unsigned int d=0, i=dim; d<dim, i<2*dim; ++d, ++i)
+	for (unsigned int d=0, i=dim; d<dim; ++d, ++i)
 	{
-	  for (unsigned int e=0, j=dim; e<dim, j<2*dim; ++e, ++j)
+	  for (unsigned int e=0, j=dim; e<dim; ++e, ++j)
 	  {
 	    flux[i][e] = W[d] * W[j] - W[e] * W[i];
 	    flux[i][e] /= W[density_component];
@@ -1966,7 +1966,7 @@ struct MHDEquations
       // Flux function for the conservation of mass
       number udotB = 0;
       
-      for (unsigned int d=0, i=dim; d<dim, i<2*dim; ++d, ++i)
+      for (unsigned int d=0, i=dim; d<dim; ++d, ++i)
       {
 	flux[density_component][d] = W[d];
 	udotB += W[d] * W[i];
@@ -1977,7 +1977,7 @@ struct MHDEquations
 
       
       // Flux function for the conservation of energy
-      for (unsigned int d=0, i=dim; d<dim, i<2*dim; ++d, ++i)
+      for (unsigned int d=0, i=dim; d<dim; ++d, ++i)
          flux[energy_component][d] = W[d] / W[density_component] *
                                      (W[energy_component] + pressure + magnetic_pressure)
                                      - W[i]*udotB;

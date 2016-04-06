@@ -570,7 +570,7 @@ namespace Parameters
 		{
 		  tmp_pair1 = periodic_pair[i];
 		  if(tmp_pair == tmp_pair1)
-		     pair_flag = true;			// WARNING : Save only if it's not there
+		     pair_flag = true;
 		}
 		if(!pair_flag)
 		{

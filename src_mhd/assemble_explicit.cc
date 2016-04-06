@@ -226,7 +226,6 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
     // Wminus is Neighbouring cell value
     for (unsigned int q=0; q<n_q_points; ++q)
     {
-	//for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
 	for(unsigned int c=0; c<MHDEquations<dim>::n_components; ++c)
 	{
 	  Wplus[q][c] = 0.0;
@@ -235,7 +234,7 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
 	for (unsigned int i=0; i<dofs_per_cell; ++i)
 	{
 	  const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
-	  Wplus[q][c] += current_solution.local_element(dof_indices[i]) * 
+	  Wplus[q][c] += current_solution(dof_indices[i]) * 
 			  fe_v.shape_value_component(i, q, c);
 	}
 	// Check face_flip of the boundary face and change order of quadrature points if necesary
