@@ -13,6 +13,7 @@
 #include <deal.II/grid/tria_iterator.h>
 #include <deal.II/grid/grid_in.h>
 #include <deal.II/grid/tria_boundary_lib.h>
+#include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_accessor.h>
@@ -20,6 +21,7 @@
 
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/fe/fe_system.h>
+#include <deal.II/fe/mapping_q.h>
 #include <deal.II/fe/mapping_q1.h>
 #include <deal.II/fe/mapping_cartesian.h>
 #include <deal.II/fe/fe_dgq.h>
@@ -146,6 +148,68 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    }
 }
 
+/******************************************************************************************
+ * 	Configure the periodic boundaries
+ ******************************************************************************************/
+
+template <int dim>
+void ConservationLaw<dim>::configure_periodic_boundary()
+{
+   std::cout<<"\n\t Configuring boundary conditions \n";
+
+     
+     //	Create periodicity vector to store the periodic info.
+     std::vector<dealii::GridTools::PeriodicFacePair<
+		 typename dealii::parallel::distributed
+			  ::Triangulation<dim>::cell_iterator > >
+					periodicity_vector;
+
+   for(unsigned int i=0; i<parameters.periodic_pair.size();++i)
+   {
+     //	Read boundary pair from the input parameters
+     std::pair<dealii::types::boundary_id,dealii::types::boundary_id> boundary_pair = parameters.periodic_pair[i];
+     unsigned int bp_first =boundary_pair.first, bp_second=boundary_pair.second;
+     std::cout<<"\n\t Collecting Periodic faces for Boundary pair ("
+	      <<bp_first<<","<<bp_second<<")\n";
+
+     unsigned int direction=parameters.directions[i];
+     //	Create periodicity with collect_periodic_faces
+     dealii::GridTools::collect_periodic_faces(triangulation,
+				       boundary_pair.first,
+				       boundary_pair.second,
+				       direction,
+				       periodicity_vector);
+   }
+   //	Add the periodic information to the triangulation
+   std::cout<<"\n\t Adding periodicity to the triangulation \n";
+   triangulation.add_periodicity(periodicity_vector);
+   
+   std::cout<<"\n\t Distributing degrees of freedom \n";
+   dof_handler.clear();
+   dof_handler.distribute_dofs (fe);
+   locally_owned_dofs = dof_handler.locally_owned_dofs ();
+   DoFTools::extract_locally_relevant_dofs (dof_handler,
+                                            locally_relevant_dofs);
+   
+   for(unsigned int i=0; i<parameters.periodic_pair.size();++i)
+   {
+     //	Read boundary pair from the input parameters
+     std::pair<dealii::types::boundary_id,dealii::types::boundary_id> boundary_pair = parameters.periodic_pair[i];
+     // Map to identify cells in both sides of the boundary
+     unsigned int bp_first =boundary_pair.first, bp_second=boundary_pair.second;
+     std::cout<<"\n\t Building periodicity map for Boundary pair ("<<bp_first<<","<<bp_second<<")\n";
+     
+     unsigned int direction=parameters.directions[i];
+     DealIIExtensions::make_periodicity_map_dg<dealii::DoFHandler<dim>>(dof_handler,
+									boundary_pair.first,
+									boundary_pair.second,
+									direction,
+									periodic_map);
+     }
+}
+/******************************************************************************************/
+
+
 //------------------------------------------------------------------------------
 // Return mapping type based on selected type
 //------------------------------------------------------------------------------
@@ -159,7 +223,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::q2)
    {
-      static MappingQ<dim> m(2);
+      static MappingQ<dim,dim> m(2);
       return m;
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
@@ -183,7 +247,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
 template <int dim>
 void ConservationLaw<dim>::compute_cartesian_mesh_size ()
 {
-   const double geom_tol = 1.0e-12;
+   const double geom_tol = 1.0e-10;
    
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -717,6 +781,10 @@ void ConservationLaw<dim>::run ()
       else if(parameters.mesh_type == "gmsh")
          grid_in.read_msh(input_file);
    }
+   
+   // Set periodic boundary conditions
+   if(parameters.is_periodic)
+     configure_periodic_boundary();
    
 //   {
 //      // Use this refine around corner in forward step

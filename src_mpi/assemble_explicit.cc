@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "claw.h"
+#include "DealiiExtensions.h"
 
 using namespace dealii;
 
@@ -177,6 +178,94 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    typedef double NormalFlux[EulerEquations<dim>::n_components];
    NormalFlux *normal_fluxes = new NormalFlux[n_q_points];
    
+   //****************************************************
+   //	IN CASE OF PERIODIC BOUDNARY CONDITIONS
+   //****************************************************
+   
+   typename EulerEquations<dim>::BoundaryKind boundCheck = EulerEquations<dim>::periodic;
+   if((boundary_kind==boundCheck)) //&&(parameters.is_periodic)
+   {
+      // Find the neighbouring cell via map.find(key) and store the face_pair
+      FacePair<dim,dim> face_pair;
+      FaceCellPair<dim> cell_key(dinfo.cell, face_no);
+      typename PeriodicCellMap<dim>::iterator it = periodic_map.find(cell_key);
+      face_pair = it->second;
+      
+      // Store the info of n_cell and n_face
+      typename DoFHandler<dim>::active_cell_iterator n_cell_dof = dof_handler.begin_active();
+      unsigned int face_tmp;
+      if(face_pair.cell[0]==dinfo.cell)
+      {
+	n_cell_dof= face_pair.cell[1];
+	face_tmp = face_pair.face_idx[1];
+      }
+      else
+      {
+	n_cell_dof = face_pair.cell[0];
+	face_tmp = face_pair.face_idx[0];
+      }
+      const unsigned int n_face_no = face_tmp;
+      const unsigned int n_cell_no = cell_number (n_cell_dof);
+      
+      // Extracting values at the neighboring face
+      QGauss<dim-1> quad_face(fe.degree+1);
+      FEFaceValues<dim> fe_v_n(mapping(), fe, quad_face, update_values );
+      
+      std::vector<Vector<double> > n_boundary_values(n_q_points,
+					    Vector<double>(EulerEquations<dim>::n_components));
+      fe_v_n.reinit(n_cell_dof,n_face_no);
+      fe_v_n.get_function_values (current_solution, n_boundary_values);
+      const unsigned int dofs_per_cell_neighbor = fe_v_n.dofs_per_cell;
+
+      // Compute fluxes at the periodic boundary
+    Table<2,double>
+	Wplus  (n_q_points, EulerEquations<dim>::n_components),
+	Wminus (n_q_points, EulerEquations<dim>::n_components);
+
+    // Wminus is Neighbouring cell value
+    for (unsigned int q=0; q<n_q_points; ++q)
+    {
+	for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+	{
+	  Wplus[q][c] = 0.0;
+	  Wminus[q][c] = 0.0;
+	}
+	for (unsigned int i=0; i<dofs_per_cell; ++i)
+	{
+	  const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
+	  Wplus[q][c] += current_solution(dof_indices[i]) * 
+			  fe_v.shape_value_component(i, q, c);
+	}
+	// Check face_flip of the boundary face and change order of quadrature points if necesary
+	unsigned int q1=q;
+	if(face_pair.orientation[1])
+	  q1 = n_q_points - q - 1;
+	for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
+	{
+	  const unsigned int c = fe_v_n.get_fe().system_to_component_index(i).first;
+	  Wminus[q][c] += n_boundary_values[q][c] *
+			  fe_v_n.shape_value_component(i, q1, c);
+	}
+
+	numerical_normal_flux(fe_v.normal_vector(q),
+			      Wplus[q],
+			      Wminus[q],
+			      cell_average[cell_no],
+			      cell_average[n_cell_no],
+			      normal_fluxes[q]);
+    }
+    
+   }
+   //*************************************************************
+   else
+   {
+   
+   std::vector<Vector<double> >
+   boundary_values(n_q_points, Vector<double>(EulerEquations<dim>::n_components));
+   parameters.boundary_conditions[boundary_id]
+   .values.vector_value_list(fe_v.get_quadrature_points(),
+                             boundary_values);
+
    for (unsigned int q=0; q<n_q_points; ++q)
    {
       for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
@@ -228,6 +317,7 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
                             Aplus,
                             Aminus,
                             normal_fluxes[q]);
+   }
    }
    
    // Now assemble the face term

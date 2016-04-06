@@ -1226,7 +1226,8 @@ struct EulerEquations
       outflow_boundary,
       no_penetration_boundary,
       pressure_boundary,
-      farfield_boundary
+      farfield_boundary,
+      periodic
    };
    
    
