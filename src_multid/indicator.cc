@@ -1,8 +1,8 @@
-#include <base/quadrature_lib.h>
+#include <deal.II/base/quadrature_lib.h>
 
-#include <fe/fe_values.h>
+#include <deal.II/fe/fe_values.h>
 
-#include <dofs/dof_handler.h>
+#include <deal.II/dofs/dof_handler.h>
 
 #include "equation.h"
 #include "claw.h"
@@ -198,3 +198,4 @@ void ConservationLaw<dim>::compute_shock_indicator_kxrcf ()
 }
 
 template class ConservationLaw<2>;
+template class ConservationLaw<3>;

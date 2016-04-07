@@ -1,9 +1,9 @@
-#include <base/quadrature_lib.h>
+#include <deal.II/base/quadrature_lib.h>
 
-#include <fe/fe_values.h>
-#include <fe/fe_values_extractors.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_values_extractors.h>
 
-#include <dofs/dof_handler.h>
+#include <deal.II/dofs/dof_handler.h>
 
 #include "equation.h"
 #include "claw.h"
@@ -41,10 +41,26 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
    // Need 2N - 3 >= degree for the quadrature to be exact.
    // Choose same order as used for assembly process.
    unsigned int N = (fe.degree+3)%2==0 ? (fe.degree+3)/2 : (fe.degree+4)/2;
-   Quadrature<dim> quadrature_x (QGaussLobatto<1>(N), QGauss<1>(fe.degree+1));
-   Quadrature<dim> quadrature_y (QGauss<1>(fe.degree+1), QGaussLobatto<1>(N));
+   
+   Quadrature<dim> quadrature_x, quadrature_y, quadrature_z;
+   
+   if(dim==2)
+   {
+     Quadrature<2> quadrature_x (QGaussLobatto<1>(N), QGauss<1>(fe.degree+1));
+     Quadrature<2> quadrature_y (QGauss<1>(fe.degree+1), QGaussLobatto<1>(N));
+   }
+   else if(dim==3)
+   {
+     Quadrature<3> quadrature_x (Quadrature<2> (QGaussLobatto<1>(N), QGauss<1>(fe.degree+1)), QGauss<1>(fe.degree+1));
+     Quadrature<3> quadrature_y (Quadrature<2> (QGauss<1>(fe.degree+1), QGaussLobatto<1>(N)), QGauss<1>(fe.degree+1));
+     Quadrature<3> quadrature_z (Quadrature<2> (QGauss<1>(fe.degree+1), QGauss<1>(fe.degree+1)), QGaussLobatto<1>(N));
+   }
+
    FEValues<dim> fe_values_x (mapping(), fe, quadrature_x, update_values);
    FEValues<dim> fe_values_y (mapping(), fe, quadrature_y, update_values);
+   FEValues<dim> fe_values_z (mapping(), fe, quadrature_y, update_values);	// define even in 2D to avoid compiling errors
+   if(dim==3)
+     FEValues<dim> fe_values_z (mapping(), fe, quadrature_z, update_values);
    
    const unsigned int n_q_points = quadrature_x.size();
    std::vector<double> density_values(n_q_points), energy_values(n_q_points);
@@ -76,6 +92,13 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
       fe_values_y[density].get_function_values(current_solution, density_values);
       for(unsigned int q=0; q<n_q_points; ++q)
          rho_min = std::min(rho_min, density_values[q]);
+      
+      if(dim==3)
+      {
+	fe_values_z[density].get_function_values(current_solution, density_values);
+	for(unsigned int q=0; q<n_q_points; ++q)
+	  rho_min = std::min(rho_min, density_values[q]);
+      }
       
       double density_average = cell_average[c][density_component];
       double rat = std::fabs(density_average - eps) /
@@ -124,11 +147,17 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
             fe_values_x[momentum].get_function_values(current_solution, momentum_values);
             fe_values_x[energy].get_function_values(current_solution, energy_values);
          }
-         else
+         else if(d==1)
          {
             fe_values_y[density].get_function_values(current_solution, density_values);
             fe_values_y[momentum].get_function_values(current_solution, momentum_values);
             fe_values_y[energy].get_function_values(current_solution, energy_values);
+         }
+         else if(d==2)
+         {
+            fe_values_z[density].get_function_values(current_solution, density_values);
+            fe_values_z[momentum].get_function_values(current_solution, momentum_values);
+            fe_values_z[energy].get_function_values(current_solution, energy_values);
          }
          
          for(unsigned int q=0; q<n_q_points; ++q)
@@ -208,3 +237,4 @@ void ConservationLaw<dim>::apply_positivity_limiter ()
 }
 
 template class ConservationLaw<2>;
+template class ConservationLaw<3>;

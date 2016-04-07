@@ -33,9 +33,9 @@ for rk=1,2,3,...
 endfor
 */
 
-#include <base/quadrature_lib.h>
-#include <fe/fe_values.h>
-#include <dofs/dof_handler.h>
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/fe/fe_values.h>
+#include <deal.II/dofs/dof_handler.h>
 
 #include "equation.h"
 #include "claw.h"
@@ -481,3 +481,4 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
 }
 
 template class ConservationLaw<2>;
+template class ConservationLaw<3>;

@@ -104,7 +104,6 @@ private:
    
    // Functions for explicit integration
    void integrate_cell_term_explicit (DoFInfo& dinfo, CellInfo& info);
-   void integrate_cell_term_explicit_polytropic (DoFInfo& dinfo, CellInfo& info);
    void integrate_boundary_term_explicit (DoFInfo& dinfo, CellInfo& info);
    void integrate_face_term_explicit (DoFInfo& dinfo1, DoFInfo& dinfo2,
                              CellInfo& info1, CellInfo& info2);

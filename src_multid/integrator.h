@@ -10,15 +10,15 @@
  *
  */
 
-#include <dofs/dof_handler.h>
+#include <deal.II/dofs/dof_handler.h>
 
-#include <lac/vector.h>
-#include <lac/trilinos_sparse_matrix.h>
+#include <deal.II/lac/vector.h>
+#include <deal.II/lac/trilinos_sparse_matrix.h>
 
-#include <meshworker/dof_info.h>
-#include <meshworker/integration_info.h>
-#include <meshworker/simple.h>
-#include <meshworker/loop.h>
+#include <deal.II/meshworker/dof_info.h>
+#include <deal.II/meshworker/integration_info.h>
+#include <deal.II/meshworker/simple.h>
+#include <deal.II/meshworker/loop.h>
 
 
 //------------------------------------------------------------------------------

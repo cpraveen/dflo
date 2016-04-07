@@ -9,27 +9,7 @@ const double Tl = 2.0;
 const double Tu = 1.0;
 
 //--------------------------------------------------------------------------------------------
-template <int dim>
-void PolytropicHydrostatic<dim>::vector_value (const Point<dim> &p,
-                                               Vector<double>   &values) const
-{
-   // Density
-   values[EulerEquations<dim>::density_component] = std::pow(rho0,nu-1) - alpha * (nu-1.0)/nu * p[1];
-   values[EulerEquations<dim>::density_component]
-      = std::pow(values[EulerEquations<dim>::density_component], 1.0/(nu-1.0));
-   
-   // Momentum
-   for(unsigned int d=0; d<dim; ++d)
-      values[d] = 0.0;
-   
-   double pressure = alpha * std::pow(values[EulerEquations<dim>::density_component],nu);
-   
-   // Energy
-   values[EulerEquations<dim>::energy_component] = pressure/(EulerEquations<dim>::gas_gamma - 1.0);
-}
-
-//--------------------------------------------------------------------------------------------
-// Initial condition for planar Rayleigh-Taylor problem
+// Initial condition for Rayleigh-Taylor problem
 // This is setup for 2-d case only
 //--------------------------------------------------------------------------------------------
 template <int dim>
@@ -60,8 +40,6 @@ void RayleighTaylor<dim>::vector_value (const Point<dim> &p,
       + 0.5 * values[EulerEquations<dim>::density_component] * vel * vel;
 }
 
-//--------------------------------------------------------------------------------------------
-// Radial Rayleigh-Taylor from Leveque & Bale
 //--------------------------------------------------------------------------------------------
 template <int dim>
 void RadialRayleighTaylor<dim>::vector_value (const Point<dim> &p,
@@ -361,9 +339,6 @@ void ConservationLaw<dim>::set_initial_condition_Qk ()
    else if(parameters.ic_function == "isohydro")
       VectorTools::interpolate(mapping(), dof_handler,
                                IsothermalHydrostatic<dim>(), old_solution);
-   else if(parameters.ic_function == "polyhydro")
-      VectorTools::interpolate(mapping(), dof_handler,
-                               PolytropicHydrostatic<dim>(1.2), old_solution);
    else if(parameters.ic_function == "isenvort")
       VectorTools::interpolate(mapping(), dof_handler,
                                IsentropicVortex<dim>(5.0, 0.0, 0.0), old_solution);

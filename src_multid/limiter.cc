@@ -1,8 +1,9 @@
-#include <base/quadrature_lib.h>
 
-#include <fe/fe_values.h>
+#include <deal.II/base/quadrature_lib.h>
 
-#include <dofs/dof_handler.h>
+#include <deal.II/fe/fe_values.h>
+
+#include <deal.II/dofs/dof_handler.h>
 
 #include "equation.h"
 #include "claw.h"
@@ -206,7 +207,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk_deprecated ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Point<dim> dr = p[i] - cell->center();
+               Tensor<1,dim,double> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
@@ -359,7 +360,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Point<dim> dr = p[i] - cell->center();
+               Tensor<1, dim, double> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
@@ -516,3 +517,4 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
 }
 
 template class ConservationLaw<2>;
+template class ConservationLaw<3>;

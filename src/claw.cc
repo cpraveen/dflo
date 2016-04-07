@@ -1,45 +1,45 @@
-#include <deal.II/base/quadrature_lib.h>
-#include <deal.II/base/function.h>
-#include <deal.II/base/parameter_handler.h>
-#include <deal.II/base/function_parser.h>
-#include <deal.II/base/utilities.h>
-#include <deal.II/base/conditional_ostream.h>
+#include <base/quadrature_lib.h>
+#include <base/function.h>
+#include <base/parameter_handler.h>
+#include <base/function_parser.h>
+#include <base/utilities.h>
+#include <base/conditional_ostream.h>
 
-#include <deal.II/lac/vector.h>
-#include <deal.II/lac/compressed_sparsity_pattern.h>
+#include <lac/vector.h>
+#include <lac/compressed_sparsity_pattern.h>
 
-#include <deal.II/grid/tria.h>
-#include <deal.II/grid/grid_generator.h>
-#include <deal.II/grid/grid_out.h>
-#include <deal.II/grid/tria_accessor.h>
-#include <deal.II/grid/tria_iterator.h>
-#include <deal.II/grid/grid_in.h>
-#include <deal.II/grid/tria_boundary_lib.h>
+#include <grid/tria.h>
+#include <grid/grid_generator.h>
+#include <grid/grid_out.h>
+#include <grid/tria_accessor.h>
+#include <grid/tria_iterator.h>
+#include <grid/grid_in.h>
+#include <grid/tria_boundary_lib.h>
 
-#include <deal.II/dofs/dof_handler.h>
-#include <deal.II/dofs/dof_accessor.h>
-#include <deal.II/dofs/dof_tools.h>
-#include <deal.II/dofs/dof_renumbering.h>
+#include <dofs/dof_handler.h>
+#include <dofs/dof_accessor.h>
+#include <dofs/dof_tools.h>
+#include <dofs/dof_renumbering.h>
 
-#include <deal.II/fe/fe_values.h>
-#include <deal.II/fe/fe_system.h>
-#include <deal.II/fe/mapping_q1.h>
-#include <deal.II/fe/mapping_cartesian.h>
-#include <deal.II/fe/fe_dgq.h>
-#include <deal.II/fe/fe_dgp.h>
+#include <fe/fe_values.h>
+#include <fe/fe_system.h>
+#include <fe/mapping_q1.h>
+#include <fe/mapping_cartesian.h>
+#include <fe/fe_dgq.h>
+#include <fe/fe_dgp.h>
 
-#include <deal.II/numerics/vector_tools.h>
-#include <deal.II/numerics/solution_transfer.h>
-#include <deal.II/numerics/matrix_tools.h>
+#include <numerics/vector_tools.h>
+#include <numerics/solution_transfer.h>
+#include <numerics/matrix_tools.h>
 
-#include <deal.II/lac/trilinos_sparse_matrix.h>
-#include <deal.II/lac/trilinos_vector.h>
-#include <deal.II/lac/trilinos_precondition.h>
-#include <deal.II/lac/trilinos_solver.h>
+#include <lac/trilinos_sparse_matrix.h>
+#include <lac/trilinos_vector.h>
+#include <lac/trilinos_precondition.h>
+#include <lac/trilinos_solver.h>
 
-#include <deal.II/lac/solver_gmres.h>
-#include <deal.II/lac/sparse_direct.h>
-#include <deal.II/lac/precondition_block.h>
+#include <lac/solver_gmres.h>
+#include <lac/sparse_direct.h>
+#include <lac/precondition_block.h>
 
 #include <Sacado.hpp>
 
@@ -304,7 +304,7 @@ void ConservationLaw<dim>::setup_system ()
    }
    else
    {
-      DynamicSparsityPattern c_sparsity(dof_handler.n_dofs());
+      CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
       DoFTools::make_flux_sparsity_pattern (dof_handler, c_sparsity);
       sparsity_pattern.copy_from(c_sparsity);
 
@@ -361,19 +361,19 @@ void ConservationLaw<dim>::setup_system ()
                neighbor = cell->neighbor(face_no);
             Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
                    ExcInternalError());
-            Tensor<1,dim> dr = neighbor->center() - cell->center();
-            if(dr[0] < -0.5*dx)
+            Point<dim> dr = neighbor->center() - cell->center();
+            if(dr(0) < -0.5*dx)
                lcell[c] = neighbor;
-            else if(dr[0] > 0.5*dx)
+            else if(dr(0) > 0.5*dx)
                rcell[c] = neighbor;
-            else if(dr[1] < -0.5*dx)
+            else if(dr(1) < -0.5*dx)
                bcell[c] = neighbor;
-            else if(dr[1] > 0.5*dx)
+            else if(dr(1) > 0.5*dx)
                tcell[c] = neighbor;
             else
             {
                std::cout << "Did not find all neighbours\n";
-               std::cout << "dx, dy = " << dr[0] << "  " << dr[1] << std::endl;
+               std::cout << "dx, dy = " << dr(0) << "  " << dr(1) << std::endl;
                exit(0);
             }
          }
@@ -430,9 +430,9 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    
    integrator.info_box.initialize (fe, mapping());
    
-   AnyData rhs;
+   NamedData< Vector<double>* > rhs;
    Vector<double>* data = &right_hand_side;
-   rhs.add<Vector<double>*> (data, "RHS");
+   rhs.add (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
 
