@@ -327,7 +327,7 @@ void ConservationLaw<dim>::setup_system ()
 {
    TimerOutput::Scope t(computing_timer, "Setup");
 
-   //pcout << "Allocating memory ...\n";
+   pcout << "Allocating memory ...\n";
    
    dof_handler.clear();
    dof_handler.distribute_dofs (fe);
@@ -337,10 +337,10 @@ void ConservationLaw<dim>::setup_system ()
                                             locally_relevant_dofs);
    
    // Size all of the fields.
-   current_solution.reinit  (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
-   right_hand_side.reinit   (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    old_solution.reinit 		(locally_owned_dofs, mpi_communicator);
-   predictor.reinit 		(locally_owned_dofs, mpi_communicator);
+   current_solution.reinit (locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
+   predictor.reinit 		   (locally_owned_dofs, mpi_communicator);
+   right_hand_side.reinit 	(locally_owned_dofs, locally_relevant_dofs, mpi_communicator);
    newton_update.reinit 	(locally_owned_dofs, mpi_communicator);
    
    cell_average.resize 		(triangulation.n_active_cells(),
@@ -395,6 +395,7 @@ void ConservationLaw<dim>::setup_system ()
       double dx = cell->diameter() / std::sqrt(1.0*dim);
 
       for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
+      {
          if (! cell->at_boundary(face_no))
          {
             const typename DoFHandler<dim>::cell_iterator
@@ -417,6 +418,60 @@ void ConservationLaw<dim>::setup_system ()
                exit(0);
             }
          }
+         else if(parameters.is_periodic)
+	 {
+	   dealii::types::boundary_id b_id = cell->face(face_no)->boundary_id();
+	   for(unsigned int i = 0; i<parameters.periodic_pair.size(); ++i)
+	   {
+	     if((b_id==parameters.periodic_pair[i].first)||(b_id==parameters.periodic_pair[i].second))
+	     {
+	       // Find the neighbouring cell via map.find(key) and store the face_pair
+	       FacePair<dim,dim> face_pair;
+	       FaceCellPair<dim> cell_key(cell, face_no);
+	       typename PeriodicCellMap<dim>::iterator it = periodic_map.find(cell_key);
+	       face_pair = it->second;
+	       
+	       typename DoFHandler<dim>::active_cell_iterator 
+		  neighbor = dof_handler.begin_active();
+	       unsigned int face_tmp;
+	       if(face_pair.cell[0]==cell)
+	       {
+		 neighbor= face_pair.cell[1];
+		 face_tmp = face_pair.face_idx[1];
+	       }
+	       else
+	       {
+		 neighbor = face_pair.cell[0];
+		 face_tmp = face_pair.face_idx[0];
+	       }
+	       
+	       const unsigned int n_face_no = face_tmp;
+	       const unsigned int n_cell_no = cell_number (neighbor);
+	       
+	       Assert(neighbor->level() == cell->level() || neighbor->level() == cell->level()-1,
+		    ExcInternalError());
+	       Tensor<1,dim> dr = cell->face(face_no)->center() - cell->center();
+	       if(dr[0] < -0.2*dx)
+		 lcell[c] = neighbor;
+	       else if(dr[0] > 0.2*dx)
+		 rcell[c] = neighbor;
+	       else if(dr[1] < -0.2*dx)
+		 bcell[c] = neighbor;
+	       else if(dr[1] > 0.2*dx)
+		 tcell[c] = neighbor;
+	       else
+	       {
+		 std::cout << "Did not find all neighbours\n";
+		 std::cout << "dx, dy = " << dr[0] << "  " << dr[1] << std::endl;
+		 exit(0);
+	       }
+	     }
+	   }
+	       
+	   const typename DoFHandler<dim>::cell_iterator
+	   neighbor = cell->neighbor(face_no);
+	 }
+      }
    }
 }
 
@@ -448,7 +503,6 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    LA::Vector<double>* data = &right_hand_side;
    rhs.add< LA::Vector<double>* > (data, "RHS");
    integrator.assembler.initialize (rhs);
-
 }
 
 //------------------------------------------------------------------------------
@@ -888,7 +942,7 @@ void ConservationLaw<dim>::run ()
          
          refine_grid(refinement_indicators);
          
-         //newton_update.reinit (locally_owned_dofs, mpi_communicator);
+         newton_update.reinit (locally_owned_dofs, mpi_communicator);
 
          next_refine_time = elapsed_time + parameters.refine_time_step;
          next_refine_iter = time_iter + parameters.refine_iter_step;
