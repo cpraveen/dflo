@@ -1206,12 +1206,17 @@ void ConservationLaw<dim>::compute_errors ()
       VectorTools::interpolate(mapping(), dof_handler,
                                RadialRayleighTaylor<dim>(), old_solution);
    }
+   else if(parameters.ic_function == "polyhydro")
+   {
+      VectorTools::interpolate(mapping(), dof_handler,
+                               PolytropicHydrostatic<dim>(1.2), old_solution);
+   }
    else
    {
       VectorTools::interpolate(mapping(), dof_handler,
                                parameters.initial_conditions, old_solution);
    }
-   
+
    current_solution -= old_solution;
    output_results();
    
@@ -1233,6 +1238,7 @@ void ConservationLaw<dim>::compute_errors ()
    }
 
    double area = M_PI; //4.0;
+   std::cout << "Area used for error normalization = " << area << std::endl;
    for(unsigned int c=0; c<EulerEquations<2>::n_components; ++c)
       std::cout << L2_error[c]/std::sqrt(area) << "  ";
    std::cout << std::endl;

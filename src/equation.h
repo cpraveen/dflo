@@ -119,7 +119,7 @@ struct EulerEquations
    template <typename InputVector>
    static
    typename InputVector::value_type
-   max_eigenvalue (const InputVector        &W,
+   max_eigenvalue (const InputVector           &W,
                    const dealii::Tensor<1,dim> &normal)
    {
       typedef typename InputVector::value_type number;
@@ -197,9 +197,9 @@ struct EulerEquations
    //---------------------------------------------------------------------------
    template <typename InputVector, typename number>
    static
-   void normal_flux (const InputVector        &W,
-                     const dealii::Point<dim> &normal,
-                     number                   (&flux)[n_components])
+   void normal_flux (const InputVector           &W,
+                     const dealii::Tensor<1,dim> &normal,
+                     number                      (&flux)[n_components])
    {
       const number pressure = compute_pressure<number> (W);
       
@@ -325,7 +325,7 @@ struct EulerEquations
    static
    void lxf_flux 
    (
-    const dealii::Tensor<1,dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     const dealii::Vector<double>     &Aplus,
@@ -383,7 +383,7 @@ struct EulerEquations
    static
    void steger_warming_flux 
    (
-    const dealii::Tensor<1,dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &Wplus,
     const InputVector                &Wminus,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -470,7 +470,7 @@ struct EulerEquations
    static
    void roe_flux
    (
-    const dealii::Tensor<1,dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -564,7 +564,7 @@ struct EulerEquations
    static
    void hllc_flux
    (
-    const dealii::Tensor<1,dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &W_l,
     const InputVector                &W_r,
     typename InputVector::value_type (&normal_flux)[n_components]
@@ -715,8 +715,8 @@ struct EulerEquations
    static
    void kinetic_split_flux
    (
-    int                               sign,
-    const dealii::Tensor<1,dim>         &normal,
+    int                              sign,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &W,
     typename InputVector::value_type (&normal_flux)[n_components]
    )
@@ -757,7 +757,7 @@ struct EulerEquations
    static
    void kfvs_flux 
    (
-    const dealii::Tensor<1,dim>          &normal,
+    const dealii::Tensor<1,dim>       &normal,
     const InputVector                 &Wplus,
     const InputVector                 &Wminus,
     typename InputVector::value_type  (&normal_flux)[n_components]
@@ -788,7 +788,7 @@ struct EulerEquations
    static
    void no_penetration_flux 
    (
-    const dealii::Point<dim>         &normal,
+    const dealii::Tensor<1,dim>      &normal,
     const InputVector                &Wminus,
     typename InputVector::value_type (&normal_flux)[n_components]
    )
@@ -940,7 +940,7 @@ struct EulerEquations
    static
    void
    compute_Wminus (const BoundaryKind           &boundary_kind,
-                   const dealii::Tensor<1,dim>     &normal_vector,
+                   const dealii::Tensor<1,dim>  &normal_vector,
                    const DataVector             &Wplus,
                    const dealii::Vector<double> &boundary_values,
                    const DataVector             &Wminus)

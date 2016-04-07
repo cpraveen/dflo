@@ -49,7 +49,7 @@ end
 subsection time stepping
   set time step type = global
   set cfl = 0.9
-  set final time = 20.0
+  set final time = 0.1
   set nonlinear iterations = 1
 end
 

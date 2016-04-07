@@ -89,6 +89,7 @@ void ConservationLaw<dim>::compute_min_max_mood_var()
       for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
       {
          if (cell->at_boundary(f) == false)
+         {
             if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
             {
                unsigned int cn = cell_number(cell->neighbor(f));
@@ -108,6 +109,7 @@ void ConservationLaw<dim>::compute_min_max_mood_var()
                                                cell_average[cn][EulerEquations<dim>::density_component]);
                }
             }
+         }
       }
    }
 }
@@ -243,6 +245,7 @@ bool ConservationLaw<dim>::test_u2(const typename DoFHandler<dim>::cell_iterator
    for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
    {
       if (cell->at_boundary(f) == false)
+      {
          if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
          {
             get_mood_second_derivatives (cell->neighbor(f), D2);
@@ -264,6 +267,7 @@ bool ConservationLaw<dim>::test_u2(const typename DoFHandler<dim>::cell_iterator
                }
             }
          }
+      }
    }
    
    static const double eps = 0.5;
@@ -341,6 +345,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
                {
                   if (cell->at_boundary(f) == false)
+                  {
                      if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
                      {
                         unsigned int cn = cell_number(cell->neighbor(f));
@@ -384,6 +389,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                            }
                         }
                      }
+                  }
                }
                //AssertThrow(c>0, ExcMessage("MOOD failure"));
             }
@@ -409,6 +415,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
          for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
          {
             if (cell->at_boundary(f) == false)
+            {
                if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
                {
                   unsigned int cn = cell_number(cell->neighbor(f));
@@ -422,6 +429,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                      re_update[cn] = true;
                   }
                }
+            }
          }
          re_update[c] = true;
       }
@@ -444,6 +452,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
          for (unsigned int f=0; f<GeometryInfo<dim>::faces_per_cell; ++f)
          {
             if (cell->at_boundary(f) == false)
+            {
                if (cell->neighbor(f)->has_children() == false || cell->neighbor_is_coarser(f))
                {
                   unsigned int cn = cell_number(cell->neighbor(f));
@@ -457,6 +466,7 @@ bool ConservationLaw<dim>::apply_mood(unsigned int &n_reduce,
                      reset_sol[cn] = true;
                   }
                }
+            }
          }
       }
    }

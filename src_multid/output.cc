@@ -1,8 +1,8 @@
-#include <deal.II/base/utilities.h>
+#include <base/utilities.h>
 
-#include <deal.II/dofs/dof_handler.h>
+#include <dofs/dof_handler.h>
 
-#include <deal.II/numerics/data_out.h>
+#include <numerics/data_out.h>
 
 #include <iostream>
 #include <fstream>
@@ -107,4 +107,3 @@ void ConservationLaw<dim>::output_results () const
 }
 
 template class ConservationLaw<2>;
-template class ConservationLaw<3>;

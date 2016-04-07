@@ -134,7 +134,7 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    std::vector<unsigned int>& dof_indices = dinfo.indices;
    const unsigned int& face_no = dinfo.face_number;
    const double& face_diameter = dinfo.face->diameter();
-   const unsigned int& boundary_id = dinfo.face->boundary_indicator();
+   const unsigned int& boundary_id = dinfo.face->boundary_id();
    
    const FEValuesBase<dim>& fe_v = info.fe_values();
    const unsigned int n_q_points = fe_v.n_quadrature_points;

@@ -123,7 +123,7 @@ ConservationLaw<dim>::refine_forward_step ()
       cell->clear_coarsen_flag();
       cell->clear_refine_flag();
    
-      Tensor<1, dim> dr = cell->center() - corner;
+      Point<dim> dr = cell->center() - corner;
       if(dr.norm() < radius)
          cell->set_refine_flag();
    }
@@ -133,4 +133,3 @@ ConservationLaw<dim>::refine_forward_step ()
 }
 
 template class ConservationLaw<2>;
-template class ConservationLaw<3>;

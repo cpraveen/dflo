@@ -6,6 +6,27 @@
 
 #include "equation.h"
 
+//------------------------------------------------------------------------
+template <int dim>
+class PolytropicHydrostatic: public dealii::Function<dim>
+{
+public:
+   PolytropicHydrostatic (double nu)
+   :
+   dealii::Function<dim>(EulerEquations<dim>::n_components),
+   nu (nu)
+   {}
+   virtual void vector_value (const dealii::Point<dim>  &p,
+                              dealii::Vector<double>  &values) const;
+   
+private:
+   double nu; // polytropic index
+   const double p0 = 1.0;
+   const double rho0 = 1.0;
+   const double alpha = 1.0;
+};
+
+//------------------------------------------------------------------------
 template <int dim>
 class RayleighTaylor : public dealii::Function<dim>
 {

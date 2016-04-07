@@ -184,4 +184,3 @@ template class RayleighTaylor<2>;
 template class IsentropicVortex<2>;
 template class VortexSystem<2>;
 template class ConservationLaw<2>;
-template class ConservationLaw<3>;

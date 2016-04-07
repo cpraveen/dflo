@@ -1,11 +1,11 @@
 xmin = -0.25;
 xmax = +0.25;
-ymin = -0.75;
-ymax = +0.75;
+ymin = -1.00;
+ymax = +1.00;
 
 // y length is 3 times x length
-nx = 201;
-ny = (nx-1)*3 + 1;
+nx = 51;
+ny = (nx-1)*4 + 1;
 
 Point(1) = {xmin, ymin, 0};
 Point(2) = {xmax, ymin, 0};

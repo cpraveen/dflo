@@ -304,7 +304,7 @@ void ConservationLaw<dim>::setup_system ()
    }
    else
    {
-      CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
+      DynamicSparsityPattern c_sparsity(dof_handler.n_dofs());
       DoFTools::make_flux_sparsity_pattern (dof_handler, c_sparsity);
       sparsity_pattern.copy_from(c_sparsity);
 
@@ -429,11 +429,10 @@ void ConservationLaw<dim>::setup_mesh_worker (IntegratorExplicit<dim>& integrato
    integrator.info_box.add_update_flags_face     (update_normal_vectors); // TODO:ADIFF
    
    integrator.info_box.initialize (fe, mapping());
-
    
    AnyData rhs;
    Vector<double>* data = &right_hand_side;
-   rhs.add< Vector<double>* > (data, "RHS");
+   rhs.add<Vector<double>*> (data, "RHS");
    integrator.assembler.initialize (rhs);
 }
 
