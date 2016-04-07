@@ -35,7 +35,6 @@
 
 #include "parameters.h"
 #include "integrator.h"
-
 #include"DealiiExtensions.h"
 
 using namespace dealii;
@@ -306,7 +305,7 @@ private:
    std::vector< dealii::Vector<double> > inv_mass_matrix;
    
    Parameters::AllParameters<dim>  parameters;
-   dealii::ConditionalOStream		       pcout;
+   dealii::ConditionalOStream      pcout;
    TimerOutput                     computing_timer;
 
    // Call the appropriate numerical flux function
@@ -314,8 +313,7 @@ private:
    inline
    void numerical_normal_flux 
    (
-      const dealii::Tensor<1, dim, double> &normal,
-      //const dealii::Point<dim>         &normal,
+      const dealii::Tensor<1,dim>      &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,

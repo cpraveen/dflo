@@ -311,8 +311,8 @@ namespace Parameters
    template <int dim>
    AllParameters<dim>::AllParameters ()
    :
-   external_force (dim),
-   initial_conditions (EulerEquations<dim>::n_components)
+   initial_conditions (EulerEquations<dim>::n_components),
+   external_force (dim)
    {}
    
    
@@ -520,7 +520,7 @@ namespace Parameters
                = EulerEquations<dim>::outflow_boundary;
             else if (boundary_type == "farfield")
                boundary_conditions[boundary_id].kind
-	       = EulerEquations<dim>::farfield_boundary;
+	           = EulerEquations<dim>::farfield_boundary;
             else if (boundary_type == "periodic")
 	    {
 	      boundary_conditions[boundary_id].kind
