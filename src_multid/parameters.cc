@@ -553,4 +553,3 @@ namespace Parameters
 
 // To avoid linking errors
 template struct Parameters::AllParameters<2>;
-template struct Parameters::AllParameters<3>;
