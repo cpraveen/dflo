@@ -362,6 +362,13 @@ namespace Parameters
    {
       static const unsigned int max_n_boundaries = 10;
       
+      // In case of periodic boundary conditions
+      bool is_periodic = 0;
+      std::string direction;
+      std::vector<unsigned int> directions; 
+      std::vector<std::pair<dealii::types::boundary_id,dealii::types::boundary_id>> periodic_pair;
+      
+      
       struct BoundaryConditions
       {
          typename EulerEquations<dim>::BoundaryKind kind;
