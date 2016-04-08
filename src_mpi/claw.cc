@@ -576,8 +576,7 @@ ConservationLaw<dim>::compute_time_step_cartesian ()
       global_dt = std::min(global_dt, dt(c));
    }
    
-   global_dt = -global_dt;
-   global_dt = -Utilities::MPI::max (global_dt, mpi_communicator);
+   global_dt = Utilities::MPI::min (global_dt, mpi_communicator);
 }
 
 //------------------------------------------------------------------------------

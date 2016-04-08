@@ -150,11 +150,11 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
    
    // Conservative variable value at face
    Table<2,double>
-      Wplus  (n_q_points, EulerEquations<dim>::n_components),
-      Wminus (n_q_points, EulerEquations<dim>::n_components);
-
+   Wplus  (n_q_points, EulerEquations<dim>::n_components),
+   Wminus (n_q_points, EulerEquations<dim>::n_components);
+   
    /*Table<3,double>
-      grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim);*/
+    grad_Wplus  (n_q_points, EulerEquations<dim>::n_components, dim);*/
    
    // On the other side of face, we have boundary. We get Wminus from
    // boundary conditions
@@ -196,13 +196,13 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
       unsigned int face_tmp;
       if(face_pair.cell[0]==dinfo.cell)
       {
-	n_cell_dof= face_pair.cell[1];
-	face_tmp = face_pair.face_idx[1];
+         n_cell_dof= face_pair.cell[1];
+         face_tmp = face_pair.face_idx[1];
       }
       else
       {
-	n_cell_dof = face_pair.cell[0];
-	face_tmp = face_pair.face_idx[0];
+         n_cell_dof = face_pair.cell[0];
+         face_tmp = face_pair.face_idx[0];
       }
       const unsigned int n_face_no = face_tmp;
       const unsigned int n_cell_no = cell_number (n_cell_dof);
@@ -211,155 +211,156 @@ void ConservationLaw<dim>::integrate_boundary_term_explicit
       QGauss<dim-1> quad_face(fe.degree+1);
       FEFaceValues<dim> fe_v_n(mapping(), fe, quad_face, update_values );
       
-      std::vector<Vector<double> > n_boundary_values(n_q_points,
-					    Vector<double>(EulerEquations<dim>::n_components));
-      fe_v_n.reinit(n_cell_dof,n_face_no);
-      fe_v_n.get_function_values (current_solution, n_boundary_values);
+      fe_v_n.reinit(n_cell_dof, n_face_no);
       const unsigned int dofs_per_cell_neighbor = fe_v_n.dofs_per_cell;
-
+      std::vector<types::global_dof_index> dof_indices_n (dofs_per_cell_neighbor);
+      n_cell_dof->get_dof_indices (dof_indices_n);
+      
       // Compute fluxes at the periodic boundary
-    Table<2,double>
-	Wplus  (n_q_points, EulerEquations<dim>::n_components),
-	Wminus (n_q_points, EulerEquations<dim>::n_components);
-
-    // Wminus is Neighbouring cell value
-    for (unsigned int q=0; q<n_q_points; ++q)
-    {
-	for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-	{
-	  Wplus[q][c] = 0.0;
-	  Wminus[q][c] = 0.0;
-	}
-	for (unsigned int i=0; i<dofs_per_cell; ++i)
-	{
-	  const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
-	  Wplus[q][c] += current_solution(dof_indices[i]) * 
-			  fe_v.shape_value_component(i, q, c);
-	}
-	// Check face_flip of the boundary face and change order of quadrature points if necesary
-	unsigned int q1=q;
-	if(face_pair.orientation[1])
-	  q1 = n_q_points - q - 1;
-	for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
-	{
-	  const unsigned int c = fe_v_n.get_fe().system_to_component_index(i).first;
-	  Wminus[q][c] += n_boundary_values[q][c] *
-			  fe_v_n.shape_value_component(i, q1, c);
-	}
-
-	numerical_normal_flux(fe_v.normal_vector(q),
-			      Wplus[q],
-			      Wminus[q],
-			      cell_average[cell_no],
-			      cell_average[n_cell_no],
-			      normal_fluxes[q]);
-    }
-    
+      Table<2,double>
+      Wplus  (n_q_points, EulerEquations<dim>::n_components),
+      Wminus (n_q_points, EulerEquations<dim>::n_components);
+      
+      // Wminus is Neighbouring cell value
+      for (unsigned int q=0; q<n_q_points; ++q)
+      {
+         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+         {
+            Wplus[q][c] = 0.0;
+            Wminus[q][c] = 0.0;
+         }
+         for (unsigned int i=0; i<dofs_per_cell; ++i)
+         {
+            const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
+            Wplus[q][c] += current_solution(dof_indices[i]) *
+                           fe_v.shape_value_component(i, q, c);
+         }
+         
+         for (unsigned int i=0; i<dofs_per_cell_neighbor; ++i)
+         {
+            const unsigned int c = fe_v_n.get_fe().system_to_component_index(i).first;
+            Wminus[q][c] += current_solution(dof_indices_n[i]) *
+                            fe_v_n.shape_value_component(i, q, c);
+         }
+         
+         // Check face_flip of the boundary face and change order of quadrature points if necesary
+         unsigned int q1=q;
+         if(face_pair.orientation[1])
+            q1 = n_q_points - q - 1;
+         
+         numerical_normal_flux(fe_v.normal_vector(q),
+                               Wplus[q],
+                               Wminus[q1],
+                               cell_average[cell_no],
+                               cell_average[n_cell_no],
+                               normal_fluxes[q]);
+      }
+      
    }
    //*************************************************************
    else
    {
-   
-   std::vector<Vector<double> >
-   boundary_values(n_q_points, Vector<double>(EulerEquations<dim>::n_components));
-   parameters.boundary_conditions[boundary_id]
-   .values.vector_value_list(fe_v.get_quadrature_points(),
-                             boundary_values);
-
-   for (unsigned int q=0; q<n_q_points; ++q)
-   {
-      for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
-      {
-         Wplus[q][c] = 0.0;
-         /*for(unsigned int d=0; d<dim; ++d)
-            grad_Wplus[q][c][d] = 0.0;*/
-      }
-      for (unsigned int i=0; i<dofs_per_cell; ++i)
-      {
-         const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
-         Wplus[q][c] += current_solution(dof_indices[i]) *
-                        fe_v.shape_value_component(i, q, c);
-
-         /*for (unsigned int d=0; d<dim; ++d)
-            grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
-                                   fe_v.shape_grad_component(i, q, c)[d];*/
-      }
       
-      EulerEquations<dim>::compute_Wminus (boundary_kind,
-                                           fe_v.normal_vector(q),
-                                           Wplus[q],
-                                           boundary_values[q],
-                                           Wminus[q]);
-
-      // Apply bc on cell average also. This part is bit ugly.
-      Table<2,double> avg (2, EulerEquations<dim>::n_components);
-      for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
+      std::vector<Vector<double> >
+      boundary_values(n_q_points, Vector<double>(EulerEquations<dim>::n_components));
+      parameters.boundary_conditions[boundary_id]
+      .values.vector_value_list(fe_v.get_quadrature_points(),
+                                boundary_values);
+      
+      for (unsigned int q=0; q<n_q_points; ++q)
       {
-         avg[0][ic] = cell_average[cell_no][ic];
-         avg[1][ic] = cell_average[cell_no][ic];
+         for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)
+         {
+            Wplus[q][c] = 0.0;
+            /*for(unsigned int d=0; d<dim; ++d)
+             grad_Wplus[q][c][d] = 0.0;*/
+         }
+         for (unsigned int i=0; i<dofs_per_cell; ++i)
+         {
+            const unsigned int c = fe_v.get_fe().system_to_component_index(i).first;
+            Wplus[q][c] += current_solution(dof_indices[i]) *
+                           fe_v.shape_value_component(i, q, c);
+            
+            /*for (unsigned int d=0; d<dim; ++d)
+             grad_Wplus[q][c][d] += current_solution(dof_indices[i]) *
+             fe_v.shape_grad_component(i, q, c)[d];*/
+         }
+         
+         EulerEquations<dim>::compute_Wminus (boundary_kind,
+                                              fe_v.normal_vector(q),
+                                              Wplus[q],
+                                              boundary_values[q],
+                                              Wminus[q]);
+         
+         // Apply bc on cell average also. This part is bit ugly.
+         Table<2,double> avg (2, EulerEquations<dim>::n_components);
+         for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
+         {
+            avg[0][ic] = cell_average[cell_no][ic];
+            avg[1][ic] = cell_average[cell_no][ic];
+         }
+         EulerEquations<dim>::compute_Wminus (boundary_kind,
+                                              fe_v.normal_vector(q),
+                                              avg[0],
+                                              boundary_values[q],
+                                              avg[1]);
+         Vector<double> Aplus (EulerEquations<dim>::n_components);
+         Vector<double> Aminus(EulerEquations<dim>::n_components);
+         for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
+         {
+            Aplus[ic]  = avg[0][ic];
+            Aminus[ic] = avg[1][ic];
+         }
+         
+         numerical_normal_flux(fe_v.normal_vector(q),
+                               Wplus[q],
+                               Wminus[q],
+                               Aplus,
+                               Aminus,
+                               normal_fluxes[q]);
       }
-      EulerEquations<dim>::compute_Wminus (boundary_kind,
-                                           fe_v.normal_vector(q),
-                                           avg[0],
-                                           boundary_values[q],
-                                           avg[1]);
-      Vector<double> Aplus (EulerEquations<dim>::n_components);
-      Vector<double> Aminus(EulerEquations<dim>::n_components);
-      for(unsigned int ic=0; ic<EulerEquations<dim>::n_components; ++ic)
-      {
-         Aplus[ic]  = avg[0][ic];
-         Aminus[ic] = avg[1][ic];
-      }
-
-      numerical_normal_flux(fe_v.normal_vector(q),
-                            Wplus[q],
-                            Wminus[q],
-                            Aplus,
-                            Aminus,
-                            normal_fluxes[q]);
-   }
    }
    
    // Now assemble the face term
    for (unsigned int i=0; i<fe_v.dofs_per_cell; ++i)
       //if (fe_v.get_fe().has_support_on_face(i, face_no) == true)
+   {
+      double F_i = 0;
+      
+      for (unsigned int point=0; point<n_q_points; ++point)
       {
-         double F_i = 0;
+         const unsigned int
+         component_i = fe_v.get_fe().system_to_component_index(i).first;
          
-         for (unsigned int point=0; point<n_q_points; ++point)
-         {
-            const unsigned int
-            component_i = fe_v.get_fe().system_to_component_index(i).first;
-            
-            F_i += normal_fluxes[point][component_i] *
-                   fe_v.shape_value_component(i, point, component_i) *
-                   fe_v.JxW(point);
-
-            /*
-            F_i += 5.0 * mu_shock(cell_no) / dinfo.cell->diameter() *
-                   (Wplus[point][component_i] - Wminus[point][component_i]) *
-                   fe_v.shape_value_component(i, point, component_i) *
-                   fe_v.JxW(point);
-
-            for(unsigned int d=0; d<dim; ++d)
-               F_i -= mu_shock(cell_no)         * grad_Wplus[point][component_i][d] *
-                     fe_v.normal_vector(point)[d] *
-                     fe_v.shape_value_component(i, point, component_i) *
-                     fe_v.JxW(point)
-                     +
-                     mu_shock(cell_no) * 
-                     fe_v.shape_grad_component(i, point, component_i)[d] *
-                     fe_v.normal_vector(point)[d] *
-                     (Wplus[point][component_i] - Wminus[point][component_i]) *
-                     fe_v.JxW(point);
-                     */
-         }
+         F_i += normal_fluxes[point][component_i] *
+                fe_v.shape_value_component(i, point, component_i) *
+                fe_v.JxW(point);
          
-         local_vector (i) -= F_i;
+         /*
+          F_i += 5.0 * mu_shock(cell_no) / dinfo.cell->diameter() *
+          (Wplus[point][component_i] - Wminus[point][component_i]) *
+          fe_v.shape_value_component(i, point, component_i) *
+          fe_v.JxW(point);
+          
+          for(unsigned int d=0; d<dim; ++d)
+          F_i -= mu_shock(cell_no)         * grad_Wplus[point][component_i][d] *
+          fe_v.normal_vector(point)[d] *
+          fe_v.shape_value_component(i, point, component_i) *
+          fe_v.JxW(point)
+          +
+          mu_shock(cell_no) *
+          fe_v.shape_grad_component(i, point, component_i)[d] *
+          fe_v.normal_vector(point)[d] *
+          (Wplus[point][component_i] - Wminus[point][component_i]) *
+          fe_v.JxW(point);
+          */
       }
+      
+      local_vector (i) -= F_i;
+   }
    
    delete[] normal_fluxes;   
-
+   
 }
 
 
