@@ -1,5 +1,5 @@
-n = 201;
-L = 20.0;
+n = 101;
+L = 10.0;
 
 l = 0.5*L;
 
@@ -20,5 +20,11 @@ Transfinite Surface(1) = {1,2,3,4};
 Recombine Surface(1);
 Transfinite Line{1,2,3,4} = n;
 
-Physical Line(1) = {1,2,3,4};
+Periodic Line {2} = {-4};
+Periodic Line {3} = {-1};
+
+Physical Line(1) = {1};
+Physical Line(2) = {2};
+Physical Line(3) = {3};
+Physical Line(4) = {4};
 Physical Surface(10) = {1};

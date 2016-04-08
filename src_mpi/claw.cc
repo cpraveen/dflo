@@ -155,7 +155,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
 template <int dim>
 void ConservationLaw<dim>::configure_periodic_boundary()
 {
-   std::cout<<"\n\t Configuring boundary conditions \n";
+   pcout<<"\n\t Configuring boundary conditions \n";
 
      
      //	Create periodicity vector to store the periodic info.
@@ -169,7 +169,7 @@ void ConservationLaw<dim>::configure_periodic_boundary()
      //	Read boundary pair from the input parameters
      std::pair<dealii::types::boundary_id,dealii::types::boundary_id> boundary_pair = parameters.periodic_pair[i];
      unsigned int bp_first =boundary_pair.first, bp_second=boundary_pair.second;
-     std::cout<<"\n\t Collecting Periodic faces for Boundary pair ("
+     pcout<<"\n\t Collecting Periodic faces for Boundary pair ("
 	      <<bp_first<<","<<bp_second<<")\n";
 
      unsigned int direction=parameters.directions[i];
@@ -181,15 +181,12 @@ void ConservationLaw<dim>::configure_periodic_boundary()
 				       periodicity_vector);
    }
    //	Add the periodic information to the triangulation
-   std::cout<<"\n\t Adding periodicity to the triangulation \n";
+   pcout<<"\n\t Adding periodicity to the triangulation \n";
    triangulation.add_periodicity(periodicity_vector);
    
-   std::cout<<"\n\t Distributing degrees of freedom \n";
+   pcout<<"\n\t Distributing degrees of freedom \n";
    dof_handler.clear();
    dof_handler.distribute_dofs (fe);
-   locally_owned_dofs = dof_handler.locally_owned_dofs ();
-   DoFTools::extract_locally_relevant_dofs (dof_handler,
-                                            locally_relevant_dofs);
    
    for(unsigned int i=0; i<parameters.periodic_pair.size();++i)
    {
@@ -197,7 +194,7 @@ void ConservationLaw<dim>::configure_periodic_boundary()
      std::pair<dealii::types::boundary_id,dealii::types::boundary_id> boundary_pair = parameters.periodic_pair[i];
      // Map to identify cells in both sides of the boundary
      unsigned int bp_first =boundary_pair.first, bp_second=boundary_pair.second;
-     std::cout<<"\n\t Building periodicity map for Boundary pair ("<<bp_first<<","<<bp_second<<")\n";
+     pcout<<"\n\t Building periodicity map for Boundary pair ("<<bp_first<<","<<bp_second<<")\n";
      
      unsigned int direction=parameters.directions[i];
      DealIIExtensions::make_periodicity_map_dg<dealii::DoFHandler<dim>>(dof_handler,
@@ -223,7 +220,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::q2)
    {
-      static MappingQ<dim,dim> m(2);
+      static MappingQ<dim> m(2);
       return m;
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)

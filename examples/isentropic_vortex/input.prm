@@ -5,7 +5,7 @@
 set mesh type = gmsh
 set mesh file = grid.msh
 set degree = 1
-set basis = Pk
+set basis = Qk
 set mapping = cartesian
 
 # Stabilization parameter
@@ -17,8 +17,29 @@ set diffusion coefficient = 0.0
 # We may specify boundary conditions for up to MAX_BD boundaries.
 # Your .inp file should have these boundaries designated.
 # farfield supersonic inflow boundary
+
 subsection boundary_1
-   set type = slip
+   set type = periodic
+   set pair = 3
+   set direction = y
+end
+
+subsection boundary_2
+   set type = periodic
+   set pair = 4
+   set direction = x
+end
+
+subsection boundary_3
+   set type = periodic
+   set pair = 1
+   set direction = y
+end
+
+subsection boundary_4
+   set type = periodic
+   set pair = 2
+   set direction = x
 end
 
 # --------------------------------------------------
@@ -71,7 +92,7 @@ end
 
 subsection limiter
    set shock indicator = limiter
-   set type = TVB
+   set type = none
    set characteristic limiter = true
    set positivity limiter = false
    set M = 0

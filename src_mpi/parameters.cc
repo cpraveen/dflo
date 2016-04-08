@@ -311,8 +311,8 @@ namespace Parameters
    template <int dim>
    AllParameters<dim>::AllParameters ()
    :
-   initial_conditions (EulerEquations<dim>::n_components),
-   external_force (dim)
+   external_force (dim),
+   initial_conditions (EulerEquations<dim>::n_components)
    {}
    
    

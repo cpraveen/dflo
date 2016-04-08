@@ -34,21 +34,26 @@ template <int dim>
 class IsentropicVortex : public dealii::Function<dim>
 {
 public:
-   IsentropicVortex (double beta, double x0, double y0)
+   IsentropicVortex (double mach_inf, double theta, double beta, 
+                     double x0, double y0)
    :
    dealii::Function<dim>(EulerEquations<dim>::n_components),
+   mach_inf (mach_inf),
+   theta (theta*M_PI/180.0),
    beta (beta),
    x0 (x0),
    y0 (y0)
    {
       const double gamma = EulerEquations<dim>::gas_gamma;
       a1 = 0.5*beta/M_PI;
-      a2 = (gamma-1.0)*std::pow(a1,2)/2.0;
+      a2 = 0.5*(gamma-1.0)*std::pow(a1,2);
    }
    virtual void vector_value (const dealii::Point<dim>  &p,
                               dealii::Vector<double> &values) const; 
    
 private:
+   double mach_inf;
+   double theta;
    double beta;
    double a1, a2;
    double x0, y0;
