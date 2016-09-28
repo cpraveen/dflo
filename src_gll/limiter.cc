@@ -1,8 +1,8 @@
-#include <base/quadrature_lib.h>
+#include <deal.II/base/quadrature_lib.h>
 
-#include <fe/fe_values.h>
+#include <deal.II/fe/fe_values.h>
 
-#include <dofs/dof_handler.h>
+#include <deal.II/dofs/dof_handler.h>
 
 #include "equation.h"
 #include "claw.h"
@@ -217,7 +217,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Point<dim> dr = p[i] - cell->center();
+               Tensor<1,dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                                                   + dr[0] * Dx_new(comp_i)
                                                   + dr[1] * Dy_new(comp_i);
@@ -327,7 +327,7 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
          std::vector<double> theta(n_components, 1.0);
          for (unsigned int face_no=0; face_no<GeometryInfo<dim>::faces_per_cell; ++face_no)
          {
-            Point<dim> dr = cell->face(face_no)->center() - cell->center();
+            Tensor<1,dim> dr = cell->face(face_no)->center() - cell->center();
             for(unsigned int i=0; i<n_components; ++i)
             if(dumax[i] - dumin[i] > Mdx2)
             {
@@ -364,7 +364,7 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
             for(unsigned int i=0; i<fe.dofs_per_cell; ++i)
             {
                unsigned int comp_i = fe.system_to_component_index(i).first;
-               Point<dim> dr = p[i] - cell->center();
+               Tensor<1,dim> dr = p[i] - cell->center();
                current_solution(dof_indices[i]) = cell_average[c][comp_i]
                   + dr[0] * Dx(comp_i) + dr[1] * Dy(comp_i);
             }
