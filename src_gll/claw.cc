@@ -6,7 +6,7 @@
 #include <deal.II/base/conditional_ostream.h>
 
 #include <deal.II/lac/vector.h>
-#include <deal.II/lac/compressed_sparsity_pattern.h>
+#include <deal.II/lac/dynamic_sparsity_pattern.h>
 
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
@@ -24,6 +24,7 @@
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/mapping_q1.h>
+#include <deal.II/fe/mapping_q.h>
 #include <deal.II/fe/mapping_cartesian.h>
 #include <deal.II/fe/fe_dgq.h>
 #include <deal.II/fe/fe_dgp.h>
@@ -175,7 +176,7 @@ const Mapping<dim,dim>& ConservationLaw<dim>::mapping() const
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::q2)
    {
-      static MappingQ<dim> m(2);
+      static MappingQ<dim,dim> m(2);
       return m;
    }
    else if(parameters.mapping_type == Parameters::AllParameters<dim>::cartesian)
@@ -316,7 +317,7 @@ void ConservationLaw<dim>::setup_system ()
                coupling[i][j] = DoFTools::none;
             coupling[i][i] = DoFTools::always;
          }
-         CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
+         DynamicSparsityPattern c_sparsity(dof_handler.n_dofs());
          DoFTools::make_sparsity_pattern (dof_handler, coupling, c_sparsity);
          sparsity_pattern.copy_from(c_sparsity);
          system_matrix.reinit (sparsity_pattern);
@@ -339,7 +340,7 @@ void ConservationLaw<dim>::setup_system ()
    }
    else
    {
-      CompressedSparsityPattern c_sparsity(dof_handler.n_dofs());
+      DynamicSparsityPattern c_sparsity(dof_handler.n_dofs());
       DoFTools::make_flux_sparsity_pattern (dof_handler, c_sparsity);
       sparsity_pattern.copy_from(c_sparsity);
 
@@ -410,7 +411,7 @@ void ConservationLaw<dim>::setup_system ()
          }
          else
          {
-            unsigned int boundary_id = cell->face(face_no)->boundary_indicator();
+            unsigned int boundary_id = cell->face(face_no)->boundary_id();
             typename EulerEquations<dim>::BoundaryKind boundary_kind =
                parameters.boundary_conditions[boundary_id].kind;
             const Point<dim>& face_center = cell->face(face_no)->center();

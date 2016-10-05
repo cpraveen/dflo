@@ -9,7 +9,6 @@
 #include <deal.II/base/conditional_ostream.h>
 
 #include <deal.II/lac/vector.h>
-#include <deal.II/lac/compressed_sparsity_pattern.h>
 #include <deal.II/lac/precondition_block.h>
 
 #include <deal.II/grid/tria.h>
@@ -285,7 +284,7 @@ private:
    inline
    void numerical_normal_flux 
    (
-      const dealii::Point<dim>         &normal,
+      const dealii::Tensor<1,dim>      &normal,
       const InputVector                &Wplus,
       const InputVector                &Wminus,
       const dealii::Vector<double>     &Aplus,
