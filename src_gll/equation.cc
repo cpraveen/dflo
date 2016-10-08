@@ -119,9 +119,8 @@ compute_derived_quantities_vector (const std::vector<Vector<double> >           
       computed_quantities[q](dim) = compute_pressure<double> (uh[q]);
 
       // Perturbation pressure useful for hydrostatic tests
-      /*
-      computed_quantities[q](dim) = compute_pressure<double> (uh[q]) - std::pow(1.0 - evaluation_points[q][0]/6.0,6);
-      */
+      //computed_quantities[q](dim) = compute_pressure<double> (uh[q]) - std::exp(-evaluation_points[q][0]);
+      //computed_quantities[q](dim) = compute_pressure<double> (uh[q]) - std::pow(1.0 - evaluation_points[q][0]/6.0,6);
       
       if (do_schlieren_plot == true)
          computed_quantities[q](dim+1) = duh[q][density_component] *
