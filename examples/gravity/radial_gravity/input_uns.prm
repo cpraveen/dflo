@@ -3,8 +3,9 @@
 
 # The input grid 
 set mesh type = gmsh
-set mesh file = circle.msh
+set mesh file = grid_uns.msh
 set degree = 1
+set mapping = q1
 
 # Stabilization parameter
 set diffusion power       = 2.0
@@ -18,7 +19,7 @@ set potential = sqrt(x*x + y*y)
 # Your .inp file should have these boundaries designated.
 # farfield supersonic inflow boundary
 subsection boundary_1
-   set type = slip
+   set type = outflow
 end
 
 # --------------------------------------------------
@@ -73,7 +74,8 @@ subsection flux
 end
 
 subsection limiter
-   set type = none
+   set type = minmax
+   #set indicator = rediual
    set beta = 2.0
    set characteristic limiter = true
    set positivity limiter = false

@@ -3,7 +3,7 @@
 
 # The input grid 
 set mesh type = gmsh
-set mesh file = grid_cart.msh
+set mesh file = grid_pert.msh
 set degree = 2
 set mapping = cartesian
 
@@ -11,7 +11,7 @@ set mapping = cartesian
 set diffusion power       = 2.0
 set diffusion coefficient = 0.0
 #set gravity = 0.1
-set potential = x + y
+set potential = x
 
 # --------------------------------------------------
 # Boundary conditions
@@ -19,6 +19,18 @@ set potential = x + y
 # Your .inp file should have these boundaries designated.
 # farfield supersonic inflow boundary
 subsection boundary_1
+   set type = slip
+end
+
+subsection boundary_2
+   set type = outflow
+end
+
+subsection boundary_3
+   set type = slip
+end
+
+subsection boundary_4
    set type = outflow
 end
 
@@ -28,8 +40,13 @@ end
 # are passed to the expression parsing function.  You should use x,y,z for
 # the coordinate variables.
 
+# Polytropic solution
+# nu=1.2, gamma=1.4
 subsection initial condition
-   set function = isohydro
+   set w_0 value = 0.0
+   set w_1 value = 0.0
+   set w_2 value = (1 - x/6)^5
+   set w_3 value = ((1 - x/6)^6 + 1.0e-4*exp(-100*(x-0.5)^2))/0.4
 end
 
 # --------------------------------------------------
@@ -37,7 +54,7 @@ end
 subsection time stepping
   set time step type = global
   set cfl = 0.9
-  set final time = 0.15
+  set final time = 0.25
   set nonlinear iterations = 1
 end
 
@@ -51,7 +68,7 @@ end
 subsection output
   set iter step      = 100
   set schlieren plot = true
-  set format         = tecplot
+  set format         = vtk
 end
 
 # --------------------------------------------------

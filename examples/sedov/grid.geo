@@ -1,4 +1,4 @@
-n = 201;
+n = 201; // number of points along each side
 L = 4.0;
 
 l = 0.5*L;

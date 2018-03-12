@@ -4,13 +4,14 @@
 # The input grid 
 set mesh type = gmsh
 set mesh file = grid.msh
-set degree = 2
+set degree = 1
 set mapping = cartesian
 
 # Stabilization parameter
 set diffusion power       = 2.0
 set diffusion coefficient = 0.0
-set gravity = 0.1
+#set gravity = 0.1
+set potential = y
 
 # --------------------------------------------------
 # Boundary conditions

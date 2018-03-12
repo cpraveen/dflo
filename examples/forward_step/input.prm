@@ -88,4 +88,5 @@ subsection limiter
    set characteristic limiter = true
    set positivity limiter = true
    set M = 0
+   set beta = 2.0
 end

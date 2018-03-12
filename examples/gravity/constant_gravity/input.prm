@@ -3,9 +3,9 @@
 
 # The input grid 
 set mesh type = gmsh
-set mesh file = grid.msh
+set mesh file = grid_cart.msh
 set degree = 1
-#set mapping = cartesian
+set mapping = cartesian
 
 # Stabilization parameter
 set diffusion power       = 2.0
@@ -44,7 +44,7 @@ subsection initial condition
    set w_0 value = 0.0
    set w_1 value = 0.0
    set w_2 value = exp(-y)
-   set w_3 value = exp(-y)/0.4
+   set w_3 value = (exp(-y)+1.0e-2*exp(-100*(x-0.5)^2)/0.4
 end
 
 # --------------------------------------------------
@@ -52,7 +52,7 @@ end
 subsection time stepping
   set time step type = global
   set cfl = 0.9
-  set final time = 20.0
+  set final time = 0.1
   set nonlinear iterations = 1
 end
 

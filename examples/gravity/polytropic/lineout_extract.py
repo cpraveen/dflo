@@ -1,4 +1,4 @@
-#Command : visit -s lineout_extract.py
+#Command : visit -cli -nowin -s lineout_extract.py
 #Author  : Anant Diwakar
 #Date    : 28 June 2014
 
@@ -6,17 +6,14 @@
 
 axis_font_size = 1.1
 
-# No. of points on the curve
-# Choose equal to number of cells in x direction, see grid.geo file
-no_of_points = 200
+no_of_points = 50 # No. of points on the curve
 
 #Lineout parameters
-x_start, x_end = -2.0, 2.0
-y_start, y_end =  0.0, 0.0
-
-#no_of_points = 300
-#x_start, x_end = -2.0, 2.0
-#y_start, y_end = -2.0, 2.0
+x_start = 0.0
+x_end = 1.0
+dx = (x_end - x_start)/no_of_points
+y_start = 5*dx
+y_end = y_start
 
 var_list = ["Density","Pressure","Energy"] # List of variable to be extracted
 
@@ -73,7 +70,7 @@ for var in var_list:
     # End spontaneous state
 
     ViewCurveAtts = ViewCurveAttributes()
-    ViewCurveAtts.domainCoords = (0, 4)
+    ViewCurveAtts.domainCoords = (x_start, x_end)
     ViewCurveAtts.rangeCoords = (-1, 3)
     ViewCurveAtts.viewportCoords = (0.2, 0.95, 0.15, 0.9)
     ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG

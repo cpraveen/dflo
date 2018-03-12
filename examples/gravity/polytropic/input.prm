@@ -3,15 +3,15 @@
 
 # The input grid 
 set mesh type = gmsh
-set mesh file = grid_cart.msh
-set degree = 2
+set mesh file = grid.msh
+set degree = 1
 set mapping = cartesian
 
 # Stabilization parameter
 set diffusion power       = 2.0
 set diffusion coefficient = 0.0
 #set gravity = 0.1
-set potential = x + y
+set potential = y
 
 # --------------------------------------------------
 # Boundary conditions
@@ -19,7 +19,19 @@ set potential = x + y
 # Your .inp file should have these boundaries designated.
 # farfield supersonic inflow boundary
 subsection boundary_1
-   set type = outflow
+   set type = slip
+end
+
+subsection boundary_2
+   set type = slip
+end
+
+subsection boundary_3
+   set type = slip
+end
+
+subsection boundary_4
+   set type = slip
 end
 
 # --------------------------------------------------
@@ -29,7 +41,7 @@ end
 # the coordinate variables.
 
 subsection initial condition
-   set function = isohydro
+   set function = polyhydro
 end
 
 # --------------------------------------------------
@@ -37,7 +49,7 @@ end
 subsection time stepping
   set time step type = global
   set cfl = 0.9
-  set final time = 0.15
+  set final time = 0.1
   set nonlinear iterations = 1
 end
 
@@ -49,9 +61,9 @@ end
 # --------------------------------------------------
 # Output frequency and kind
 subsection output
-  set iter step      = 100
+  set iter step      = 10
   set schlieren plot = true
-  set format         = tecplot
+  set format         = vtk
 end
 
 # --------------------------------------------------

@@ -4,7 +4,8 @@
 # The input grid 
 set mesh type = gmsh
 set mesh file = tube.msh
-set degree = 1
+set degree = 2
+set basis = Pk
 set mapping = cartesian
 
 # Stabilization parameter
@@ -90,6 +91,7 @@ subsection limiter
    set shock indicator = limiter
    set characteristic limiter = true
    set positivity limiter = false
-   set M = 0.0
    set beta = 2.0
+   set M = 0.0
+   set conserve angular momentum = false
 end
