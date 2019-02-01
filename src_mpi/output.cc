@@ -81,7 +81,7 @@ void ConservationLaw<dim>::output_results ()
                               ".vtu");
       all_files.push_back (filenames);
       std::ofstream visit_output ("master_file.visit");
-      data_out.write_visit_record(visit_output, all_files);
+      DataOutBase::write_visit_record(visit_output, all_files);
    }
    
    ++output_file_number;

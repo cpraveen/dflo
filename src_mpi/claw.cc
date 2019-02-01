@@ -108,7 +108,7 @@ void ConservationLaw<dim>::read_parameters (const char *input_filename)
    ParameterHandler prm;
    Parameters::AllParameters<dim>::declare_parameters (prm);
    
-   prm.read_input (input_filename);
+   prm.parse_input (input_filename);
    parameters.parse_parameters (prm);
    
    //pcout.set_condition (parameters.output == Parameters::Solver::verbose);
