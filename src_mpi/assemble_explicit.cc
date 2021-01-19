@@ -18,6 +18,7 @@
 #include <fstream>
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include "claw.h"
 #include "DealiiExtensions.h"
@@ -560,13 +561,21 @@ void ConservationLaw<dim>::assemble_system (IntegratorExplicit<dim>& integrator)
     dof_handler.end(),
     integrator.dof_info, 
     integrator.info_box,
-    boost::bind(&ConservationLaw<dim>::integrate_cell_term_explicit,
-                this, _1, _2),
-    boost::bind(&ConservationLaw<dim>::integrate_boundary_term_explicit,
-                this, _1, _2),
-    boost::bind(&ConservationLaw<dim>::integrate_face_term_explicit,
-                this, _1, _2, _3, _4),
-    integrator.assembler);
+    std::bind(&ConservationLaw<dim>::integrate_cell_term_explicit,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2),
+    std::bind(&ConservationLaw<dim>::integrate_boundary_term_explicit,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2),
+    std::bind(&ConservationLaw<dim>::integrate_face_term_explicit,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2,
+                std::placeholders::_3,
+                std::placeholders::_4),
+                integrator.assembler);
     
     right_hand_side.compress (VectorOperation::add);
 

@@ -176,7 +176,7 @@ void ConservationLaw<dim>::set_initial_condition_Pk ()
    QGauss<dim> quadrature (fe.degree+1);
    unsigned int n_q_points = quadrature.size();
    FEValues<dim> fe_values (mapping(), fe, quadrature, 
-                            update_values|update_q_points|update_JxW_values);
+                            update_values|update_quadrature_points|update_JxW_values);
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
    std::vector< Vector<double> > ic_values(n_q_points, 
                                            Vector<double>(EulerEquations<dim>::n_components));

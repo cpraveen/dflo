@@ -12,7 +12,7 @@
 #include <deal.II/numerics/vector_tools.h>
 #include <deal.II/numerics/solution_transfer.h>
 
-#include <deal.II/lac/parallel_vector.h>
+#include <deal.II/lac/la_parallel_vector.h>
 
 #include <deal.II/distributed/tria.h>
 #include <deal.II/distributed/grid_refinement.h>
@@ -1440,7 +1440,7 @@ struct EulerEquations
    void
    compute_refinement_indicators (const dealii::DoFHandler<dim> 		&dof_handler,
                                   const dealii::Mapping<dim>    		&mapping,
-                                  const dealii::parallel::distributed::Vector<double>  	&solution,
+                                  const dealii::LinearAlgebra::distributed::Vector<double>  	&solution,
                                   dealii::Vector<double>		&refinement_indicators) //dealii::TrilinosWrappers::MPI::Vector
    {
       const unsigned int dofs_per_cell = dof_handler.get_fe().dofs_per_cell;
@@ -1544,16 +1544,12 @@ struct EulerEquations
    {
    public:
       Postprocessor (const bool do_schlieren_plot);
-      
+
       virtual
       void
-      compute_derived_quantities_vector 
-         (const std::vector<dealii::Vector<double> >              &uh,
-          const std::vector<std::vector<dealii::Tensor<1,dim> > > &duh,
-          const std::vector<std::vector<dealii::Tensor<2,dim> > > &dduh,
-          const std::vector<dealii::Point<dim> >                  &normals,
-          const std::vector<dealii::Point<dim> >                  &evaluation_points,
-          std::vector<dealii::Vector<double> >                    &computed_quantities) const;
+      evaluate_vector_field
+      (const dealii::DataPostprocessorInputs::Vector<dim> &input_data,
+       std::vector<dealii::Vector<double>>                &computed_quantities) const;
       
       virtual std::vector<std::string> get_names () const;
       

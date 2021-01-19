@@ -33,7 +33,7 @@ public:
    
    dealii::MeshWorker::IntegrationInfoBox<dim> info_box;
    dealii::MeshWorker::DoFInfo<dim> dof_info;
-   dealii::MeshWorker::Assembler::ResidualSimple< dealii::parallel::distributed::Vector<double> > assembler;
+   dealii::MeshWorker::Assembler::ResidualSimple< dealii::LinearAlgebra::distributed::Vector<double> > assembler;
 
 };
 

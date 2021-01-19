@@ -10,7 +10,7 @@
 #include <deal.II/base/timer.h>
 
 #include <deal.II/lac/vector.h>
-#include <deal.II/lac/parallel_vector.h>
+#include <deal.II/lac/la_parallel_vector.h>
 
 #include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/tria_accessor.h>
@@ -41,7 +41,7 @@ using namespace dealii;
 
 namespace LA
 {
-   using namespace ::parallel::distributed;
+   using namespace ::LinearAlgebra::distributed;
 }
 
 //-----------------------------------------------------------------------------
@@ -389,7 +389,7 @@ private:
    void get_cell_average(const typename dealii::DoFHandler<dim>::cell_iterator& cell,
                          dealii::Vector<double>& avg) const
    {
-      if(cell->active())
+      if(cell->is_active())
       {
          unsigned int cell_no = cell_number(cell);
          for(unsigned int c=0; c<EulerEquations<dim>::n_components; ++c)

@@ -84,7 +84,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
 
    // NOTE: We get multiple sets of same support points since fe is an FESystem
    Quadrature<dim> qsupport (fe.get_unit_support_points());
-   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_quadrature_points);
    
    Vector<double> dfx (n_components);
    Vector<double> dbx (n_components);
@@ -102,7 +102,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Qk ()
    std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
                                                      std::vector< Tensor<1,dim> >(n_components));
    
-   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
+   auto local_range = current_solution.get_partitioner()->local_range();
 
    // Data for positivity limiter
    PosLimData<dim> pos_lim_data (fe, mapping(), local_range);
@@ -258,7 +258,7 @@ void ConservationLaw<dim>::apply_limiter_TVB_Pk ()
    static const double sqrt_3 = sqrt(3.0);
    const double beta = 0.5 * parameters.beta;
    
-   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
+   auto local_range = current_solution.get_partitioner()->local_range();
 
    // Data for positivity limiter
    PosLimData<dim> pos_lim_data (fe, mapping(), local_range);
@@ -414,14 +414,14 @@ void ConservationLaw<dim>::apply_limiter_minmax_Qk ()
    
    // NOTE: We get multiple sets of same support points since fe is an FESystem
    Quadrature<dim> qsupport (fe.get_unit_support_points());
-   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_q_points);
+   FEValues<dim>   fe_values (mapping(), fe, qsupport, update_quadrature_points);
    
    Vector<double> avg_nbr (n_components);
    std::vector<unsigned int> dof_indices (fe.dofs_per_cell);
    std::vector< std::vector< Tensor<1,dim> > > grad (qrule.size(),
                                                      std::vector< Tensor<1,dim> >(n_components));
    
-   std::pair<unsigned int,unsigned int> local_range = current_solution.local_range();
+   auto local_range = current_solution.get_partitioner()->local_range();
    
    // Data for positivity limiter
    PosLimData<dim> pos_lim_data (fe, mapping(), local_range);

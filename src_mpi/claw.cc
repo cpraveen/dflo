@@ -12,7 +12,7 @@
 #include <deal.II/grid/tria_accessor.h>
 #include <deal.II/grid/tria_iterator.h>
 #include <deal.II/grid/grid_in.h>
-#include <deal.II/grid/tria_boundary_lib.h>
+//#include <deal.II/grid/tria_boundary_lib.h>
 #include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/dofs/dof_handler.h>
@@ -683,7 +683,7 @@ ConservationLaw<dim>::compute_angular_momentum ()
    
    FEValues<dim> fe_values (mapping(), fe,
                             quadrature_formula,
-                            update_values | update_q_points | update_JxW_values);
+                            update_values | update_quadrature_points | update_JxW_values);
    const FEValuesExtractors::Vector momentum (0);
    std::vector< Tensor<1,dim> > momentum_values(n_q_points);
    
@@ -729,8 +729,8 @@ ConservationLaw<dim>::solve (LA::Vector<double> &newton_update,
 {
    TimerOutput::Scope t(computing_timer, "Solve");
    
-   std::pair<unsigned int,unsigned int> local_range = newton_update.local_range();
-   
+   auto local_range = newton_update.get_partitioner()->local_range();
+
    std::vector<unsigned int> dof_indices(fe.dofs_per_cell);
    typename DoFHandler<dim>::active_cell_iterator
       cell = dof_handler.begin_active(),
@@ -784,7 +784,13 @@ void ConservationLaw<dim>::iterate_explicit (IntegratorExplicit<dim>& integrator
          TimerOutput::Scope t(computing_timer, "RK update");
          
          // current_solution = (1-ark)*current_solution + ark*old_solution + (1-ark)*newton_update
-         current_solution.sadd(1.0-ark[rk], ark[rk], old_solution, 1-ark[rk], newton_update);
+         //current_solution.sadd(1.0-ark[rk], ark[rk], old_solution, 1-ark[rk], newton_update);
+         for(unsigned int i=0; i<current_solution.local_size(); ++i)
+         {
+            current_solution.local_element(i) = (ark[rk]*old_solution.local_element(i) +
+                                                 (1.0-ark[rk])*(current_solution.local_element(i) + newton_update.local_element(i)));
+         }
+         current_solution.update_ghost_values();
       }
       
       compute_cell_average ();
@@ -952,9 +958,9 @@ void ConservationLaw<dim>::run ()
    timer_all.stop ();
    
    pcout << std::endl;
-   pcout << "Elapsed CPU time  (iter): " << timer_iterations()/60 << " min.\n";
+   pcout << "Elapsed CPU time  (iter): " << timer_iterations.cpu_time()/60 << " min.\n";
    pcout << "Elapsed wall time (iter): " << timer_iterations.wall_time()/60 << " min.\n";
-   pcout << "Elapsed CPU time  (all) : " << timer_all()/60 << " min.\n";
+   pcout << "Elapsed CPU time  (all) : " << timer_all.cpu_time()/60 << " min.\n";
    pcout << "Elapsed wall time (all) : " << timer_all.wall_time()/60 << " min.\n";
    
    computing_timer.print_summary ();
