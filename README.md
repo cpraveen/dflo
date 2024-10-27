@@ -1,6 +1,10 @@
 dflo
 ====
 
+> This code is rather old, for more recent examples of DG codes, see
+> https://github.com/cpraveen/fem/tree/master/dg1d
+> https://github.com/cpraveen/fem/tree/master/dg2d
+
 Discontinuous Galerkin solver for compressible flows. Some features of the code are
 
 * cartesian and quadrilateral cells
