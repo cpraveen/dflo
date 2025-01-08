@@ -1,7 +1,9 @@
 dflo
 ====
 
-> This code is rather old, for more recent examples of DG codes, see  
+> This code is rather old, it may not even compile with latest deal.II versions; in that case try with v9.5.0.
+>
+> For more recent examples of DG codes, see  
 > https://github.com/cpraveen/fem/tree/master/dg1d  
 > https://github.com/cpraveen/fem/tree/master/dg2d
 
